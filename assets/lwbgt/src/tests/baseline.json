@@ -1,0 +1,239 @@
+{
+  "compilers": {
+    "Clang 18.1.3": {
+      "branches": {
+        "cases": 996,
+        "sha256": "4a2d7286fe26dd7cec8fd6eb276f70ca13004eb7bf1b3162bfbfc9099af64db4",
+        "status": "bit-identical"
+      },
+      "esat": {
+        "cases": 1682,
+        "sha256": "d4409388ea0e46ee157870b37a9ead8f03fff156c5c26e5e120fee1f49a27c26",
+        "status": "bit-identical"
+      },
+      "wbgt": {
+        "candidate_sha256": "1de32a0d6ed1a612946e0edb134d52519d7a1c368e6cd15c5af1fbb8610b5345",
+        "cases": 35976,
+        "cohorts": {
+          "calendar-boundary": {
+            "failure": 0,
+            "success": 52
+          },
+          "domain-edge": {
+            "failure": 2,
+            "success": 2
+          },
+          "finite-invalid": {
+            "failure": 3,
+            "success": 3
+          },
+          "fixed-weather": {
+            "failure": 0,
+            "success": 2
+          },
+          "float-conversion": {
+            "failure": 0,
+            "success": 8
+          },
+          "height-sign": {
+            "failure": 0,
+            "success": 128
+          },
+          "horizon-minute": {
+            "failure": 0,
+            "success": 2178
+          },
+          "interactions": {
+            "failure": 0,
+            "success": 432
+          },
+          "known-answer": {
+            "failure": 0,
+            "success": 2
+          },
+          "pressure-boundary": {
+            "failure": 6,
+            "success": 0
+          },
+          "radiation-threshold": {
+            "failure": 0,
+            "success": 150
+          },
+          "seeded-nominal": {
+            "failure": 5,
+            "success": 4995
+          },
+          "seeded-stress": {
+            "failure": 2035,
+            "success": 2965
+          },
+          "solar-clipping": {
+            "failure": 0,
+            "success": 300
+          },
+          "solar-global": {
+            "failure": 0,
+            "success": 9360
+          },
+          "solar-height2": {
+            "failure": 0,
+            "success": 96
+          },
+          "thermophysical": {
+            "failure": 0,
+            "success": 48
+          },
+          "thermophysical-extreme": {
+            "failure": 1025,
+            "success": 2335
+          },
+          "time-calendar": {
+            "failure": 0,
+            "success": 6912
+          },
+          "wind-stability": {
+            "failure": 0,
+            "success": 96
+          },
+          "wind-threshold": {
+            "failure": 0,
+            "success": 2736
+          },
+          "year-sweep": {
+            "failure": 0,
+            "success": 100
+          }
+        },
+        "corrected_2m_wind_cases": 4775,
+        "reference_sha256": "e6ee6fea2653b6f2a50f04a2053a464c73d5f40d5e610e40ad5d5d85e889b869",
+        "status": "bit-identical except corrected scalar 2 m wind"
+      }
+    },
+    "GCC 13.3.0": {
+      "branches": {
+        "cases": 996,
+        "sha256": "4a2d7286fe26dd7cec8fd6eb276f70ca13004eb7bf1b3162bfbfc9099af64db4",
+        "status": "bit-identical"
+      },
+      "esat": {
+        "cases": 1682,
+        "sha256": "d4409388ea0e46ee157870b37a9ead8f03fff156c5c26e5e120fee1f49a27c26",
+        "status": "bit-identical"
+      },
+      "wbgt": {
+        "candidate_sha256": "1de32a0d6ed1a612946e0edb134d52519d7a1c368e6cd15c5af1fbb8610b5345",
+        "cases": 35976,
+        "cohorts": {
+          "calendar-boundary": {
+            "failure": 0,
+            "success": 52
+          },
+          "domain-edge": {
+            "failure": 2,
+            "success": 2
+          },
+          "finite-invalid": {
+            "failure": 3,
+            "success": 3
+          },
+          "fixed-weather": {
+            "failure": 0,
+            "success": 2
+          },
+          "float-conversion": {
+            "failure": 0,
+            "success": 8
+          },
+          "height-sign": {
+            "failure": 0,
+            "success": 128
+          },
+          "horizon-minute": {
+            "failure": 0,
+            "success": 2178
+          },
+          "interactions": {
+            "failure": 0,
+            "success": 432
+          },
+          "known-answer": {
+            "failure": 0,
+            "success": 2
+          },
+          "pressure-boundary": {
+            "failure": 6,
+            "success": 0
+          },
+          "radiation-threshold": {
+            "failure": 0,
+            "success": 150
+          },
+          "seeded-nominal": {
+            "failure": 5,
+            "success": 4995
+          },
+          "seeded-stress": {
+            "failure": 2035,
+            "success": 2965
+          },
+          "solar-clipping": {
+            "failure": 0,
+            "success": 300
+          },
+          "solar-global": {
+            "failure": 0,
+            "success": 9360
+          },
+          "solar-height2": {
+            "failure": 0,
+            "success": 96
+          },
+          "thermophysical": {
+            "failure": 0,
+            "success": 48
+          },
+          "thermophysical-extreme": {
+            "failure": 1025,
+            "success": 2335
+          },
+          "time-calendar": {
+            "failure": 0,
+            "success": 6912
+          },
+          "wind-stability": {
+            "failure": 0,
+            "success": 96
+          },
+          "wind-threshold": {
+            "failure": 0,
+            "success": 2736
+          },
+          "year-sweep": {
+            "failure": 0,
+            "success": 100
+          }
+        },
+        "corrected_2m_wind_cases": 4775,
+        "reference_sha256": "e6ee6fea2653b6f2a50f04a2053a464c73d5f40d5e610e40ad5d5d85e889b869",
+        "status": "bit-identical except corrected scalar 2 m wind"
+      }
+    }
+  },
+  "date": "2026-10-01",
+  "floating_point_flags": [
+    "-O2",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-fno-strict-aliasing"
+  ],
+  "input_sha256": {
+    "cases.csv": "9531c1793c1b034337476a2991d22528423c9ed1f9705138cef92aa01cadaf14",
+    "esat-cases.csv": "325237ffaa89a270c4d8281c57b73b73b2015afb48429c4d3c40fe26dc2e6ab0",
+    "weather-cases.csv": "398ac4144913c6311e00e0b54d57ae8bed7e4d435528a268f4b1d460d8c1e983"
+  },
+  "oracle_blob": "7bc6e6ddd76a538d6454b27e9b252667846e6c9b",
+  "platform": "Linux x86_64",
+  "seed": 20261001,
+  "seeded_rows": 10000,
+  "version": "1.0.1"
+}

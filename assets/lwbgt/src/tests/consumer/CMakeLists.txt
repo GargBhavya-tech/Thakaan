@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.16)
+project(lwbgt_consumer LANGUAGES C CXX)
+
+find_package(lwbgt 1.0.0 CONFIG REQUIRED)
+add_executable(lwbgt_static_consumer main.c)
+add_executable(lwbgt_shared_consumer main.c)
+add_executable(lwbgt_cpp_consumer main.cpp)
+target_link_libraries(lwbgt_static_consumer PRIVATE lwbgt::static)
+target_link_libraries(lwbgt_shared_consumer PRIVATE lwbgt::shared)
+target_compile_features(lwbgt_cpp_consumer PRIVATE cxx_std_11)
+target_link_libraries(lwbgt_cpp_consumer PRIVATE lwbgt::shared)

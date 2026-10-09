@@ -1,0 +1,25 @@
+Package: lwbgt
+Type: Package
+Title: Reference-Compatible Outdoor Wet Bulb Globe Temperature
+Version: 1.2.0
+Authors@R: c(
+    person("Yifei", "Zheng", email = "zyf0717@gmail.com",
+           role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0009-0001-4858-2025")),
+    person("James C.", "Liljegren", role = "ctb"),
+    person("Nels", "Larson", role = "ctb"),
+    person(family = "UChicago Argonne, LLC", role = "cph")
+    )
+Description: Computes outdoor wet bulb globe temperature using the
+    reference-compatible Liljegren numerical model described by Liljegren et
+    al. (2008) <doi:10.1080/15459620802310770>. Provides dependency-free,
+    vectorized access to the native calculation with explicit input units,
+    per-row validation, and deterministic failure reporting.
+License: Apache License (== 2.0)
+Copyright: See file inst/COPYRIGHTS.
+URL: https://github.com/zyf0717/lwbgt,
+    https://zyf0717.r-universe.dev/lwbgt
+BugReports: https://github.com/zyf0717/lwbgt/issues
+Depends: R (>= 4.3.0)
+Encoding: UTF-8
+NeedsCompilation: yes

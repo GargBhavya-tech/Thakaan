@@ -1,0 +1,133 @@
+name: Python package
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-wheels:
+    name: ${{ matrix.artifact }} wheel
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            artifact: linux-x86_64
+            arch: x86_64
+            platform: linux
+          - runner: ubuntu-24.04-arm
+            artifact: linux-aarch64
+            arch: aarch64
+            platform: linux
+          - runner: macos-15-intel
+            artifact: macos-x86_64
+            arch: x86_64
+            platform: macos
+          - runner: macos-15
+            artifact: macos-arm64
+            arch: arm64
+            platform: macos
+          - runner: windows-2025
+            artifact: windows-amd64
+            arch: AMD64
+            platform: windows
+    runs-on: ${{ matrix.runner }}
+    env:
+      CIBW_BUILD: cp310-*
+      CIBW_SKIP: '*-musllinux_*'
+      CIBW_ARCHS: ${{ matrix.arch }}
+      CIBW_TEST_COMMAND: python -m unittest discover -s {project}/tests/python -v
+      CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >-
+        delvewheel repair --analyze-existing --exclude ucrtbase.dll
+        -w {dest_dir} -v {wheel}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Provision standalone MinGW GCC
+        if: matrix.platform == 'windows'
+        id: mingw
+        uses: egor-tensin/setup-mingw@v3
+        with:
+          platform: x64
+          version: 12.2.0
+      - name: Select MinGW compiler
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          "CC=${{ steps.mingw.outputs.gcc }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CMAKE_GENERATOR=Ninja" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Build, repair, and test wheel
+        uses: pypa/cibuildwheel@v4.1.1
+      - name: Inspect wheel contents
+        run: python tests/check_distribution.py "wheelhouse/*.whl"
+      - name: Inspect Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          python -m pip install auditwheel
+          for wheel in wheelhouse/*.whl; do
+            auditwheel show "$wheel"
+          done
+      - name: Inspect macOS dependencies
+        if: matrix.platform == 'macos'
+        run: python -m pip install delocate && delocate-listdeps wheelhouse/*.whl
+      - name: Inspect Windows dependencies
+        if: matrix.platform == 'windows'
+        run: python -m pip install delvewheel && delvewheel show --analyze-existing wheelhouse\*.whl
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-${{ matrix.artifact }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-sdist:
+    name: source distribution
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Check version coherence
+        run: python tests/check_versions.py
+      - name: Build source distribution
+        run: |
+          python -m pip install build twine
+          python -m build --sdist
+          python tests/check_distribution.py "dist/*.tar.gz"
+          python -m twine check dist/*
+      - name: Rebuild wheel from source distribution
+        run: |
+          python -m pip wheel --no-deps --wheel-dir sdist-wheel dist/*.tar.gz
+          python tests/check_distribution.py "sdist-wheel/*.whl"
+      - name: Test source-built wheel in a clean environment
+        run: |
+          python -m venv sdist-test
+          sdist-test/bin/python -m pip install --no-index sdist-wheel/*.whl
+          sdist-test/bin/python -m unittest discover -s tests/python -v
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  python-compatibility:
+    name: Linux wheel on latest Python
+    needs: build-wheels
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist-linux-x86_64
+          path: dist
+      - name: Install the same ABI-independent wheel
+        run: |
+          python -m pip install --no-index dist/*.whl
+          python -m unittest discover -s tests/python -v

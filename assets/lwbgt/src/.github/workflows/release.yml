@@ -1,0 +1,186 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release-tag:
+    name: Verify annotated release tag
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Require an annotated tag object
+        run: test "$(git cat-file -t "$GITHUB_REF_NAME")" = tag
+
+  artifacts:
+    needs: release-tag
+    uses: ./.github/workflows/python.yml
+
+  r-artifact:
+    needs: release-tag
+    uses: ./.github/workflows/r.yml
+
+  testpypi-publish:
+    name: Publish verified artifacts to TestPyPI
+    needs: [artifacts, r-artifact]
+    runs-on: ubuntu-24.04
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/lwbgt/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Require the complete release matrix
+        run: |
+          test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 5
+          test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l)" -eq 1
+      - name: Publish through TestPyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  testpypi-smoke:
+    name: Verify TestPyPI artifact identity and installation
+    needs: testpypi-publish
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Download the release wheel from TestPyPI
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir testpypi
+          for attempt in $(seq 1 12); do
+            if python -m pip download \
+              --index-url https://test.pypi.org/simple/ \
+              --only-binary=:all: --no-cache-dir --no-deps \
+              --dest testpypi "lwbgt==$version"; then
+              break
+            fi
+            if test "$attempt" -eq 12; then
+              exit 1
+            fi
+            sleep 10
+          done
+      - name: Match the complete tested artifact set byte-for-byte
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import time
+          from pathlib import Path
+          from urllib.request import urlopen
+
+          version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          expected = {
+              path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in Path("dist").iterdir()
+              if path.is_file()
+          }
+          release_url = f"https://test.pypi.org/pypi/lwbgt/{version}/json"
+          published = {}
+          for attempt in range(12):
+              try:
+                  with urlopen(release_url) as response:
+                      release = json.load(response)
+                  published = {
+                      item["filename"]: item["digests"]["sha256"]
+                      for item in release["urls"]
+                  }
+              except OSError:
+                  published = {}
+              if published == expected:
+                  break
+              if attempt != 11:
+                  time.sleep(10)
+          else:
+              raise SystemExit(
+                  f"TestPyPI release differs: published={published}, expected={expected}"
+              )
+
+          downloaded = list(Path("testpypi").glob("*.whl"))
+          if len(downloaded) != 1:
+              raise SystemExit(f"expected one TestPyPI wheel, got {downloaded}")
+          expected_wheel = Path("dist", downloaded[0].name)
+          if not expected_wheel.is_file():
+              raise SystemExit(f"TestPyPI returned an unexpected artifact: {downloaded[0].name}")
+          actual_hash = hashlib.sha256(downloaded[0].read_bytes()).hexdigest()
+          expected_hash = hashlib.sha256(expected_wheel.read_bytes()).hexdigest()
+          if actual_hash != expected_hash:
+              raise SystemExit(
+                  f"TestPyPI artifact hash mismatch: {actual_hash} != {expected_hash}"
+              )
+          print(f"TestPyPI release identity: {len(expected)} artifacts: ok")
+          print(f"TestPyPI wheel download: {downloaded[0].name}: {actual_hash}")
+          PY
+      - name: Test the wheel retrieved from TestPyPI
+        run: |
+          python -m venv testpypi-test
+          testpypi-test/bin/python -m pip install --no-index testpypi/*.whl
+          testpypi-test/bin/python -m unittest discover -s tests/python -v
+
+  publish:
+    name: Publish verified artifacts to PyPI
+    needs: [artifacts, testpypi-smoke]
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/lwbgt
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Require the complete release matrix
+        run: |
+          test "$(find dist -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 5
+          test "$(find dist -maxdepth 1 -type f -name '*.tar.gz' | wc -l)" -eq 1
+      - name: Publish through PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub release
+    needs: [publish, r-artifact]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: r-source
+          path: r-dist
+      - name: Create release for the existing annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* r-dist/* --verify-tag --generate-notes

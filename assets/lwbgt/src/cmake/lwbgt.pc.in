@@ -1,0 +1,11 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: lwbgt
+Description: Exact-compatible optimized Liljegren WBGT implementation
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -llwbgt
+Libs.private: @LWBGT_PC_PRIVATE_LIBS@
+Cflags: -I${includedir}

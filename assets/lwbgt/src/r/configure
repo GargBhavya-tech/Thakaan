@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -eu
+
+if test -z "${R_HOME:-}"; then
+    R_HOME=`R RHOME`
+fi
+
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+LWBGT_FP_FLAGS="-fno-fast-math -ffp-contract=off -fno-strict-aliasing"
+
+trap 'rm -f conftest.c conftest.o' EXIT HUP INT QUIT TERM
+printf '%s\n' 'int main(void) { return 0; }' > conftest.c
+
+for flag in ${LWBGT_FP_FLAGS}; do
+    if ! ${CC} ${CFLAGS} ${flag} -c conftest.c -o conftest.o >/dev/null 2>&1; then
+        echo "configure: error: the C compiler does not support required flag ${flag}" >&2
+        exit 1
+    fi
+done
+
+sed "s|@LWBGT_FP_FLAGS@|${LWBGT_FP_FLAGS}|" src/Makevars.in > src/Makevars

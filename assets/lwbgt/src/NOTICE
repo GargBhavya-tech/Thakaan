@@ -1,0 +1,9 @@
+lwbgt
+Copyright 2026 Yifei Zheng. Project-authored work is licensed under Apache-2.0.
+
+Includes a modified Liljegren WBGT v1.1 kernel, Copyright 2008 UChicago Argonne,
+LLC. Full third-party terms are included with this distribution in
+LicenseRef-UChicago-Argonne-WBGT-1.1.txt.
+
+This product includes software produced by UChicago Argonne, LLC
+under Contract No. DE-AC02-06CH11357 with the Department of Energy.

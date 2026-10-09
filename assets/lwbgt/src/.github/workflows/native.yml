@@ -1,0 +1,134 @@
+name: Native checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            cc: gcc
+          - os: ubuntu-24.04
+            cc: clang
+          - os: macos-15-intel
+            cc: clang
+          # Keep the runner aligned with the Visual Studio 2022 generator below.
+          - os: windows-2022
+            cc: gcc
+    runs-on: ${{ matrix.os }}
+    env:
+      CC: ${{ matrix.cc }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - name: Check version coherence
+        run: python tests/check_versions.py
+      - name: Provision standalone MinGW GCC
+        if: runner.os == 'Windows'
+        id: mingw
+        uses: egor-tensin/setup-mingw@v3
+        with:
+          platform: x64
+          version: 12.2.0
+      - name: Select MinGW compilers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "CC=${{ steps.mingw.outputs.gcc }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CXX=${{ steps.mingw.outputs.gxx }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Test SwiftPM consumer
+        if: runner.os == 'macOS' || (runner.os == 'Linux' && matrix.cc == 'gcc')
+        shell: bash
+        run: |
+          build/lwbgt_probe build/cases.csv > build/swift-expected.csv
+          export LWBGT_CASES="$PWD/build/cases.csv"
+          export LWBGT_EXPECTED="$PWD/build/swift-expected.csv"
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            swift test --package-path tests/swiftpm -c release -Xcc -march=native
+          else
+            docker run --rm --volume "$PWD:/workspace" --workdir /workspace \
+              --env LWBGT_CASES=/workspace/build/cases.csv \
+              --env LWBGT_EXPECTED=/workspace/build/swift-expected.csv \
+              swift:6.2.4-noble \
+              swift test --package-path tests/swiftpm -c release -Xcc -march=native
+          fi
+      - name: Configure experimental MSVC build
+        if: runner.os == 'Windows'
+        env:
+          CC: cl
+          CXX: cl
+        run: >-
+          cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
+          -DLWBGT_EXPERIMENTAL_MSVC=ON
+      - name: Build with MSVC
+        if: runner.os == 'Windows'
+        run: cmake --build build-msvc --config Release --parallel
+      - name: Test MSVC APIs, exports, and installed consumers
+        if: runner.os == 'Windows'
+        env:
+          CC: cl
+          CXX: cl
+        run: ctest --test-dir build-msvc -C Release --output-on-failure
+      - name: Compare MSVC numerical behavior with verified MinGW outputs
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $failed = 0
+          $probes = @(
+            @{name="wbgt"; executable="lwbgt_probe"; cases="build/cases.csv"},
+            @{name="esat"; executable="lwbgt_esat_probe"; cases="build/esat-cases.csv"},
+            @{name="branches"; executable="lwbgt_branch_probe"; cases=""}
+          )
+          foreach ($probe in $probes) {
+            $comparisonArgs = @("tests/compare_compilers.py", "build/$($probe.executable).exe",
+              "build-msvc/Release/$($probe.executable).exe", "build-msvc/reports/$($probe.name).json", "--exact-finite")
+            if ($probe.cases) { $comparisonArgs += @("--cases", $probe.cases) }
+            python @comparisonArgs
+            if ($LASTEXITCODE -ne 0) { $failed = 1 }
+          }
+          exit $failed
+      - name: Test an installed MSVC-built Python wheel
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          CC: cl
+          CXX: cl
+          CMAKE_GENERATOR: Visual Studio 17 2022
+          CMAKE_GENERATOR_PLATFORM: x64
+        run: |
+          python -m pip install build
+          python -m build --wheel --outdir msvc-wheel --config-setting "cmake.define.LWBGT_EXPERIMENTAL_MSVC=ON"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m venv msvc-test
+          msvc-test/Scripts/python -m pip install --no-index (Get-ChildItem msvc-wheel/*.whl).FullName
+          msvc-test/Scripts/python -m unittest discover -s tests/python -v
+      - name: Save MSVC compiler and numerical reports
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: msvc-compatibility
+          path: |
+            build-msvc/reports/
+            build-msvc/CMakeCache.txt
+            build-msvc/CMakeFiles/**/CMakeCCompiler.cmake
+            build-msvc/Testing/Temporary/LastTest.log
+            build/CMakeFiles/**/CMakeCCompiler.cmake
+            build/cases.csv
+            build/esat-cases.csv
+          if-no-files-found: warn

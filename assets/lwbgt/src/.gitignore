@@ -1,0 +1,15 @@
+/build/
+/build-gcc16/
+/build-profile/
+.build/
+__pycache__/
+*.py[cod]
+/dist/
+/wheelhouse/
+/sdist-wheel/
+/sdist-test/
+/lwbgt_*.tar.gz
+/lwbgt.Rcheck/
+/r/src/*.o
+/r/src/*.so
+/r/src/*.dll

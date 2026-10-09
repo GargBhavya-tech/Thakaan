@@ -1,0 +1,28 @@
+name: CI
+run-name: CI ${{ github.ref_name }}
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    if: github.event.action != 'closed' || github.event.pull_request.merged == true
+    uses: ./.github/workflows/native.yml
+
+  python:
+    if: github.event.action != 'closed' || github.event.pull_request.merged == true
+    uses: ./.github/workflows/python.yml
+
+  r:
+    if: github.event.action != 'closed' || github.event.pull_request.merged == true
+    uses: ./.github/workflows/r.yml

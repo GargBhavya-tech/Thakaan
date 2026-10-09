@@ -1,0 +1,8 @@
+Project-authored files:
+  Copyright 2026 Yifei Zheng. Apache License, Version 2.0.
+  Full text: LICENSES/Apache-2.0.txt.
+
+src/wbgt.c:
+  Copyright 2008 UChicago Argonne, LLC. All Rights Reserved.
+  Modified by Yifei Zheng; the source records the derivative-work notice.
+  Full terms: LICENSES/LicenseRef-UChicago-Argonne-WBGT-1.1.txt.

@@ -1,0 +1,80 @@
+[build-system]
+requires = ["scikit-build-core>=1.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "lwbgt"
+version = "1.2.0"
+description = "Reference-compatible Liljegren outdoor wet bulb globe temperature (WBGT) kernel with C/FFI, Python, and R APIs"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0 AND LicenseRef-UChicago-Argonne-WBGT-1.1"
+license-files = [
+  "LICENSE",
+  "NOTICE",
+  "src/LicenseRef-UChicago-Argonne-WBGT-1.1.txt",
+]
+authors = [{ name = "Yifei Zheng" }]
+keywords = [
+  "wet bulb globe temperature",
+  "WBGT",
+  "Liljegren",
+  "heat stress",
+  "occupational heat stress",
+  "meteorology",
+  "biometeorology",
+  "scientific computing",
+  "FFI",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: C",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/zyf0717/lwbgt"
+Documentation = "https://github.com/zyf0717/lwbgt/blob/main/docs/README.md"
+Source = "https://github.com/zyf0717/lwbgt"
+Issues = "https://github.com/zyf0717/lwbgt/issues"
+Changelog = "https://github.com/zyf0717/lwbgt/blob/main/CHANGELOG.md"
+Citation = "https://github.com/zyf0717/lwbgt/blob/main/CITATION.cff"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/python/{wheel_tag}"
+cmake.build-type = "Release"
+cmake.args = ["-DBUILD_TESTING=OFF"]
+install.components = ["python"]
+wheel.packages = ["python/lwbgt"]
+wheel.py-api = "py3"
+wheel.reproducible = true
+sdist.include = [
+  "/Package.swift",
+  "/CMakeLists.txt",
+  "/cmake/**",
+  "/include/**",
+  "/src/**",
+  "/upstream/**",
+  "/python/**",
+  "/r/**",
+  "/tests/**",
+  "/benchmarks/**",
+  "/CHANGELOG.md",
+  "/CONTRIBUTING.md",
+  "/CITATION.cff",
+  "/docs/**",
+  "/LICENSE",
+  "/NOTICE",
+  "/README.md",
+  "!**/__pycache__/**",
+]

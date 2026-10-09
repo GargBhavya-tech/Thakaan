@@ -1,0 +1,114 @@
+name: R package
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux GCC / R release
+            os: ubuntu-24.04
+            r: release
+            compiler: gcc
+            check_args: ''
+          - name: Linux Clang / R-devel
+            os: ubuntu-24.04
+            r: devel
+            compiler: clang
+            check_args: --no-manual
+          - name: Windows Rtools / R release
+            os: windows-2025
+            r: release
+            compiler: rtools
+            check_args: --no-manual
+          - name: macOS AppleClang / R release
+            os: macos-15
+            r: release
+            compiler: appleclang
+            check_args: --no-manual
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        if: matrix.compiler == 'gcc'
+        with:
+          python-version: '3.10'
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+          use-public-rspm: true
+          windows-path-include-mingw: true
+      - name: Install complete shell-script checking support
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends devscripts
+      - name: Install Clang
+        if: matrix.compiler == 'clang'
+        run: sudo apt-get install --yes --no-install-recommends clang
+      - name: Reuse the Linux shell-script audit on macOS
+        if: runner.os == 'macOS'
+        run: echo "_R_CHECK_BASHISMS_=false" >> "$GITHUB_ENV"
+      - name: Select Clang for R package compilation
+        if: matrix.compiler == 'clang'
+        run: echo "R_MAKEVARS_USER=$GITHUB_WORKSPACE/.github/r/Makevars.clang" >> "$GITHUB_ENV"
+      - name: Verify synchronized sources and versions
+        if: matrix.compiler == 'gcc'
+        run: |
+          python tests/check_versions.py
+          python tests/check_r_sources.py
+      - uses: r-lib/actions/setup-tinytex@v2
+        if: matrix.compiler == 'gcc'
+      - name: Build and check the R package
+        run: |
+          R CMD build r
+          R CMD check ${{ matrix.check_args }} lwbgt_*.tar.gz
+          ! grep -Eq '^Status:.*(ERROR|WARNING)' lwbgt.Rcheck/00check.log
+      - name: Require Clang compilation
+        if: matrix.compiler == 'clang'
+        run: grep -q clang lwbgt.Rcheck/00install.out
+      - name: Audit the installed DLL
+        run: |
+          dll="$(find lwbgt.Rcheck/lwbgt/libs -type f \( -name '*.so' -o -name '*.dll' -o -name '*.dylib' \) -print -quit)"
+          test -n "$dll"
+          case "$RUNNER_OS" in
+            macOS)
+              exports="$(nm -gU "$dll" | awk '{print $NF}' | sed 's/^_//' | sort)"
+              test "$exports" = R_init_lwbgt
+              ! nm -gu "$dll" | grep -Eq '[[:space:]_](exit|printf)$'
+              ;;
+            Windows)
+              symbols="$(objdump -p "$dll")"
+              grep -Eq 'R_init_lwbgt' <<< "$symbols"
+              ! grep -Eq 'calc_wbgt|calc_solar_parameters|Twb|Tglobe|h_(cylinder|sphere)_in_air|esat|dew_point|viscosity|thermal_cond|diffusivity|evap|emis_atm|solarposition|daynum|est_wind_speed|stab_srdt' <<< "$symbols"
+              undefined="$(nm -u "$dll" 2>/dev/null |
+                awk '{print $NF}' |
+                sed -e 's/^__imp_//' -e 's/^_//' |
+                sort -u || true)"
+              ! grep -Eq '^(exit|printf)$' <<< "$undefined"
+              ;;
+            *)
+              exports="$(nm -D --defined-only "$dll" | awk '{print $NF}' | sort)"
+              test "$exports" = R_init_lwbgt
+              ! nm -D --undefined-only "$dll" | grep -Eq '[[:space:]_](exit|printf)(@.*)?$'
+              ;;
+          esac
+
+      - name: Upload the checked R source package
+        if: matrix.compiler == 'gcc'
+        uses: actions/upload-artifact@v7
+        with:
+          name: r-source
+          path: lwbgt_*.tar.gz
+          if-no-files-found: error

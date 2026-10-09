@@ -1,0 +1,5 @@
+useDynLib(lwbgt, .registration = TRUE, .fixes = "C_")
+
+export(calculate)
+export(esat)
+export(lwbgt_input)

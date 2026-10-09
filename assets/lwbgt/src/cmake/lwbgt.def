@@ -1,0 +1,6 @@
+LIBRARY lwbgt
+EXPORTS
+    calc_wbgt
+    esat
+    lwbgt_calc_batch_v1
+    lwbgt_calc_batch_ex_v1
