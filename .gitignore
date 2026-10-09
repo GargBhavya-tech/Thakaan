@@ -1,0 +1,42 @@
+﻿# Added by code-review-graph
+.code-review-graph/
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+.idea/
+*.iml
+.cxx/
+.externalNativeBuild/
+
+# Secrets (OpenAQ key etc.)
+.env
+*.key
+secrets.properties
+
+# Heavy staged assets: move via Office Kit, list them in docs/ASSETS.md
+assets/models/
+assets/osm/*.pbf
+assets/osm/*.osm
+*.litertlm
+*.tflite
+*.onnx
+*.dlc
+*.bin
+*.pbf
+
+# Recordings that may hold health or location data (keep the held-out session OUT of git)
+recordings/
+*.mp4
+*.wav
+
+# smoke-test probe build output (APK + debug keystore)
+tools/smoketest/build/
+
+# Claude Code runtime state
+.claude/scheduled_tasks.lock
