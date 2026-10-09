@@ -77,7 +77,7 @@ class ImuBuilder(val fs: Double = 100.0, seed: Long = 1, startNanos: Long = 1_00
             val burst = if ((i / (fs * 0.7)).toInt() % 3 == 0) 1.0 else 0.15
             val peak = if (i % 70 == 0) 12.0 * (if ((i / 70) % 2 == 0) 1 else -1) else 0.0 // a heave about every 0.7 s
             add(
-                doubleArrayOf(g[0] + noise(1.5) * burst + peak, g[1] + noise(1.5) * burst, g[2] + noise(1.5) * burst),
+                doubleArrayOf(g[0] + noise(1.5) * burst + peak * dir[0], g[1] + noise(1.5) * burst + peak * dir[1], g[2] + noise(1.5) * burst + peak * dir[2]),
                 doubleArrayOf(noise(2.2) * burst + 1.5 * burst, noise(2.0) * burst, noise(1.8) * burst),
             )
         }
