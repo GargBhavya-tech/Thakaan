@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.thakaan.body.EcTempVectors
 import com.thakaan.inference.Backend
 import com.thakaan.inference.ModelHost
 import com.thakaan.sensorhub.SensorHub
@@ -119,7 +120,9 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                 }
 
                 Section("Checks") {
-                    Line("ECTemp vectors (7/7)", "not run yet (#22)", ok = false)
+                    val ec = remember { runCatching { EcTempVectors.checkAssets(ctx) }.getOrNull() }
+                    Line("ECTemp vectors", ec?.let { "${it.summary} pass" } ?: "could not run", ok = ec != null && ec.passed == ec.total)
+                    ec?.failures?.forEach { Line("  failed", it, ok = false) }
                     Line("Safety checks", "not run yet (#42)", ok = false)
                 }
             }

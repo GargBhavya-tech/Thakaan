@@ -55,6 +55,7 @@ dependencies {
     implementation("com.qualcomm.qti:qnn-litert-delegate:2.51.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20250107")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 
