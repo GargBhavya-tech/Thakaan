@@ -51,6 +51,8 @@ import kotlinx.coroutines.launch
 /** Engineering view. Shows sensor health, thermal headroom, where models really run, and the test slots filled by later tickets. */
 @Composable
 fun DiagnosticsScreen(onBack: () -> Unit) {
+    var lab by remember { mutableStateOf(false) }
+    if (lab) { PpgLabScreen(onBack = { lab = false }); return }
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Color.White) {
             val ctx = LocalContext.current
@@ -132,6 +134,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { ks = com.thakaan.audit.KeystoreSelfTest.run(ctx) }) { Text("Keystore signing", fontSize = 14.sp) }
                         Button(onClick = { voices = delivery.voiceStatus() }) { Text("Voices", fontSize = 14.sp) }
+                        Button(onClick = { lab = true }) { Text("PPG lab", fontSize = 14.sp) }
                     }
                     var face by remember { mutableStateOf<String?>(null) }
                     Button(onClick = {

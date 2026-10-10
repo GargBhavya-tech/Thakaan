@@ -176,7 +176,7 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
         return
     }
     guard.prompt?.let { Text(it, fontSize = 16.sp, color = Color.DarkGray) }
-    Text("Cover the camera and the light with your fingertip. Press gently. Keep still.", fontSize = 20.sp)
+    Text("Rest your arm on a table. Cover the camera and the light with your fingertip, touching lightly. Keep still. The graph below should show one bump for each heartbeat.", fontSize = 20.sp)
 
     val frames = remember(round) { ArrayList<PpgFrame>() }
     val capture = remember(round) { CameraPpgCapture(ctx) }
@@ -184,7 +184,7 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
         capture.start(
             onFrame = { f ->
                 synchronized(frames) { frames += f }
-                if (frames.size % 3 == 0) wave = (wave + f.red.toFloat()).takeLast(150)
+                if (frames.size % 15 == 0) wave = com.thakaan.ppg.LiveWave.pulse(synchronized(frames) { frames.takeLast(240).map { it.green } })
             },
             onError = { failed = it },
         )

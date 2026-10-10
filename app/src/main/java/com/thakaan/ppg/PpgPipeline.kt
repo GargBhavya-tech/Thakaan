@@ -1,7 +1,7 @@
 package com.thakaan.ppg
 
 /** One camera frame reduced to the mean colour of the centre patch. [tNanos] is the sensor (hardware) timestamp. */
-class PpgFrame(val tNanos: Long, val red: Double, val green: Double = 0.0)
+class PpgFrame(val tNanos: Long, val red: Double, val green: Double = 0.0, val blue: Double = 0.0)
 
 class PpgAnalysis(
     val fs: Double,

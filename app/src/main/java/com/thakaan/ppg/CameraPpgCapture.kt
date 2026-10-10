@@ -166,7 +166,7 @@ class CameraPpgCapture(private val ctx: Context) {
         val w = img.width; val h = img.height
         val yP = img.planes[0]; val uP = img.planes[1]; val vP = img.planes[2]
         val yBuf = yP.buffer; val uBuf = uP.buffer; val vBuf = vP.buffer
-        var sumR = 0.0; var sumG = 0.0; var n = 0
+        var sumR = 0.0; var sumG = 0.0; var sumB = 0.0; var n = 0
         val x0 = w / 2 - 100; val y0 = h / 2 - 100
         var y = y0
         while (y < y0 + 200) {
@@ -178,12 +178,13 @@ class CameraPpgCapture(private val ctx: Context) {
                 val v = (vBuf.get((y / 2) * vP.rowStride + (x / 2) * vP.pixelStride).toInt() and 0xFF) - 128
                 sumR += yy + 1.402 * v
                 sumG += yy - 0.344136 * u - 0.714136 * v
+                sumB += yy + 1.772 * u
                 n++
                 x += 2
             }
             y += 2
         }
-        return PpgFrame(img.timestamp, sumR / n, sumG / n)
+        return PpgFrame(img.timestamp, sumR / n, sumG / n, sumB / n)
     }
 
     fun stop() {

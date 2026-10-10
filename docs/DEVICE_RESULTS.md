@@ -37,3 +37,11 @@ Third run (checked by Claude on the phone, no human needed):
 - Stream stability (#5), partial: sensing ran 08:18 to 08:29 (11 minutes) with the screen on; the gauge stayed REAL on every 2-minute sample and thermal status stayed 0. Per-stream rates were not sampled during the run, so the "no dropped stream for 10 minutes" criterion is only partly met. (The last sample showed the Chhaya screen: someone opened it during the run.)
 
 Ticket sheet corrected (same day): #22 ticked [x] (its Done when, Diagnostics 7/7, was seen on the phone). #8 is [~]: steady 30 fps verified indoors, but no visible pulse trace yet and not tried in sun and shade. #23 is [~]: the vector, 12-minute gap and 160 bpm spike tests pass on the laptop; that the personalised filter is switched on in the live engine is not yet confirmed. #55 is [~]: REPLAY and REAL chips seen on Home and Chhaya during replay and live sensing; not yet checked on every screen.
+
+Fingertip pulse analysis, fourth run (PPG lab, 4 real captures; analysis done on the laptop, raw traces not committed):
+- Control (phone on the table, no finger): signal steady, noise floor about 0.02 to 0.04% of the light level, no stable frequency lines. So the camera and torch are not the problem.
+- Your finger, hand-held (firm and light): the pulse is in the signal (spectral line near 54 to 62 bpm, strongest in green: pulse about 2.2% of the level in green against 0.7% in red) but the strongest frequency jumps window to window (52 to 121 bpm), phone movement was small (about 0.1 m/s2). So the red-only test correctly refuses it.
+- Phone on the table, finger resting lightly, hand supported: the pulse is only 0.02 to 0.04% of the level, yet POS (red+green+blue) gives 61 to 63 bpm in every sliding window. Red-only gave 51 to 91.
+- New method (FingertipPos): POS plus "must stay consistent across 8 s windows" plus agreement with one independent colour view. On the four real captures it accepts only the table capture (about 62 bpm) and rejects the other three. Verified by a fixture test on the laptop (skipped when the files are absent).
+- NOT verified: that 62 bpm is the true heart rate. No reference count was given. Until it is compared with a counted pulse, treat the accepted rate as unconfirmed.
+- Quick check fingertip step is now 35 s (10 s settle + 25 s measured); the whole check is 82 s without speech.

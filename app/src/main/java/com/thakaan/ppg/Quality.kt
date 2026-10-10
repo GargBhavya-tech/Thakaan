@@ -15,6 +15,7 @@ enum class Reason(val prompt: String) {
     LOW_PERFUSION("Press lighter and keep your finger still"),
     NOISY("Wipe your finger and the lens"),
     MOTION("Hold still"),
+    UNSTEADY("The reading kept changing: rest your arm on a table, rest your fingertip lightly on the lens, and keep still"),
     HR_DISAGREE("Hold still and try again"),
 }
 

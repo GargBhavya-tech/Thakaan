@@ -6,7 +6,7 @@ import com.thakaan.ppg.CheckResult
 import com.thakaan.risk.Symptom
 
 enum class CheckStepId(val label: String, val seconds: Int, val needsRecogniser: Boolean = false) {
-    FINGERTIP("Finger on the camera", 25),
+    FINGERTIP("Finger on the camera", 35),
     TREMOR("Hold the phone still", 12),
     TAPPING("Tap the two circles", 20),
     SPEECH("Say the number", 10, needsRecogniser = true),

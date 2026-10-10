@@ -65,7 +65,7 @@ class QualityAndChecksTest {
     // ---------------------------------------------------------------- checks (ticket 11)
 
     @Test fun quickCheckDiscardsSettleAndReturnsHrOnly() {
-        val frames = SyntheticPpg.generate(SyntheticPpg.Spec(hrBpm = 82.0, durationSec = 27.0)).frames
+        val frames = SyntheticPpg.generate(SyntheticPpg.Spec(hrBpm = 82.0, durationSec = 37.0)).frames
         val r = Checks.evaluate(CheckKind.QUICK, frames, ctx())
         assertTrue("reasons=${r.reasons}", r.accepted)
         assertTrue(abs(r.hrBpm!! - 82.0) <= 3.0)
@@ -107,7 +107,7 @@ class QualityAndChecksTest {
     }
 
     @Test fun aBadCaptureNeverProducesANumber() {
-        val frames = SyntheticPpg.generate(SyntheticPpg.Spec(durationSec = 30.0, piPercent = 0.1)).frames
+        val frames = SyntheticPpg.generate(SyntheticPpg.Spec(durationSec = 40.0, piPercent = 0.1)).frames
         val r = Checks.evaluate(CheckKind.QUICK, frames, ctx())
         assertFalse(r.accepted)
         assertNull(r.hrBpm)

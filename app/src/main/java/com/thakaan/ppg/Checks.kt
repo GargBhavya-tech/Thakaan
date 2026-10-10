@@ -1,11 +1,12 @@
 package com.thakaan.ppg
 
 import com.thakaan.core.Provenance
+import kotlin.math.abs
 import kotlin.math.sqrt
 
 enum class CheckKind(val settleSec: Double, val captureSec: Double) {
-    /** 10 s settle (discarded) + 15 s of data: a heart rate in about 25 s. */
-    QUICK(10.0, 15.0),
+    /** 10 s settle (discarded) + 25 s of data (enough windows to check the rate stays steady): a heart rate in about 35 s. */
+    QUICK(10.0, 25.0),
 
     /** 10 s settle (discarded) + 60 s of data: HR, RMSSD, perfusion, pulse amplitude, respiration in about 70 s. */
     FULL(10.0, 60.0),
@@ -56,15 +57,28 @@ object Checks {
 
         val analysis = PpgPipeline.analyse(capture)
         val q = Quality.evaluate(analysis, Thresholds(minSeconds = needed))
-        if (!q.accepted) return rejected(kind, q.reasons, secs, ctx)
 
-        val hr = analysis.hrBpm!!
+        // Two independent ways to accept: the strict red-only beat test, or the colour-combining test that must stay
+        // consistent over time (FingertipPos). Both need the basics: finger present, not saturated, no dropped frames.
+        val pos = FingertipPos.analyse(capture)
+        val basicsOk = q.reasons.none { it == Reason.NO_FINGER || it == Reason.SATURATED || it == Reason.DROPPED_FRAMES || it == Reason.TOO_SHORT }
+        val posOk = pos?.accepted == true && basicsOk
+        val oldOk = q.accepted
+        if (!oldOk && !posOk) {
+            // when the colour test ran and found the reading unsteady, say that, rather than a misleading "wipe the lens"
+            val reasons = if (pos != null && basicsOk) listOf(Reason.UNSTEADY) else q.reasons
+            return rejected(kind, reasons, secs, ctx)
+        }
+        // both accepted but far apart: neither can be trusted
+        if (oldOk && posOk && abs(analysis.hrBpm!! - pos!!.hrBpm!!) > 8.0) return rejected(kind, listOf(Reason.HR_DISAGREE), secs, ctx)
+
+        val hr = if (posOk) pos!!.hrBpm!! else analysis.hrBpm!!
         if (kind == CheckKind.QUICK) {
             return CheckResult(kind, true, emptyList(), null, hr, null, false, q.perfusionIndexPct, Dsp.robustRange(analysis.filtered), null, secs, ctx)
         }
         // RMSSD only from a full minute of clean data (never from under 60 s).
-        val rmssd = if (secs >= 59.0) rmssd(analysis.ibiMs) else null
-        val resp = if (secs >= 40.0) respirationBpm(analysis) else null
+        val rmssd = if (secs >= 59.0 && oldOk) rmssd(analysis.ibiMs) else null
+        val resp = if (secs >= 40.0 && oldOk) respirationBpm(analysis) else null
         return CheckResult(
             kind, true, emptyList(), null, hr, rmssd, rmssd != null && ctx.hot, q.perfusionIndexPct,
             Dsp.robustRange(analysis.filtered), resp, secs, ctx,
