@@ -168,7 +168,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                                 val line = if (!g.loaded) st else {
                                     val plan = com.thakaan.risk.AlertLadder.plan(com.thakaan.risk.Level.STRAINED, com.thakaan.risk.Lang.EN, 3)
                                     val ex = com.thakaan.risk.Explainer.explain(plan, listOf("wbgt_high"), g)
-                                    "$st; line: \"${ex.text}\" (" + (if (ex.fromModel) "from the model" else "template used: ${ex.rejectedBecause}") + ")"
+                                    "$st; model said: \"${g.lastRaw}\"; shown: \"${ex.text}\" (" + (if (ex.fromModel) "from the model" else "template used: ${ex.rejectedBecause}") + ")"
                                 }
                                 g.close()
                                 gemma = line

@@ -17,6 +17,9 @@ class GemmaPhraser(private val ctx: Context) : LlmPhraser {
 
     val loaded: Boolean get() = engine != null
 
+    /** The last thing the model said, before any checking, for Diagnostics. */
+    @Volatile var lastRaw: String? = null; private set
+
     /** Loads the engine from the pushed model file. Returns a one-line status for Diagnostics. */
     @Synchronized fun load(): String {
         if (engine != null) return status
@@ -39,10 +42,10 @@ class GemmaPhraser(private val ctx: Context) : LlmPhraser {
         val e = engine ?: return null
         val language = when (lang) { Lang.EN -> "English"; Lang.HI -> "Hindi"; Lang.KN -> "Kannada"; Lang.TA -> "Tamil"; Lang.TE -> "Telugu" }
         val prompt = "Re-word this safety message for an outdoor delivery worker in simple, kind $language. " +
-            "Keep the same action and keep every number exactly. Do not add numbers, do not reassure, do not say it is safe or fine. " +
+            "Keep the same action and keep every number exactly, written as digits (for example 3, never the word three). Do not add numbers, do not reassure, do not say it is safe or fine. " +
             "One or two short sentences. Reply with the message only.\n\nMessage: $templateLine"
         return try {
-            e.createConversation().use { c -> c.sendMessage(prompt).toString() }
+            e.createConversation().use { c -> c.sendMessage(prompt).toString() }.also { lastRaw = it }
         } catch (_: Throwable) { null }
     }
 }

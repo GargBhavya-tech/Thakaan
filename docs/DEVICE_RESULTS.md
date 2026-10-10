@@ -45,3 +45,10 @@ Fingertip pulse analysis, fourth run (PPG lab, 4 real captures; analysis done on
 - New method (FingertipPos): POS plus "must stay consistent across 8 s windows" plus agreement with one independent colour view. On the four real captures it accepts only the table capture (about 62 bpm) and rejects the other three. Verified by a fixture test on the laptop (skipped when the files are absent).
 - NOT verified: that 62 bpm is the true heart rate. No reference count was given. Until it is compared with a counted pulse, treat the accepted rate as unconfirmed.
 - Quick check fingertip step is now 35 s (10 s settle + 25 s measured); the whole check is 82 s without speech.
+
+## Models on the phone (2026-10-10, I2501, Diagnostics > Models on this phone)
+
+- Small models (activity CNN, chest-vibration denoiser, strain GRU, line-of-sight trees): all four load and produce numbers on the phone. This proves they run, not that they are accurate: they were trained on simulated data.
+- EfficientPhys and SegFormer: both load. Neither has seen a real face or street yet.
+- Vosk English and Hindi: both load from the pushed folders. Nothing has been spoken to them yet.
+- Gemma 4 E2B: loads on the GPU and writes a line. First try was rejected by the wording check (it wrote the minutes as a word, not the digit 3), so the template was shown: the guard works. After asking for digits, the line passed and was shown as "from the model". Load took well under 45 s.
