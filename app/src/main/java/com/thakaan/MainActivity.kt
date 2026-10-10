@@ -21,6 +21,9 @@ import com.thakaan.sensorhub.SensorHubService
 import com.thakaan.sensorhub.StreamRecorder
 import com.thakaan.ui.ChhayaScreen
 import com.thakaan.ui.DiagnosticsScreen
+import com.thakaan.settings.PrefsProfileStore
+import com.thakaan.ui.AlertDelivery
+import com.thakaan.ui.OnboardingScreen
 import com.thakaan.ui.QuickCheckScreen
 import com.thakaan.ui.SafetyScreen
 import com.thakaan.ui.HomeScreen
@@ -33,12 +36,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // The demo and the 10-minute stream test run with the screen on.
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val store = PrefsProfileStore(applicationContext)
+        val delivery = AlertDelivery(applicationContext)
         setContent {
+            var profile by remember { mutableStateOf(store.load()) }
+            if (profile == null) {
+                OnboardingScreen(onDone = { store.save(it); profile = it })
+                return@setContent
+            }
             var running by remember { mutableStateOf(false) }
             val perms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
                 // Start whatever the grants allow; the service skips location if it was refused.
                 start()
-                ShiftRuntime.start(applicationContext, lifecycleScope)
+                ShiftRuntime.start(applicationContext, lifecycleScope, profile = profile, onAlert = { delivery.deliver(it) })
                 running = true
             }
             var recording by remember { mutableStateOf(false) }
@@ -88,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     if (sessionFile.exists()) {
                         replaying = true
                         SensorHub.reset()
-                        ShiftRuntime.start(applicationContext, lifecycleScope, sessionFile.lastModified() / 1000 - 600)
+                        ShiftRuntime.start(applicationContext, lifecycleScope, sessionFile.lastModified() / 1000 - 600, profile, { delivery.deliver(it) })
                         lifecycleScope.launch {
                             val ticker = launch { while (true) { SensorHub.snapshot(); logStats(); delay(1000) } }
                             Replayer().play(sessionFile, speed)

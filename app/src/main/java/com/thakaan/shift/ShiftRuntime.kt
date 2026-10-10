@@ -33,12 +33,19 @@ object ShiftRuntime {
     private var lastChainMinute = -1L
 
     /** @param startEpochSec what the first reading's timestamp means in wall-clock time (replay: the recording's date). */
-    fun start(context: Context, scope: CoroutineScope, startEpochSec: Long = System.currentTimeMillis() / 1000) {
+    fun start(
+        context: Context, scope: CoroutineScope, startEpochSec: Long = System.currentTimeMillis() / 1000,
+        profile: com.thakaan.settings.UserProfile? = null,
+        /** Called when the level RISES (never when it falls), with the spoken and haptic plan in the worker's language. */
+        onAlert: ((com.thakaan.risk.AlertPlan) -> Unit)? = null,
+    ) {
         stop()
         val weather = try {
             context.assets.open("weather/bengaluru_open-meteo.json").bufferedReader().use { WeatherCache.fromOpenMeteoJson(it.readText()) }
         } catch (_: Exception) { null } // missing cache: WBGT unknown, which the risk engine treats as hot
-        val e = ShiftEngine(ShiftConfig(startEpochSec), weather, Wbgt())
+        val e = ShiftEngine(profile?.toShiftConfig(startEpochSec) ?: ShiftConfig(startEpochSec), weather, Wbgt())
+        val lang = profile?.language ?: com.thakaan.risk.Lang.HI
+        var lastAlerted = com.thakaan.risk.Level.COOL
         engine = e
         val sg: ChainSigner = try { KeystoreSigner(context = context) } catch (_: Throwable) { SoftwareSigner() }
         signer = sg
@@ -49,6 +56,8 @@ object ShiftRuntime {
                 e.onReading(r)?.let { s ->
                     _snapshot.value = s
                     if (s.level > peakSeen) peakSeen = s.level
+                    if (s.level > lastAlerted && s.level > com.thakaan.risk.Level.COOL) onAlert?.invoke(com.thakaan.risk.AlertLadder.plan(s.level, lang))
+                    lastAlerted = s.level // falling resets so the same level can alert again on the next rise
                     val minute = s.tNanos / 60_000_000_000L
                     if (minute % 15 == 0L && minute != lastChainMinute) { // one log entry per 15 minutes
                         lastChainMinute = minute
