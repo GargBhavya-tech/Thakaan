@@ -34,3 +34,4 @@ Third run (checked by Claude on the phone, no human needed):
 - No network (invariant 1): `dumpsys package` shows no INTERNET permission. Found a dependency adding READ_PHONE_STATE and storage permissions; removed in the manifest.
 - Replay (invariant 6): Replay 20x shows the REPLAY chip and every stream reports REPLAY / non-real.
 - Daily check-in (#28): shown once, three taps, saved, not shown again after relaunch.
+- Stream stability (#5), partial: sensing ran 08:18 to 08:29 (11 minutes) with the screen on; the gauge stayed REAL on every 2-minute sample and thermal status stayed 0. Per-stream rates were not sampled during the run, so the "no dropped stream for 10 minutes" criterion is only partly met. (The last sample showed the Chhaya screen: someone opened it during the run.)
