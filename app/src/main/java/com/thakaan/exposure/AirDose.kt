@@ -87,6 +87,7 @@ class AirDoseLedger {
     fun summary(): String {
         if (minutesCounted == 0) return if (minutesMissing > 0) "No air data for this area right now" else "Just started"
         val est = if (minutesFromHr * 2 >= minutesCounted) "mostly from heart rate" else "mostly estimated from workload"
-        return "%.0f µg of fine dust breathed in (area average %.0f µg/m³, modelled; %s)".format(doseUg, meanConcentration, est)
+        val dose = if (doseUg < 10.0) "%.1f".format(doseUg) else "%.0f".format(doseUg)
+        return "$dose µg of fine dust breathed in (area average %.0f µg/m³, modelled; %s)".format(meanConcentration, est)
     }
 }
