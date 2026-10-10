@@ -71,6 +71,7 @@ fun HomeScreen(
     onOpenSafety: () -> Unit = {},
     onOpenQuickCheck: () -> Unit = {},
     onOpenFaceCheck: () -> Unit = {},
+    onOpenFaceLive: () -> Unit = {},
 ) {
     MaterialTheme(colorScheme = SunScheme) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -140,6 +141,7 @@ fun HomeScreen(
                 }
                 Button(onClick = onOpenQuickCheck, Modifier.fillMaxWidth()) { Text("Quick check (about 95 s)", fontSize = 20.sp) }
                 Button(onClick = onOpenFaceCheck, Modifier.fillMaxWidth()) { Text("Face check (optional, 40 s)", fontSize = 18.sp) }
+                Button(onClick = onOpenFaceLive, Modifier.fillMaxWidth()) { Text("Face live view (pulse, breathing, oxygen...)", fontSize = 18.sp) }
                 Button(onClick = onOpenChhaya, Modifier.fillMaxWidth()) { Text("Chhaya route (shade and water)", fontSize = 20.sp) }
                 Button(onClick = onOpenSafety, Modifier.fillMaxWidth()) { Text("Safety checks", fontSize = 18.sp) }
                 Button(onClick = onOpenDiagnostics, Modifier.fillMaxWidth()) { Text("Diagnostics", fontSize = 18.sp) }

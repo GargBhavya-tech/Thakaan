@@ -86,7 +86,7 @@ class FaceTracker(private val ctx: Context) {
         val hasBlend = Blendshapes.usable(scores)
         return FaceObservation(
             tNanos, box, sr / n, sg / n, sb / n, hasBlend,
-            Blendshapes.eyeClosure(scores), Blendshapes.jawOpen(scores), Blendshapes.gazeX(scores), Blendshapes.gazeY(scores), motion,
+            Blendshapes.eyeClosure(scores), Blendshapes.jawOpen(scores), Blendshapes.gazeX(scores), Blendshapes.gazeY(scores), motion, rects,
         )
     }
 

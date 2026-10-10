@@ -15,6 +15,8 @@ class FaceObservation(
     val eyeClosure: Double, val jawOpen: Double, val gazeX: Double, val gazeY: Double,
     /** Movement of the face centre since the previous frame as a fraction of the face width. */
     val motion: Double,
+    /** The skin regions read for the pulse, for drawing on the live screen only. Pixel units of the (half-size) frame. */
+    val rois: List<PixelRect> = emptyList(),
 ) {
     fun toFaceFrame() = FaceFrame(tNanos, r, g, b, box != null, motion)
     fun toFatigueFrame() = FatigueFrame(tNanos, eyeClosure, jawOpen, gazeX, gazeY, box != null && hasBlend)
