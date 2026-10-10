@@ -39,6 +39,7 @@ import com.thakaan.shift.ShiftRuntime
 fun HomeScreen(
     running: Boolean,
     replaying: Boolean,
+    workType: com.thakaan.settings.WorkType,
     onToggleHub: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenQuickCheck: () -> Unit,
@@ -98,7 +99,7 @@ fun HomeScreen(
 
                 AppCard {
                     Text("Quick check", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("Pulse, steadiness, tapping and how you feel. About 95 seconds.", fontSize = 15.sp, color = Ink.sub)
+                    Text(quickCheckBlurb(workType), fontSize = 15.sp, color = Ink.sub)
                     PrimaryAction("Start quick check", onClick = onOpenQuickCheck)
                 }
 

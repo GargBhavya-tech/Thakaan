@@ -29,6 +29,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.thakaan.settings.WorkType
+import com.thakaan.shift.CheckStepId
+import com.thakaan.shift.QuickCheckPlan
 
 private enum class Tab(val label: String, val glyph: Glyph) {
     TODAY("Today", Glyph.TODAY), CHECK("Check", Glyph.CHECK), ROUTE("Route", Glyph.ROUTE), REPORT("Report", Glyph.REPORT),
@@ -49,6 +52,8 @@ fun AppShell(
     onToggleHub: () -> Unit,
     onToggleRecord: () -> Unit,
     onReplay: (Float) -> Unit,
+    workType: WorkType,
+    onWorkType: (WorkType) -> Unit,
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
     var stack by remember { mutableStateOf(listOf<Page>()) }
@@ -58,10 +63,10 @@ fun AppShell(
 
     when (stack.lastOrNull()) {
         Page.SETTINGS -> SettingsScreen(
-            running = running, recording = recording, replaying = replaying, onToggleRecord = onToggleRecord, onReplay = onReplay,
+            running = running, recording = recording, replaying = replaying, onToggleRecord = onToggleRecord, onReplay = onReplay, workType = workType, onWorkType = onWorkType,
             onOpenSafety = { push(Page.SAFETY) }, onOpenDiagnostics = { push(Page.DIAGNOSTICS) }, onOpenFaceLive = { push(Page.FACE_LIVE) }, onBack = ::pop,
         )
-        Page.QUICK -> QuickCheckScreen(onBack = ::pop)
+        Page.QUICK -> QuickCheckScreen(onBack = ::pop, workType = workType)
         Page.FACE -> FaceCheckScreen(onBack = ::pop)
         Page.FACE_LIVE -> FaceLiveScreen(onBack = ::pop)
         Page.SAFETY -> SafetyScreen(onBack = ::pop)
@@ -90,8 +95,8 @@ fun AppShell(
             ) { inner ->
                 Box(Modifier.fillMaxSize().padding(inner)) {
                     when (tab) {
-                        Tab.TODAY -> HomeScreen(running = running, replaying = replaying, onToggleHub = onToggleHub, onOpenSettings = { push(Page.SETTINGS) }, onOpenQuickCheck = { push(Page.QUICK) })
-                        Tab.CHECK -> CheckScreen(onQuick = { push(Page.QUICK) }, onFace = { push(Page.FACE) })
+                        Tab.TODAY -> HomeScreen(running = running, replaying = replaying, workType = workType, onToggleHub = onToggleHub, onOpenSettings = { push(Page.SETTINGS) }, onOpenQuickCheck = { push(Page.QUICK) })
+                        Tab.CHECK -> CheckScreen(workType = workType, onQuick = { push(Page.QUICK) }, onFace = { push(Page.FACE) })
                         Tab.ROUTE -> ChhayaScreen(onBack = null)
                         Tab.REPORT -> ShiftReportScreen(onBack = null)
                     }
@@ -103,23 +108,39 @@ fun AppShell(
 
 /** The Check tab: the checks a worker can run, the quick one first. */
 @Composable
-private fun CheckScreen(onQuick: () -> Unit, onFace: () -> Unit) {
+private fun CheckScreen(workType: WorkType, onQuick: () -> Unit, onFace: () -> Unit) {
     ThakaanTheme {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 PageHeader("Check", null)
                 AppCard {
                     Text("Quick check", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Text("Fingertip pulse, hand steadiness, tapping and how you feel. About 95 seconds. A step you skip is marked skipped, never guessed.", fontSize = 15.sp, color = Ink.sub)
+                    Text(quickCheckBlurb(workType) + " A step you skip is marked skipped, never guessed.", fontSize = 15.sp, color = Ink.sub)
+                    Text("Set for: ${workType.label}. Change this in Settings.", fontSize = 13.sp, color = Ink.sub)
                     PrimaryAction("Start quick check", onClick = onQuick)
                 }
-                AppCard {
-                    Text("Face check (optional)", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("About 40 seconds with the front camera: tiredness signals and a pulse estimate. The camera pictures stay in memory and are never saved.", fontSize = 15.sp, color = Ink.sub)
+                if (workType.facePossible) AppCard {
+                    Text("Face check", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("About 40 seconds with the front camera: tiredness signs and a pulse estimate. The camera pictures stay in memory and are never saved.", fontSize = 15.sp, color = Ink.sub)
                     SecondaryAction("Start face check", onClick = onFace)
                 }
                 Text("These checks support the level; they never set it alone. Heat-strain wellbeing tool, not a medical device.", fontSize = 12.sp, color = Ink.sub, modifier = Modifier.padding(horizontal = 4.dp))
             }
         }
     }
+}
+
+/** One line saying what this kind of work's Quick check contains and how long it takes. */
+internal fun quickCheckBlurb(w: WorkType): String {
+    val names = QuickCheckPlan(false, w).steps.map {
+        when (it) {
+            CheckStepId.FINGERTIP -> "fingertip pulse"
+            CheckStepId.FACE -> "face check"
+            CheckStepId.TREMOR -> "hand hold"
+            CheckStepId.TAPPING -> "tapping"
+            CheckStepId.SPEECH -> "a spoken number"
+            CheckStepId.SYMPTOMS -> "how you feel"
+        }
+    }
+    return names.joinToString(", ").replaceFirstChar { it.uppercase() } + ". About ${QuickCheckPlan.approxSeconds(w)} seconds."
 }

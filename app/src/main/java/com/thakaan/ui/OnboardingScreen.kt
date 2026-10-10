@@ -65,6 +65,21 @@ fun OnboardingScreen(onDone: (UserProfile) -> Unit) {
                             else OutlinedButton(onClick = { flow.language = l; tick++ }, Modifier.fillMaxWidth().height(56.dp)) { Text(n, fontSize = 22.sp) })
                         }
                     }
+                    OnboardingStep.WORK -> {
+                        Text("What kind of work do you do?", fontSize = 20.sp)
+                        Text("This decides which checks Thakaan asks you to do. You can change it later in Settings.", fontSize = 16.sp, color = Color.DarkGray)
+                        com.thakaan.settings.WorkType.entries.forEach { w ->
+                            val pick: () -> Unit = { flow.workType = w; tick += 1 }
+                            val inner: @Composable () -> Unit = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(w.label, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(w.hint, fontSize = 13.sp)
+                                }
+                            }
+                            if (flow.workType == w) Button(onClick = pick, Modifier.fillMaxWidth().height(68.dp)) { inner() }
+                            else OutlinedButton(onClick = pick, Modifier.fillMaxWidth().height(68.dp)) { inner() }
+                        }
+                    }
                     OnboardingStep.BODY -> {
                         Text("Your body size sets how fast heat builds up. It stays on this phone.", fontSize = 18.sp)
                         NumberField("Weight (kg)", flow.massKg?.toString() ?: "") { flow.massKg = it.toDoubleOrNull() }

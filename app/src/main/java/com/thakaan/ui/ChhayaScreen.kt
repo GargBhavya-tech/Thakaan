@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -146,29 +148,18 @@ fun ChhayaScreen(onBack: (() -> Unit)?) {
             val kLon = cos(Math.toRadians((latMin + latMax) / 2))
             val spanX = (lonMax - lonMin) * kLon; val spanY = latMax - latMin
 
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (onBack != null) Button(onClick = onBack) { Text("Back", fontSize = 16.sp) }
-                    Text("Route", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
-                    if (live != null) ProvenanceChip(if (override != null) com.thakaan.core.Provenance.SIMULATED else live.provenance)
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (onBack != null) IconAction(Glyph.BACK, "Back", onBack)
+                    Text("Route", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Ink.ink, modifier = Modifier.weight(1f).padding(start = 4.dp))
+                    ProvenanceChip(if (override != null || live == null) com.thakaan.core.Provenance.SIMULATED else live.provenance)
                 }
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Strain:", fontSize = 13.sp)
-                    if (live != null) FilterChip(selected = override == null, onClick = { override = null }, label = { Text("Live (${live.level.word})", fontSize = 13.sp) })
-                    Level.entries.forEach { l -> FilterChip(selected = (override ?: if (live == null) Level.WARMING else null) == l, onClick = { override = l }, label = { Text(l.word, fontSize = 13.sp) }) }
-                }
-                if (override != null || live == null) Text("Demo strain: SIMULATED, not your real level.", fontSize = 12.sp, color = Color(0xFF8A5A00))
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    MapLayer.entries.forEach { l -> FilterChip(selected = layer == l, onClick = { layer = l }, label = { Text(l.label, fontSize = 15.sp) }) }
-                }
-
-                if (layer == MapLayer.SHADE) {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Shade from:", fontSize = 13.sp)
-                        ShadeSource.entries.forEach { o -> FilterChip(selected = source == o, onClick = { source = o }, label = { Text(o.label, fontSize = 13.sp) }) }
+                RouteSummary(route, sunDown)
+                AppCard {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MapLayer.entries.forEach { l -> Pill(l.label, layer == l) { layer = l } }
                     }
-                }
-                Box(Modifier.fillMaxWidth().aspectRatio(1f).background(Color(0xFFF4F6F8), RoundedCornerShape(10.dp))) {
+                Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF4F6F8))) {
                     Canvas(
                         Modifier.fillMaxSize().clipToBounds()
                             .pointerInput(g) {
@@ -282,34 +273,66 @@ fun ChhayaScreen(onBack: (() -> Unit)?) {
                         fontSize = 13.sp, fontWeight = FontWeight.Medium,
                     )
                 }
-                Legend(layer)
-                LayerNote(layer, rider, pmNow, air, nowSec, dow, minute)
-                if (layer == MapLayer.SHADE && sunDown) Text(
-                    "The sun is down, so there is no sun to avoid. The shade colours and the shade percentage below are not meaningful at this hour: any detour comes from the last daylight slot of the table, not from real light.",
-                    fontSize = 13.sp, color = Color(0xFF8A5A00), modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF4E0), RoundedCornerShape(8.dp)).padding(8.dp),
-                )
-                if (route == null) {
-                    Text("No route found between these points.", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                } else {
-                    Column(Modifier.fillMaxWidth().background(Color(0xFFE8F0FE), RoundedCornerShape(10.dp)).padding(10.dp)) {
-                        Text(route.chip, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ROUTE_BLUE)
-                        Text(route.note, fontSize = 16.sp)
-                        Text("%.1f km, %.1f min walking".format(route.distanceM / 1000.0, route.timeSec / 60.0), fontSize = 14.sp)
-                        if (route.arcs != route.fastestArcs) Text(
-                            "Fastest route (dashed grey): %.1f min, %.0f%% shade".format(route.fastestTimeSec / 60.0, route.fastestShadeShare * 100),
-                            fontSize = 14.sp, color = Color(0xFF455A64),
-                        )
-                    }
-                    Text(
-                        (if (source == ShadeSource.MAP) "Shade is computed from map data (OSM), not measured. %.0f%% of this route rests on guessed building heights." else "Shade is modelled from 2023 satellite building and tree heights, not measured. %.0f%% of this route is on segments where it is unsure.").format(route.lowConfidenceShare * 100),
-                        fontSize = 11.sp, color = Color.DarkGray,
-                    )
+                    Legend(layer)
+                    LayerNote(layer, rider, pmNow, air, nowSec, dow, minute)
                 }
+                AppCard {
+                    Text("Route for", fontSize = 13.sp, color = Ink.sub, fontWeight = FontWeight.Medium)
+                    val levels = Level.entries
+                    val labels = (if (live != null) listOf("Live") else emptyList()) + levels.map { it.word }
+                    val sel = if (override == null && live != null) 0 else (if (live != null) 1 else 0) + levels.indexOf(override ?: Level.WARMING)
+                    Segmented(labels, sel) { i -> val k = if (live != null) i - 1 else i; override = if (k < 0) null else levels[k] }
+                    if (override != null || live == null) Text("Demo strain: SIMULATED, not your real level.", fontSize = 12.sp, color = Ink.warnInk)
+                    else Text("Following your live level: ${live.level.word}.", fontSize = 12.sp, color = Ink.sub)
+                    if (layer == MapLayer.SHADE) {
+                        Text("Shade from", fontSize = 13.sp, color = Ink.sub, fontWeight = FontWeight.Medium)
+                        Segmented(ShadeSource.entries.map { it.label }, ShadeSource.entries.indexOf(source)) { source = ShadeSource.entries[it] }
+                    }
+                }
+                if (route != null) Text(
+                    (if (source == ShadeSource.MAP) "Shade is computed from map data (OSM), not measured. %.0f%% of this route rests on guessed building heights." else "Shade is modelled from 2023 satellite building and tree heights, not measured. %.0f%% of this route is on segments where it is unsure.").format(route.lowConfidenceShare * 100),
+                    fontSize = 12.sp, color = Ink.sub, modifier = Modifier.padding(horizontal = 4.dp),
+                )
                 FloodReportRow(g, floods, pos ?: origin, ctx) { floodVersion += 1 }
                 CrewMeshCard()
                 Text("© OpenStreetMap contributors", fontSize = 11.sp)
             }
         }
+    }
+}
+
+/** The answer first: what the route costs and gains, in three numbers, before the map. */
+@Composable
+private fun RouteSummary(route: com.thakaan.chhaya.Route?, sunDown: Boolean) {
+    if (route == null) {
+        AppCard(tint = Ink.alertBg, border = Ink.alertInk) {
+            Text("No route found between these points", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Ink.alertInk)
+            Text("Tap the map to move the destination.", fontSize = 14.sp, color = Ink.sub)
+        }
+        return
+    }
+    AppCard(tint = Ink.accentSoft, border = Ink.accent) {
+        Text("YOUR ROUTE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink.accent, letterSpacing = 1.2.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Metric(if (route.level == Level.DANGER) "Do this" else "Extra time", if (route.extraText == "No extra time") "None" else route.extraText, Modifier.weight(1f))
+            Metric("Shade", if (sunDown) "n/a" else "%.0f%%".format(route.shadeShare * 100), Modifier.weight(1f))
+            Metric("Walk", "%.0f min".format(route.timeSec / 60.0), Modifier.weight(1f), "%.1f km".format(route.distanceM / 1000.0))
+        }
+        Text(route.note, fontSize = 15.sp, color = Ink.ink)
+        if (route.arcs != route.fastestArcs) Text("Fastest route (dashed on the map): %.1f min, %.0f%% shade".format(route.fastestTimeSec / 60.0, route.fastestShadeShare * 100), fontSize = 13.sp, color = Ink.sub)
+        if (sunDown) Text(
+            "The sun is down, so there is no sun to avoid. Shade is not meaningful at this hour: any detour comes from the last daylight slot of the table, not from real light.",
+            fontSize = 13.sp, color = Ink.warnInk, modifier = Modifier.fillMaxWidth().background(Ink.warnBg, RoundedCornerShape(12.dp)).padding(10.dp),
+        )
+    }
+}
+
+@Composable
+private fun Metric(label: String, value: String, modifier: Modifier, note: String? = null) {
+    Column(modifier.background(Color.White, RoundedCornerShape(14.dp)).padding(12.dp)) {
+        Text(label, fontSize = 12.sp, color = Ink.sub, fontWeight = FontWeight.Medium)
+        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Ink.ink, style = Tabular, maxLines = 1)
+        if (note != null) Text(note, fontSize = 12.sp, color = Ink.sub)
     }
 }
 

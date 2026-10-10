@@ -38,6 +38,8 @@ class UserProfileTest {
     @Test fun bodyStepBlocksUntilValid() {
         val f = OnboardingFlow()
         assertTrue(f.next()) // language
+        assertEquals(OnboardingStep.WORK, f.step)
+        assertTrue(f.next()) // kind of work
         assertEquals(OnboardingStep.BODY, f.step)
         assertFalse(f.next()); assertNotNull(f.problem())
         f.massKg = 70.0; f.heightM = 1.7; f.age = 30
@@ -46,7 +48,7 @@ class UserProfileTest {
 
     @Test fun shortPhoneNumberIsRejectedButBlankIsFine() {
         val f = OnboardingFlow()
-        f.next(); f.massKg = 70.0; f.heightM = 1.7; f.age = 30; f.next(); f.next()
+        f.next(); f.next(); f.massKg = 70.0; f.heightM = 1.7; f.age = 30; f.next(); f.next()
         assertEquals(OnboardingStep.CONTACT, f.step)
         f.contact = "123"; assertNotNull(f.problem())
         f.contact = ""; assertNull(f.problem())
@@ -56,11 +58,22 @@ class UserProfileTest {
         val f = OnboardingFlow()
         assertNull(f.build())
         f.language = Lang.TE; f.next()
+        f.workType = WorkType.DELIVERY; f.next()
         f.massKg = 75.0; f.heightM = 1.75; f.age = 28; f.next(); f.next(); f.next(); f.next()
         assertEquals(OnboardingStep.DONE, f.step)
         val p = f.build()!!
         assertEquals(Lang.TE, p.language); assertEquals(75.0, p.massKg, 0.0)
         assertEquals(UserProfile().restSeatedHr, p.restSeatedHr, 0.0) // blank resting pulse keeps the default
         assertFalse(p.shareLocationWithSupervisor) // sharing is opt-in
+        assertEquals(WorkType.DELIVERY, p.workType)
+    }
+
+    @Test fun workTypeSurvivesStorageAndUnknownMeansTheGeneralCheck() {
+        val p = UserProfile("", Lang.HI, 70.0, 1.7, 30, 0, 70.0, "", false, WorkType.CONSTRUCTION)
+        assertEquals(WorkType.CONSTRUCTION, UserProfile.fromJson(p.toJson()).workType)
+        assertEquals(WorkType.OTHER_GIG, UserProfile.fromJson("{\"work\": \"ASTRONAUT\"}").workType)
+        assertEquals(WorkType.OTHER_GIG, UserProfile.fromJson("{}").workType) // a profile saved before this field existed
+        assertEquals(WorkType.SECURITY, p.withWorkType(WorkType.SECURITY).workType)
+        assertEquals(p.massKg, p.withWorkType(WorkType.SECURITY).massKg, 0.0) // changing the work changes nothing else
     }
 }

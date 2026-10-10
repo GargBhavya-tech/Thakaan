@@ -83,6 +83,8 @@ class MainActivity : ComponentActivity() {
                 running = running,
                 recording = recording,
                 replaying = replaying,
+                workType = profile?.workType ?: com.thakaan.settings.WorkType.OTHER_GIG,
+                onWorkType = { w -> profile?.let { p -> val q = p.withWorkType(w); store.save(q); profile = q } },
                 onToggleHub = {
                     if (running) {
                         lifecycleScope.launch { recorder.stop() }

@@ -78,12 +78,12 @@ import java.util.Calendar
  * Results go to the shift engine; raw frames and samples stay in RAM only. DEVICE-UNTESTED (the plan is unit-tested).
  */
 @Composable
-fun QuickCheckScreen(onBack: () -> Unit) {
+fun QuickCheckScreen(onBack: () -> Unit, workType: com.thakaan.settings.WorkType = com.thakaan.settings.WorkType.OTHER_GIG) {
     val engine = ShiftRuntime.engine
     val ctx = LocalContext.current
     val recogniser = remember { com.thakaan.speech.DigitRecognizer(ctx) }
     DisposableEffect(Unit) { onDispose { recogniser.close() } }
-    val plan = remember { QuickCheckPlan(speechAvailable = recogniser.anyAvailable()) }
+    val plan = remember { QuickCheckPlan(speechAvailable = recogniser.anyAvailable(), workType = workType) }
     val outcome = remember { QuickCheckOutcome() }
     var step by remember { mutableStateOf<CheckStepId?>(null) }
     var round by remember { mutableIntStateOf(0) }
@@ -95,7 +95,7 @@ fun QuickCheckScreen(onBack: () -> Unit) {
                 Text("Quick check", fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 when {
                     engine == null -> {
-                        Text("Start Thakaan on the Home screen first.", fontSize = 20.sp)
+                        Text("Start sensing on the Today screen first.", fontSize = 20.sp)
                         Button(onClick = onBack) { Text("Back", fontSize = 20.sp) }
                     }
                     finished -> Summary(outcome, onBack)
@@ -119,6 +119,7 @@ fun QuickCheckScreen(onBack: () -> Unit) {
                             CheckStepId.TREMOR -> TremorStep(outcome, round, advance, retry, skip)
                             CheckStepId.TAPPING -> TappingStep(outcome, round, advance, retry, skip)
                             CheckStepId.SYMPTOMS -> SymptomStep(outcome, advance)
+                            CheckStepId.FACE -> FaceStep(outcome, advance, skip)
                             CheckStepId.SPEECH -> SpeechStep(recogniser, outcome, round, advance, retry, skip)
                         }
                     }
@@ -147,8 +148,19 @@ private fun finish(engine: ShiftEngine, o: QuickCheckOutcome) {
 private fun Summary(o: QuickCheckOutcome, onBack: () -> Unit) {
     Text("Check finished", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
     o.summary().forEach { Text(it, fontSize = 18.sp) }
-    Text("Your numbers stay on this phone. The Home screen shows the level.", fontSize = 16.sp, color = Color.DarkGray)
+    Text("Your numbers stay on this phone. The Today screen shows the level.", fontSize = 16.sp, color = Color.DarkGray)
     Button(onClick = onBack, Modifier.fillMaxWidth().height(64.dp)) { Text("Done", fontSize = 22.sp) }
+}
+
+/** The face check as a step: it moves on when the camera read something usable, and records the step as skipped when it did not. */
+@Composable
+private fun FaceStep(o: QuickCheckOutcome, advance: () -> Unit, skip: (String) -> Unit) {
+    FaceCheckBody(
+        embedded = true,
+        onDone = { if (o.faceDone) advance() else skip("no usable reading") },
+        onSkip = { skip("worker skipped") },
+        onFinished = { ok, line -> o.faceDone = ok; o.faceSummary = line },
+    )
 }
 
 @Composable

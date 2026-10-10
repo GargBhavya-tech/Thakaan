@@ -3,6 +3,7 @@ package com.thakaan.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +39,8 @@ fun SettingsScreen(
     running: Boolean,
     recording: Boolean,
     replaying: Boolean,
+    workType: com.thakaan.settings.WorkType,
+    onWorkType: (com.thakaan.settings.WorkType) -> Unit,
     onToggleRecord: () -> Unit,
     onReplay: (Float) -> Unit,
     onOpenSafety: () -> Unit,
@@ -51,6 +55,23 @@ fun SettingsScreen(
             val stats by SensorHub.stats.collectAsStateWithLifecycle()
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 PageHeader("Settings", onBack)
+
+                SectionLabel("Your work")
+                AppCard {
+                    Text("This sets which checks the Quick check asks for. Gloves, helmets and noise make some checks unreliable, so each kind of work gets its own.", fontSize = 14.sp, color = Ink.sub)
+                    com.thakaan.settings.WorkType.entries.forEach { w ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onWorkType(w) }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RadioButton(selected = workType == w, onClick = null)
+                            Column(Modifier.weight(1f)) {
+                                Text(w.label, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                                Text(w.hint, fontSize = 13.sp, color = Ink.sub)
+                            }
+                        }
+                    }
+                }
 
                 SectionLabel("Demo tools")
                 AppCard {

@@ -20,7 +20,11 @@ class UserProfile(
     val restSeatedHr: Double = 70.0,
     val emergencyContact: String = "",
     val shareLocationWithSupervisor: Boolean = false,
+    /** What kind of work: decides which steps the Quick check has. Missing or unknown means the general check. */
+    val workType: WorkType = WorkType.OTHER_GIG,
 ) {
+    fun withWorkType(w: WorkType) = UserProfile(name, language, massKg, heightM, ageYears, acclimatisationDays, restSeatedHr, emergencyContact, shareLocationWithSupervisor, w)
+
     fun toShiftConfig(startEpochSec: Long, deviceId: String = "phone") = ShiftConfig(
         startEpochSec, bodyMassKg = massKg, heightM = heightM, ageYears = ageYears,
         acclimatisationDays = acclimatisationDays, restSeatedHr = restSeatedHr, deviceId = deviceId,
@@ -29,7 +33,7 @@ class UserProfile(
     fun toJson(): String = JSONObject()
         .put("name", name).put("lang", language.name).put("massKg", massKg).put("heightM", heightM).put("age", ageYears)
         .put("accl", acclimatisationDays).put("restHr", restSeatedHr).put("contact", emergencyContact)
-        .put("shareLoc", shareLocationWithSupervisor).toString()
+        .put("shareLoc", shareLocationWithSupervisor).put("work", workType.name).toString()
 
     companion object {
         val MASS = 35.0..160.0
@@ -48,18 +52,19 @@ class UserProfile(
             return UserProfile(
                 j.optString("name", "").take(40), lang, num("massKg", MASS, d.massKg), num("heightM", HEIGHT, d.heightM), age, accl,
                 num("restHr", REST_HR, d.restSeatedHr), j.optString("contact", "").filter { it.isDigit() || it == '+' }.take(15),
-                j.optBoolean("shareLoc", false),
+                j.optBoolean("shareLoc", false), WorkType.parse(j.optString("work", "")),
             )
         }
     }
 }
 
-enum class OnboardingStep { LANGUAGE, BODY, HEAT_EXPERIENCE, CONTACT, PRIVACY, DONE }
+enum class OnboardingStep { LANGUAGE, WORK, BODY, HEAT_EXPERIENCE, CONTACT, PRIVACY, DONE }
 
 /** What the worker has entered so far plus the validation that decides if the next step may open. */
 class OnboardingFlow {
     var step = OnboardingStep.LANGUAGE; private set
     var language = Lang.HI
+    var workType = WorkType.OTHER_GIG
     var massKg: Double? = null
     var heightM: Double? = null
     var age: Int? = null
@@ -70,7 +75,7 @@ class OnboardingFlow {
 
     /** Null when the current step is valid; otherwise a short message saying what to fix. */
     fun problem(): String? = when (step) {
-        OnboardingStep.LANGUAGE -> null
+        OnboardingStep.LANGUAGE, OnboardingStep.WORK -> null
         OnboardingStep.BODY -> when {
             massKg?.let { it in UserProfile.MASS } != true -> "Weight must be between 35 and 160 kg."
             heightM?.let { it in UserProfile.HEIGHT } != true -> "Height must be between 1.20 and 2.10 m."
@@ -96,7 +101,7 @@ class OnboardingFlow {
         val d = UserProfile()
         return UserProfile(
             "", language, massKg ?: d.massKg, heightM ?: d.heightM, age ?: d.ageYears, acclimatisationDays,
-            restHr ?: d.restSeatedHr, contact, share,
+            restHr ?: d.restSeatedHr, contact, share, workType,
         )
     }
 }

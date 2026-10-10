@@ -31,7 +31,7 @@ Lead with Chhaya Route, then the body model. Let them touch the phone.
 2. **Chhaya Route (the thing they remember).** Open Chhaya, turn on airplane mode in front of them, tap a destination. "Offline. The route and the shade are computed on the phone." At Strained it detours to shade and adds a water stop with the seconds shown.
 3. **The body model.** Diagnostics: ECTemp 7 of 7. "We reproduce the published equations exactly before we personalise."
 4. **Honesty discipline.** Safety tab 6 of 6; flip a guard, the row turns red. "A check that cannot fail proves nothing." Keystore signing: change one byte, the log is flagged.
-5. **Let them do the 90-second check** (tremor, tapping, how do you feel). Skip the finger step unless the pulse has been calibrated by then.
+5. **Let them do the Quick check** (about 80 s for the general check; it depends on the kind of work set in Settings, and a delivery partner's includes the 40 s face check, so about 2 minutes). Tremor, tapping, how do you feel.
 6. **Close with limits** (first three bullets of `docs/LIMITATIONS.md`).
 
 ## Format 2: stage narrative (timed, 3 minutes)

@@ -244,3 +244,31 @@ fun StrainGauge(tss: Int, level: Level, idle: Boolean = false, modifier: Modifie
       }
     }
 }
+
+/** Equal-width choices in one rounded track (radius 14 = inner 11 + 3 padding, so the corners nest). At least 44 dp tall. */
+@Composable
+fun Segmented(options: List<String>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
+    Row(
+        modifier.fillMaxWidth().background(Ink.ground, RoundedCornerShape(14.dp)).border(BorderStroke(1.dp, Ink.line), RoundedCornerShape(14.dp)).padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.weight(1f).defaultMinSize(minHeight = 44.dp).background(if (on) Ink.accent else Color.Transparent, RoundedCornerShape(11.dp)).clickable { onSelect(i) },
+                contentAlignment = Alignment.Center,
+            ) { Text(label, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, color = if (on) Color.White else Ink.ink, maxLines = 1) }
+        }
+    }
+}
+
+/** A rounded choice for a scrolling row (the map layers). At least 40 dp tall. */
+@Composable
+fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(20.dp)
+    Box(
+        Modifier.defaultMinSize(minHeight = 40.dp).background(if (selected) Ink.accentSoft else Ink.card, shape)
+            .border(BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) Ink.accent else Ink.line), shape).clickable(onClick = onClick).padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text(text, fontSize = 15.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, color = if (selected) Ink.accent else Ink.ink) }
+}

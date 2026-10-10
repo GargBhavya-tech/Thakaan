@@ -7,6 +7,7 @@ import com.thakaan.ppg.CheckContext
 import com.thakaan.ppg.CheckKind
 import com.thakaan.ppg.CheckResult
 import com.thakaan.risk.Symptom
+import com.thakaan.settings.WorkType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -78,5 +79,63 @@ class QuickCheckPlanTest {
         assertFalse(o.done(CheckStepId.SPEECH))
         assertTrue(o.summary().any { it.contains("not usable") })
         assertTrue(plan.steps.contains(CheckStepId.SPEECH))
+    }
+
+    @Test fun deliveryPartnersGetTheFaceCheckAndTapping() {
+        val p = QuickCheckPlan(speechAvailable = false, workType = WorkType.DELIVERY)
+        assertTrue(CheckStepId.FACE in p.steps && CheckStepId.FINGERTIP in p.steps && CheckStepId.TAPPING in p.steps)
+        assertEquals("the pulse first", CheckStepId.FINGERTIP, p.steps.first())
+        assertEquals("how do you feel last", CheckStepId.SYMPTOMS, p.steps.last())
+        assertTrue("with the face check it runs about two minutes, not 90 s: ${p.totalSeconds}", p.totalSeconds in 91..130)
+    }
+
+    @Test fun constructionWorkersGetTheShortGlovesAndHelmetCheck() {
+        val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.CONSTRUCTION)
+        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.TREMOR, CheckStepId.SYMPTOMS), p.steps)
+        assertFalse("no face behind goggles, no tapping in gloves, no spoken digits in noise", p.steps.any { it == CheckStepId.FACE || it == CheckStepId.TAPPING || it == CheckStepId.SPEECH })
+        assertTrue(p.totalSeconds <= 70)
+    }
+
+    @Test fun securityWorkersGetNoFaceCheckAndNoSpokenNumbers() {
+        val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.SECURITY)
+        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.TREMOR, CheckStepId.TAPPING, CheckStepId.SYMPTOMS), p.steps)
+    }
+
+    @Test fun otherGigWorkersGetTheGeneralCheckAndItIsTheDefault() {
+        assertEquals(QuickCheckPlan(true).steps, QuickCheckPlan(true, WorkType.OTHER_GIG).steps)
+        assertFalse(CheckStepId.FACE in QuickCheckPlan(true, WorkType.OTHER_GIG).steps)
+    }
+
+    @Test fun everyKindOfWorkStartsWithThePulseAndEndsWithHowDoYouFeel() {
+        WorkType.entries.forEach { w ->
+            val steps = QuickCheckPlan(true, w).steps
+            assertEquals(w.name, CheckStepId.FINGERTIP, steps.first())
+            assertEquals(w.name, CheckStepId.SYMPTOMS, steps.last())
+        }
+    }
+
+    @Test fun theFaceStepCountsAsDoneOnlyWhenTheCameraReadSomething() {
+        val o = QuickCheckOutcome()
+        assertFalse(o.done(CheckStepId.FACE))
+        o.faceSummary = "Face check not usable: too dark"
+        assertFalse(o.done(CheckStepId.FACE))
+        assertTrue(o.summary().any { it.contains("not usable") })
+        o.faceDone = true; o.faceSummary = "Face check done"
+        assertTrue(o.done(CheckStepId.FACE))
+    }
+
+    @Test fun aSkippedFaceStepIsRecordedAndStillFinishesTheCheck() {
+        val plan = QuickCheckPlan(false, WorkType.DELIVERY)
+        val o = QuickCheckOutcome()
+        o.heart = heart(true); o.fitts = fitts(true); o.symptoms = emptySet()
+        assertFalse("the face step is neither done nor skipped yet", o.isComplete(plan))
+        o.skipped[CheckStepId.FACE] = "worker skipped"
+        assertTrue(o.isComplete(plan))
+        assertTrue(o.summary().any { it.contains("Look at the screen") && it.contains("skipped") })
+    }
+
+    @Test fun onlyWorkWhereAFaceCanBeReadOffersTheFaceCheckOnItsOwn() {
+        assertTrue(WorkType.DELIVERY.facePossible && WorkType.OTHER_GIG.facePossible)
+        assertFalse(WorkType.CONSTRUCTION.facePossible || WorkType.SECURITY.facePossible)
     }
 }
