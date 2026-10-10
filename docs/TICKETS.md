@@ -4,6 +4,8 @@ Generated from `docs/Thakaan — Build Map v1.md` (65 tickets). Tick a box only 
 
 Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 🟥 CORE · 🟨 SUPPORTING · ⬜ SEED. Light: ⚪ PRE-BUILD · 🟢 GREEN · 🔴 RED-OK.
 
+**Status note:** `[~]` = code written and laptop unit tests green, but the device-only part (camera, GNSS, light sensor, speech, haptics, NPU, human-in-the-loop) is UNTESTED on the phone. #41 is `[x]` because its Test runs on the laptop (150+ tests, guard-off-must-fail proofs). Tickets 9-11, 13-21, 32-40, 42 are in this state; see docs/PHONE_CHECKLIST.md when it exists.
+
 
 ## Phase 0: Pre-build decisions and foundations
 
@@ -22,29 +24,29 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ ] | 8 | Camera2 lock and torch capture | A | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
-| [ ] | 9 | PPG signal pipeline to heart rate | A | 🟥 CORE | 🔴 RED-OK | CP-A | #8 |
-| [ ] | 10 | Signal-quality gates and retry UX | A | 🟥 CORE | 🔴 RED-OK | CP-A | #9 |
-| [ ] | 11 | Quick and full checks | A | 🟥 CORE | 🔴 RED-OK | CP-A | #10 |
+| [~] | 9 | PPG signal pipeline to heart rate | A | 🟥 CORE | 🔴 RED-OK | CP-A | #8 |
+| [~] | 10 | Signal-quality gates and retry UX | A | 🟥 CORE | 🔴 RED-OK | CP-A | #9 |
+| [~] | 11 | Quick and full checks | A | 🟥 CORE | 🔴 RED-OK | CP-A | #10 |
 | [ ] | 12 | Thermal guard for captures | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11 |
 
 ## Phase 2: Motion and context
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 13 | Activity, workload and mode detection | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5, #7 |
-| [ ] | 14 | Stop detector and posture clock | B | 🟥 CORE | 🔴 RED-OK | CP-A | #13 |
-| [ ] | 15 | Collapse detection with countdown | B | 🟥 CORE | 🔴 RED-OK | CP-A | #14 |
+| [~] | 13 | Activity, workload and mode detection | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5, #7 |
+| [~] | 14 | Stop detector and posture clock | B | 🟥 CORE | 🔴 RED-OK | CP-A | #13 |
+| [~] | 15 | Collapse detection with countdown | B | 🟥 CORE | 🔴 RED-OK | CP-A | #14 |
 
 ## Phase 3: Environment and exposure
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 16 | Sun / shade state (E1) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #2, #5 |
-| [ ] | 17 | Irradiance and sun dose (E15, E2) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #16 |
-| [ ] | 18 | Weather cache and local air temperature (E9, E16) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #4, #5 |
-| [ ] | 19 | Apparent wind and Liljegren WBGT (E17, E18) | B | 🟥 CORE | 🟢 GREEN | CP-A | #4, #17, #18 |
-| [ ] | 20 | Rest ledger and drink log (E7, E8) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #14, #16 |
-| [ ] | 21 | GNSS sky view (E12, E13, E14) | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #2, #16 |
+| [~] | 16 | Sun / shade state (E1) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #2, #5 |
+| [~] | 17 | Irradiance and sun dose (E15, E2) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #16 |
+| [~] | 18 | Weather cache and local air temperature (E9, E16) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #4, #5 |
+| [~] | 19 | Apparent wind and Liljegren WBGT (E17, E18) | B | 🟥 CORE | 🟢 GREEN | CP-A | #4, #17, #18 |
+| [~] | 20 | Rest ledger and drink log (E7, E8) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #14, #16 |
+| [~] | 21 | GNSS sky view (E12, E13, E14) | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #2, #16 |
 
 ## Phase 4: Body model
 
@@ -65,22 +67,22 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 32 | Tremor hold (N9) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #13 |
-| [ ] | 33 | Fitts tapping (N4) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
-| [ ] | 34 | Speech code (N3) | B | 🟨 SUPPORTING | 🟢 GREEN | CP-B | #6 |
-| [ ] | 35 | Symptom tap (N10) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
-| [ ] | 36 | CUSUM engine and context prior | B | 🟥 CORE | 🔴 RED-OK | CP-B | #28, #32, #33 |
-| [ ] | 37 | Gait instability (N1) | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #13, #36 |
-| [ ] | 38 | Riding smoothness and brief PVT (N2, N11) | B | 🟨 SUPPORTING | 🔴 RED-OK | Stretch | #36 |
+| [~] | 32 | Tremor hold (N9) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #13 |
+| [~] | 33 | Fitts tapping (N4) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
+| [~] | 34 | Speech code (N3) | B | 🟨 SUPPORTING | 🟢 GREEN | CP-B | #6 |
+| [~] | 35 | Symptom tap (N10) | B | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
+| [~] | 36 | CUSUM engine and context prior | B | 🟥 CORE | 🔴 RED-OK | CP-B | #28, #32, #33 |
+| [~] | 37 | Gait instability (N1) | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #13, #36 |
+| [~] | 38 | Riding smoothness and brief PVT (N2, N11) | B | 🟨 SUPPORTING | 🔴 RED-OK | Stretch | #36 |
 
 ## Phase 6: Risk engine, alerts and safety
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 39 | Thakaan Strain Score and anchored levels | C | 🟥 CORE | 🔴 RED-OK | CP-A (v1), CP-B (full) | #11, #19, #20, #35 |
-| [ ] | 40 | Alert ladder | C | 🟥 CORE | 🔴 RED-OK | CP-A | #15, #39 |
-| [ ] | 41 | Safety-invariant property test | C | 🟥 CORE | 🟢 GREEN | CP-B | #39 |
-| [ ] | 42 | Safety checks tab with guard switches | C | 🟥 CORE | 🔴 RED-OK | FINAL | #6, #41 |
+| [~] | 39 | Thakaan Strain Score and anchored levels | C | 🟥 CORE | 🔴 RED-OK | CP-A (v1), CP-B (full) | #11, #19, #20, #35 |
+| [~] | 40 | Alert ladder | C | 🟥 CORE | 🔴 RED-OK | CP-A | #15, #39 |
+| [x] | 41 | Safety-invariant property test | C | 🟥 CORE | 🟢 GREEN | CP-B | #39 |
+| [~] | 42 | Safety checks tab with guard switches | C | 🟥 CORE | 🔴 RED-OK | FINAL | #6, #41 |
 | [ ] | 43 | Cooling coach | C | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11, #40 |
 | [ ] | 44 | Strain forecast | C | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #39 |
 | [ ] | 45 | Quick-check flow | C | 🟥 CORE | 🔴 RED-OK | CP-A | #11, #32, #33, #35, #39 |
@@ -124,6 +126,8 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [ ] | 63 | Backup recording | C | 🟥 CORE | 🔴 RED-OK | FINAL | #61 |
 | [ ] | 64 | Pitch narrative, both formats | C | 🟥 CORE | 🔴 RED-OK | FINAL | #60, #61, #62 |
 | [ ] | 65 | Real-worker feedback | C | 🟨 SUPPORTING | ⚪ PRE-BUILD | FINAL | — |
+
+
 
 
 
