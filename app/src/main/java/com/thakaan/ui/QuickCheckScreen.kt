@@ -202,7 +202,29 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
                 CheckContext(System.currentTimeMillis(), stamp.state.name, stamp.secSinceStop, stamp.secSincePostureChange, engine.hotNow, Provenance.REAL),
             )
             o.heart = result
-            val dimmed = ThermalGuard.torchDimmed(snap.map { it.red }.toDoubleArray(), 30.0)
+            val dts = (1 until snap.size).map { (snap[it].tNanos - snap[it - 1].tNanos) / 1e6 }
+            val ap = capture.applied
+            android.util.Log.i(
+                "THK_PPG",
+                "frames=${snap.size} dtMean=${"%.1f".format(dts.average())}ms dtMax=${"%.1f".format(dts.maxOrNull() ?: 0.0)}ms intervalsOk=${capture.frameIntervalsOk(snap)} " +
+                    "accepted=${result.accepted} reasons=${result.reasons.map { it.name }} hr=${result.hrBpm} exp=${ap?.exposureNs} iso=${ap?.iso} torch=${ap?.torchLevel} " +
+                    "redMin=${snap.minOfOrNull { it.red }} redMax=${snap.maxOfOrNull { it.red }}",
+            )
+            val t0 = snap.firstOrNull()?.tNanos ?: 0L
+            runCatching {
+                // Re-run the analysis the same way Checks.evaluate does, to see the measured values behind a rejection.
+                val settled = snap.filter { (it.tNanos - t0) / 1e9 >= CheckKind.QUICK.settleSec }
+                val cap = settled.filter { (it.tNanos - settled.first().tNanos) / 1e9 <= CheckKind.QUICK.captureSec + 0.5 }
+                val a = com.thakaan.ppg.PpgPipeline.analyse(cap)
+                val q = com.thakaan.ppg.Quality.evaluate(a, com.thakaan.ppg.Thresholds(minSeconds = CheckKind.QUICK.captureSec - 1.0))
+                android.util.Log.i(
+                    "THK_PPG",
+                    "quality PI=${"%.3f".format(q.perfusionIndexPct)}% (need 0.3) corr=${"%.2f".format(q.templateCorrelation)} (need 0.85) snr=${"%.1f".format(q.snrDb)}dB (need 5) " +
+                        "hrSpectral=${a.hrBpm?.let { "%.1f".format(it) }} hrPeaks=${a.peakHrBpm?.let { "%.1f".format(it) }} beats=${a.peakIdx.size} fs=${"%.1f".format(a.fs)} dropped=${a.droppedFrames}/${a.frameCount} meanRaw=${"%.1f".format(a.meanRaw)}",
+                )
+            }
+            // Only the analysed part: during the settle window the exposure is deliberately re-aimed, which is not a dimming torch.
+            val dimmed = ThermalGuard.torchDimmed(snap.filter { (it.tNanos - t0) / 1e9 >= CheckKind.QUICK.settleSec }.map { it.red }.toDoubleArray(), 30.0)
             if (result.accepted && result.hrBpm != null && !dimmed) {
                 engine.onHeartCheck(SystemClock.elapsedRealtimeNanos(), result.hrBpm, 1.0, stamp, Provenance.REAL)
             } else {

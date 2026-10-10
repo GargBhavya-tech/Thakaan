@@ -20,14 +20,19 @@ import java.util.concurrent.Executor
 
 /**
  * Fingertip PPG capture (#8): rear camera at 640x480, a fixed 30 fps, auto exposure / white balance / focus OFF with a
- * fixed exposure and low ISO, stabilisation and noise reduction OFF, torch at about 60% strength. For every frame it
- * averages the red and green channel over the centre 100x100 pixels and stamps it with the sensor's hardware timestamp.
+ * fixed exposure and low ISO, stabilisation and noise reduction OFF, torch at full strength. For every frame it
+ * averages the red and green channel over the centre 200x200 pixels (every second pixel) and stamps it with the sensor's hardware timestamp.
  *
  * Why: auto-exposure flattens the pulse into a straight line, a variable frame rate breaks HRV, and without the torch
  * sunlight leaking around the finger swamps the signal. Frames are RAM-only (invariant 7): nothing is written to disk.
  * DEVICE-UNTESTED: the key set is written from the Camera2 reference and must be checked on the phone (see PHONE_CHECKLIST).
  */
 class CameraPpgCapture(private val ctx: Context) {
+    private companion object {
+        const val MAX_EXPOSURE_NS = 30_000_000L // must stay under the 33.3 ms frame duration or the frame rate drops
+        const val MAX_ISO = 800
+        const val CALIB_FRAMES = 270 // about 9 s at 30 fps, inside the 10 s settle window that is discarded
+    }
     private var thread: HandlerThread? = null
     private var handler: Handler? = null
     private var device: CameraDevice? = null
@@ -65,8 +70,9 @@ class CameraPpgCapture(private val ctx: Context) {
         reader = ir
         ir.setOnImageAvailableListener({ r ->
             val img = r.acquireNextImage() ?: return@setOnImageAvailableListener
-            try { onFrame(centreMeans(img)) } finally { img.close() }
+            try { val f = centreMeans(img); autoExpose(f.red); onFrame(f) } finally { img.close() }
         }, handler)
+        activeChars = chars; activeReader = ir; calibFrames = 0; exposureNs = null; isoValue = null
 
         mgr.openCamera(id, object : CameraDevice.StateCallback() {
             override fun onOpened(cam: CameraDevice) {
@@ -101,8 +107,9 @@ class CameraPpgCapture(private val ctx: Context) {
         b.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0f)
         val expRange = chars.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
         val isoRange = chars.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
-        val exposure = (8_000_000L).coerceIn(expRange?.lower ?: 1_000_000L, expRange?.upper ?: 30_000_000L)
-        val iso = (100).coerceIn(isoRange?.lower ?: 100, isoRange?.upper ?: 800)
+        val exposure = (exposureNs ?: 20_000_000L).coerceIn(expRange?.lower ?: 1_000_000L, minOf(expRange?.upper ?: 30_000_000L, MAX_EXPOSURE_NS))
+        val iso = (isoValue ?: 200).coerceIn(isoRange?.lower ?: 100, minOf(isoRange?.upper ?: 800, MAX_ISO))
+        exposureNs = exposure; isoValue = iso
         b.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposure)
         b.set(CaptureRequest.SENSOR_SENSITIVITY, iso)
         b.set(CaptureRequest.SENSOR_FRAME_DURATION, 33_333_333L)
@@ -113,23 +120,58 @@ class CameraPpgCapture(private val ctx: Context) {
         b.set(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE, CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_OFF)
         b.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH)
         val maxTorch = chars.get(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL) ?: 1
-        val torch = (maxTorch * 0.6).toInt().coerceIn(1, maxTorch)
+        val torch = maxTorch // full strength keeps the sensor gain low; ThermalGuard still blocks a capture on a hot phone
         if (maxTorch > 1) b.set(CaptureRequest.FLASH_STRENGTH_LEVEL, torch)
         applied = Applied(exposure, iso, 33_333_333L, torch)
         return b
     }
 
-    /** Mean red and green over the centre 100x100 pixels (YUV to RGB per pixel, sampled every second pixel). */
+    private var activeChars: CameraCharacteristics? = null
+    private var activeReader: ImageReader? = null
+    private var calibFrames = 0
+    private var exposureNs: Long? = null
+    private var isoValue: Int? = null
+    private var redSum = 0.0
+    private var redN = 0
+
+    /**
+     * Exposure is fixed during a measurement, but a fixed guess is wrong across skin tones and light: an 8 ms exposure gave a
+     * nearly black frame (red 13 of 255) through a fingertip. So for the first ~9 s, which the pipeline discards as settling
+     * time, the exposure is re-aimed every second so the red mean sits near 150, then it is frozen for the real capture.
+     */
+    private fun autoExpose(red: Double) {
+        if (calibFrames >= CALIB_FRAMES) return
+        calibFrames++
+        redSum += red; redN++
+        if (calibFrames % 30 != 0) return
+        val mean = redSum / redN; redSum = 0.0; redN = 0
+        if (mean in 110.0..190.0) return
+        val chars = activeChars ?: return
+        val cam = device ?: return
+        val ir = activeReader ?: return
+        val factor = (150.0 / mean.coerceAtLeast(2.0)).coerceIn(0.25, 6.0)
+        val expRange = chars.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
+        val isoRange = chars.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+        var exp = ((exposureNs ?: 20_000_000L) * factor).toLong()
+        var iso = isoValue ?: 200
+        val cap = minOf(expRange?.upper ?: MAX_EXPOSURE_NS, MAX_EXPOSURE_NS)
+        if (exp > cap) { iso = (iso * (exp.toDouble() / cap)).toInt(); exp = cap }
+        exposureNs = exp.coerceAtLeast(expRange?.lower ?: 1_000_000L)
+        isoValue = iso.coerceIn(isoRange?.lower ?: 100, minOf(isoRange?.upper ?: 800, MAX_ISO))
+        try { session?.setRepeatingRequest(buildRequest(cam, chars, ir).build(), null, handler) } catch (_: Exception) {}
+    }
+
+    /** Mean red and green over the centre 200x200 pixels (YUV to RGB per pixel, sampled every second pixel). */
     private fun centreMeans(img: Image): PpgFrame {
         val w = img.width; val h = img.height
         val yP = img.planes[0]; val uP = img.planes[1]; val vP = img.planes[2]
         val yBuf = yP.buffer; val uBuf = uP.buffer; val vBuf = vP.buffer
         var sumR = 0.0; var sumG = 0.0; var n = 0
-        val x0 = w / 2 - 50; val y0 = h / 2 - 50
+        val x0 = w / 2 - 100; val y0 = h / 2 - 100
         var y = y0
-        while (y < y0 + 100) {
+        while (y < y0 + 200) {
             var x = x0
-            while (x < x0 + 100) {
+            while (x < x0 + 200) {
                 val yy = yBuf.get(y * yP.rowStride + x * yP.pixelStride).toInt() and 0xFF
                 val ci = (y / 2) * uP.rowStride + (x / 2) * uP.pixelStride
                 val u = (uBuf.get(ci).toInt() and 0xFF) - 128
