@@ -40,3 +40,5 @@ tools/smoketest/build/
 
 # Claude Code runtime state
 .claude/scheduled_tasks.lock
+
+console/viewer_qr.svg

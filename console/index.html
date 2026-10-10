@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thakaan crew console</title>
+<style>
+  :root { --bg:#fff; --fg:#111; --muted:#555; --line:#ccc; --cool:#1b7f3b; --warm:#b26a00; --strained:#c03a00; --danger:#9b0000; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Segoe UI, Arial, sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:12px 16px; border-bottom:2px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  h1 { font-size:22px; margin:0; }
+  main { display:grid; grid-template-columns: 2fr 1fr; gap:16px; padding:16px; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+  table { width:100%; border-collapse:collapse; font-size:16px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .lvl { font-weight:700; padding:2px 10px; border-radius:6px; color:#fff; white-space:nowrap; }
+  .COOL { background:var(--cool); } .WARMING { background:var(--warm); } .STRAINED { background:var(--strained); } .DANGER { background:var(--danger); }
+  .chip { font-size:12px; font-weight:700; color:#fff; padding:2px 8px; border-radius:20px; }
+  .REAL { background:#1b7f3b; } .REPLAY { background:#6a1b9a; } .SIMULATED { background:#455a64; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:16px; }
+  textarea { width:100%; min-height:70px; font-family:monospace; font-size:12px; }
+  button { font-size:15px; padding:6px 12px; margin:2px 4px 2px 0; cursor:pointer; }
+  .feed li { margin-bottom:6px; } .small { color:var(--muted); font-size:13px; }
+  .ok { color:var(--cool); font-weight:700; } .bad { color:var(--danger); font-weight:700; }
+  canvas { width:100%; height:260px; border:1px solid var(--line); border-radius:8px; background:#fafafa; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Thakaan crew console</h1>
+  <span class="small">Levels and coarse reasons only. Never raw heart rate, voice or symptoms.</span>
+  <span id="mode" class="small"></span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <table>
+        <thead><tr><th>Worker</th><th>Level</th><th>Trend</th><th>Since rest</th><th>Sun</th><th>Source</th><th>Why</th></tr></thead>
+        <tbody id="board"><tr><td colspan="7" class="small">No crew yet. Paste a sealed status, read the clipboard, or add the demo crew.</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <b>Crew map</b> <span class="small">coloured by level, position rounded to about 100 m</span>
+      <canvas id="map" width="700" height="260"></canvas>
+    </div>
+  </section>
+  <aside>
+    <div class="card" id="controls">
+      <b>Get a status from a phone</b>
+      <p class="small">Request code (sent with the sealed request, echoed back to stop replays): <code id="nonce"></code></p>
+      <button id="readClip">Read clipboard</button>
+      <button id="demo">Add demo crew (SIMULATED)</button>
+      <textarea id="paste" placeholder="Paste a sealed crew status here"></textarea>
+      <button id="add">Add</button>
+      <div id="msg" class="small"></div>
+    </div>
+    <div class="card">
+      <b>Alert feed</b>
+      <ul class="feed" id="feed"></ul>
+    </div>
+    <div class="card">
+      <b>Exposure log check</b>
+      <textarea id="chain" placeholder="Paste an exported exposure log here"></textarea>
+      <button id="verify">Verify chain</button>
+      <div id="chainOut"></div>
+      <p class="small">A valid chain shows entries were not edited after they were recorded. It does not prove the observations were true.</p>
+    </div>
+    <div class="card small" id="share"></div>
+  </aside>
+</main>
+<script src="verify.js"></script>
+<script>
+const SHAPE = { COOL:'●', WARMING:'▲', STRAINED:'◆', DANGER:'■' };
+const ORDER = ['COOL','WARMING','STRAINED','DANGER'];
+const params = new URLSearchParams(location.search);
+const viewer = params.has('view');
+const nonce = (crypto.getRandomValues(new Uint32Array(2))).join('-');
+let crew = {};      // member -> status
+let feed = [];      // {t, text, level}
+document.getElementById('nonce').textContent = nonce;
+document.getElementById('mode').textContent = viewer ? 'Viewing a live copy' : 'Host';
+if (viewer) document.getElementById('controls').style.display = 'none';
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function render() {
+  const rows = Object.values(crew).sort((a, b) => ORDER.indexOf(b.level) - ORDER.indexOf(a.level));
+  document.getElementById('board').innerHTML = rows.length ? rows.map(s => `<tr>
+    <td>${esc(s.member)}</td><td><span class="lvl ${s.level}">${SHAPE[s.level]} ${esc(s.level)}</span></td>
+    <td>${s.trend === 'rising' ? '↑ rising' : s.trend === 'falling' ? '↓ falling' : '→ steady'}</td>
+    <td>${s.restMin} min</td><td>${s.sunMin} min</td>
+    <td><span class="chip ${s.prov}">${esc(s.prov)}</span>${s.unsigned ? '<div class="small">unsigned demo</div>' : ''}</td>
+    <td>${(s.reasons || []).map(esc).join('<br>')}</td></tr>`).join('') : '<tr><td colspan="7" class="small">No crew yet.</td></tr>';
+  document.getElementById('feed').innerHTML = feed.slice(-12).reverse().map(f => `<li><span class="lvl ${f.level}">${esc(f.level)}</span> ${esc(f.member)}: ${esc(f.text)} <span class="small">${new Date(f.t).toLocaleTimeString()}</span></li>`).join('');
+  drawMap(rows);
+}
+
+function drawMap(rows) {
+  const c = document.getElementById('map'), g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  const pts = rows.filter(r => r.lat != null);
+  if (!pts.length) { g.fillStyle = '#777'; g.font = '14px sans-serif'; g.fillText('No positions shared', 12, 24); return; }
+  const lats = pts.map(p => p.lat), lons = pts.map(p => p.lon);
+  const minLa = Math.min(...lats) - 0.002, maxLa = Math.max(...lats) + 0.002, minLo = Math.min(...lons) - 0.002, maxLo = Math.max(...lons) + 0.002;
+  const col = { COOL:'#1b7f3b', WARMING:'#b26a00', STRAINED:'#c03a00', DANGER:'#9b0000' };
+  pts.forEach(p => {
+    const x = 20 + (p.lon - minLo) / (maxLo - minLo) * (c.width - 40), y = c.height - 20 - (p.lat - minLa) / (maxLa - minLa) * (c.height - 40);
+    g.fillStyle = col[p.level]; g.beginPath(); g.arc(x, y, 11, 0, 7); g.fill();
+    g.fillStyle = '#000'; g.font = '13px sans-serif'; g.fillText(p.member, x + 14, y + 4);
+  });
+}
+
+function accept(status, unsigned) {
+  const prev = crew[status.member];
+  status.unsigned = !!unsigned;
+  crew[status.member] = status;
+  if (!prev || ORDER.indexOf(status.level) > ORDER.indexOf(prev.level)) {
+    feed.push({ t: Date.now(), member: status.member, level: status.level, text: 'now ' + status.level + (status.reasons && status.reasons.length ? ' because: ' + status.reasons.join(', ') : '') });
+  }
+  render(); push();
+}
+
+async function addSealed(text) {
+  const r = await ThakaanVerify.verifyStatus(text);
+  const msg = document.getElementById('msg');
+  if (!r.ok) { msg.innerHTML = '<span class="bad">Rejected: ' + esc(r.reason) + '</span>'; return; }
+  msg.innerHTML = '<span class="ok">Signature OK</span>' + (r.hardwareKey ? ' (hardware key)' : ' (software key)');
+  accept(r.status, false);
+}
+
+document.getElementById('add').onclick = () => { const t = document.getElementById('paste').value.trim(); if (t) addSealed(t); };
+document.getElementById('readClip').onclick = async () => { try { addSealed(await navigator.clipboard.readText()); } catch (e) { document.getElementById('msg').textContent = 'Clipboard not available here: paste it instead.'; } };
+document.getElementById('demo').onclick = () => {
+  const now = Date.now();
+  const demo = [
+    ['Demo: Asha', 'COOL', 'steady', 12, 15, ['Heat and sun exposure'], 12.9716, 77.5946],
+    ['Demo: Imran', 'WARMING', 'rising', 48, 40, ['Heat and sun exposure', 'No real rest for a while'], 12.9769, 77.5993],
+    ['Demo: Suresh', 'STRAINED', 'rising', 75, 62, ['Body strain', 'Heat and sun exposure'], 12.9698, 77.6050],
+  ];
+  demo.forEach(d => accept({ member: d[0], level: d[1], trend: d[2], restMin: d[3], sunMin: d[4], prov: 'SIMULATED', reasons: d[5], t: now, lat: d[6], lon: d[7] }, true));
+};
+document.getElementById('verify').onclick = async () => {
+  const v = await ThakaanVerify.verifyChain(document.getElementById('chain').value.trim());
+  document.getElementById('chainOut').innerHTML = `<p class="${v.status === 'OK' ? 'ok' : 'bad'}">${esc(v.banner)}</p>`;
+};
+
+// Share the live state so a second phone that scans the QR code sees the same board.
+async function push() {
+  if (viewer) return;
+  try { await fetch('state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ crew, feed }) }); } catch (e) {}
+}
+async function pull() {
+  try { const s = await (await fetch('state')).json(); crew = s.crew || {}; feed = s.feed || []; render(); } catch (e) {}
+}
+if (viewer) { pull(); setInterval(pull, 2000); }
+document.getElementById('share').textContent = viewer ? '' : 'To share: run tools/console/serve.py and scan the QR code it prints.';
+render();
+</script>
+</body>
+</html>

@@ -66,6 +66,9 @@ class ShiftSnapshot(
     val level: Level,
     val tss: Int, val tssLow: Int, val tssHigh: Int,
     val drivers: List<String>,
+    val driverCodes: List<String>,
+    /** "rising", "steady" or "falling" over the last 10 minutes of the score. */
+    val trend: String,
     val anchors: List<String>,
     val changedFrom: Level?,
     val provenance: Provenance,
@@ -256,11 +259,17 @@ class ShiftEngine(
         val headline = StrainForecast.project(forecastHistory, if (le.effectiveSun) 1.0 else 0.3)?.headline
 
         return ShiftSnapshot(
-            tNanos, out.level, out.tss, out.tssLow, out.tssHigh, out.drivers.map { it.text }, out.anchors, out.changedFrom, out.provenance,
+            tNanos, out.level, out.tss, out.tssLow, out.tssHigh, out.drivers.map { it.text }, out.drivers.map { it.code }, trendOf(forecastHistory), out.anchors, out.changedFrom, out.provenance,
             activity, stamp.state, le.state, dose.minutesInSun, lastWbgt, rest.minutesSinceRest(tNanos), rest.restDebtMinutes(tNanos),
             band.text, headline, countdown.secondsLeft(nowMs), alarmNow || countdown.state == CountdownState.ALARM,
         )
     }
-}
 
+    private fun trendOf(h: List<TssSample>): String {
+        val recent = h.filter { it.tMin >= h.last().tMin - 10.0 }
+        if (recent.size < 3) return "steady"
+        val slope = (recent.last().tss - recent.first().tss) / max(1.0, recent.last().tMin - recent.first().tMin)
+        return when { slope > 0.3 -> "rising"; slope < -0.3 -> "falling"; else -> "steady" }
+    }
+}
 
