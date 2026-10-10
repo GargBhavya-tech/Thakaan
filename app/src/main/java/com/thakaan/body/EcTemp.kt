@@ -193,7 +193,14 @@ class EcTempFilter(
 
     private fun q(): Double = if (minutes < inflateMinutes) EcTempParams.GAMMA2 * qFactor else EcTempParams.GAMMA2
 
+    /**
+     * Optional heat-balance prior (#24): given the current core estimate it returns this minute's increment in degrees.
+     * Null (the default) keeps the plain published filter, which is what the 7 reference vectors exercise.
+     */
+    var prior: ((Double) -> Double)? = null
+
     private fun advanceOne(hr: Double?) {
+        prior?.let { ct += it(ct) }
         if (gated) {
             val res = EcTemp.stepGated(ct, v, hr, model, q(), r)
             ct = res.state.ct; v = res.state.v; lastAccepted = res.accepted; lastNis = res.nis
