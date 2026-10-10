@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -151,7 +152,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                 }
                 Box(Modifier.fillMaxWidth().aspectRatio(1f).background(Color(0xFFF4F6F8), RoundedCornerShape(10.dp))) {
                     Canvas(
-                        Modifier.fillMaxSize()
+                        Modifier.fillMaxSize().clipToBounds()
                             .pointerInput(g) {
                                 detectTransformGestures { centroid, pd, z, _ ->
                                     val nz = (zoom * z).coerceIn(1f, 8f); val f = nz / zoom
@@ -206,9 +207,9 @@ fun ChhayaScreen(onBack: () -> Unit) {
                         }
                         // reported floods drawn last so nothing hides them
                         floods.active(System.currentTimeMillis()).forEach { fr ->
+                            for (fe in fr.edges) { val gm = g.edgeGeom[fe]; for (i in 0 until gm.size - 2 step 2) seg(Color.White, gm, i, 20f) }
+                            for (fe in fr.edges) { val gm = g.edgeGeom[fe]; for (i in 0 until gm.size - 2 step 2) seg(FLOOD_RED, gm, i, 12f) }
                             val geom = g.edgeGeom[fr.edge]
-                            for (i in 0 until geom.size - 2 step 2) seg(Color.White, geom, i, 20f)
-                            for (i in 0 until geom.size - 2 step 2) seg(FLOOD_RED, geom, i, 12f)
                             val m = geom.size / 4 * 2
                             val o = Offset(px(geom[m + 1] / 1e6), py(geom[m] / 1e6))
                             drawCircle(FLOOD_RED, 36f, o, style = Stroke(6f))

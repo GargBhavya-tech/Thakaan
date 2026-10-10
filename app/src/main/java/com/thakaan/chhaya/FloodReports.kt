@@ -24,14 +24,15 @@ object FloodPhotoCheck {
     }
 }
 
-class FloodReport(val edge: Int, val lat: Double, val lon: Double, val reportedAtMs: Long, val expiresAtMs: Long) {
+/** [edge] is the road nearest the report; [edges] is every road segment the flooded patch blocks (always includes [edge]). */
+class FloodReport(val edge: Int, val lat: Double, val lon: Double, val reportedAtMs: Long, val expiresAtMs: Long, val edges: Set<Int> = setOf(edge)) {
     fun active(nowMs: Long) = nowMs in reportedAtMs until expiresAtMs
 }
 
 class FloodResult(val accepted: Boolean, val message: String, val report: FloodReport? = null)
 
 /**
- * Rider flood reports (#59). A report closes the road edge nearest to the rider (the F term of the route cost) until it
+ * Rider flood reports (#59). A report closes the road edges within 30 m of the rider (the F term of the route cost) until it
  * expires, so [ChhayaRouter] steers around it. Uncertainty resolves toward safety: an old report is dropped only when it
  * expires, never by a newer "all clear" from a single rider. The road is treated as effectively closed, not forbidden: if the
  * only way is through it the route still exists and says so.
@@ -42,24 +43,27 @@ class FloodReports(private val reports: MutableList<FloodReport> = ArrayList()) 
         const val TTL_MS = 3 * 3600_000L
         const val MAX_SNAP_M = 60.0
 
+        /** A flooded patch blocks every road segment within this distance of the report (parallel lane, side road). */
+        const val BLOCK_RADIUS_M = 30.0
+
         fun fromJson(s: String): FloodReports = try {
             val a = JSONArray(s)
-            FloodReports((0 until a.length()).map { val o = a.getJSONObject(it); FloodReport(o.getInt("e"), o.getDouble("lat"), o.getDouble("lon"), o.getLong("at"), o.getLong("until")) }.toMutableList())
+            FloodReports((0 until a.length()).map { val o = a.getJSONObject(it); val e = o.getInt("e"); val es = o.optJSONArray("es"); FloodReport(e, o.getDouble("lat"), o.getDouble("lon"), o.getLong("at"), o.getLong("until"), if (es == null) setOf(e) else (0 until es.length()).map { i -> es.getInt(i) }.toSet() + e) }.toMutableList())
         } catch (_: Exception) { FloodReports() }
     }
 
-    @Synchronized fun toJson(): String = JSONArray(reports.map { JSONObject().put("e", it.edge).put("lat", it.lat).put("lon", it.lon).put("at", it.reportedAtMs).put("until", it.expiresAtMs) }).toString()
+    @Synchronized fun toJson(): String = JSONArray(reports.map { JSONObject().put("e", it.edge).put("lat", it.lat).put("lon", it.lon).put("at", it.reportedAtMs).put("until", it.expiresAtMs).put("es", JSONArray(it.edges.toList())) }).toString()
 
     @Synchronized fun active(nowMs: Long): List<FloodReport> { reports.removeAll { nowMs >= it.expiresAtMs }; return reports.filter { it.active(nowMs) } }
 
-    @Synchronized fun closedEdges(nowMs: Long): Set<Int> = active(nowMs).map { it.edge }.toSet()
+    @Synchronized fun closedEdges(nowMs: Long): Set<Int> = active(nowMs).flatMap { it.edges }.toSet()
 
     /** One tap: the photo has been checked by [FloodPhotoCheck]; [photoProblem] is its verdict. */
     @Synchronized fun report(g: RoadGraph, lat: Double, lon: Double, nowMs: Long, photoProblem: String?): FloodResult {
         if (photoProblem != null) return FloodResult(false, photoProblem)
         val e = g.nearestEdge(lat, lon, MAX_SNAP_M) ?: return FloodResult(false, "No mapped road within ${MAX_SNAP_M.toInt()} m of you")
         reports.removeAll { it.edge == e }
-        val r = FloodReport(e, lat, lon, nowMs, nowMs + TTL_MS)
+        val r = FloodReport(e, lat, lon, nowMs, nowMs + TTL_MS, g.edgesWithin(lat, lon, BLOCK_RADIUS_M) + e)
         reports += r
         return FloodResult(true, "Reported flooded. Routes avoid this road for 3 hours.", r)
     }

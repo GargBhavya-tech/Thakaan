@@ -115,4 +115,25 @@ class FloodReportsTest {
         assertEquals(RainCue.Level.NONE, RainCue.detect(40.0, 50.0, 40.0, 28_000.0, 30_000.0))
         assertEquals(RainCue.Level.NONE, RainCue.detect(3.0, 95.0, 95.0, 100.0, 2_500.0))
     }
+
+    @Test fun aReportBlocksEveryRoadWithinThirtyMetresButNotFarRoads() {
+        val (edge, lat, lon) = middleOf(base(null))
+        val floods = FloodReports()
+        val res = floods.report(graph, lat, lon, NOW, null)
+        val closed = floods.closedEdges(NOW)
+        assertTrue(edge in closed)
+        assertEquals(graph.edgesWithin(lat, lon, FloodReports.BLOCK_RADIUS_M) + edge, closed)
+        assertTrue("a flooded patch should also close the road beside it", closed.size >= 1)
+        val far = graph.edgesWithin(lat, lon, 400.0) - graph.edgesWithin(lat, lon, 60.0)
+        assertTrue("roads far away stay open", far.isNotEmpty() && far.none { it in closed })
+        assertTrue(res.accepted)
+    }
+
+    @Test fun savedReportsKeepAllBlockedEdgesAndOldOnesStillLoad() {
+        val (_, lat, lon) = middleOf(base(null))
+        val floods = FloodReports(); floods.report(graph, lat, lon, NOW, null)
+        assertEquals(floods.closedEdges(NOW), FloodReports.fromJson(floods.toJson()).closedEdges(NOW))
+        val old = FloodReports.fromJson("[{\"e\":5,\"lat\":12.97,\"lon\":77.59,\"at\":$NOW,\"until\":${NOW + 1000}}]")
+        assertEquals(setOf(5), old.closedEdges(NOW))
+    }
 }

@@ -104,6 +104,27 @@ class RoadGraph(json: String) {
         return best
     }
 
+    /** Every edge that passes within [maxM] metres of the point: a flooded patch also blocks the parallel lane and the side road beside it. */
+    fun edgesWithin(lat: Double, lon: Double, maxM: Double): Set<Int> {
+        val k = cos(Math.toRadians(lat))
+        val out = HashSet<Int>()
+        for (e in 0 until edgeCount) {
+            val g = edgeGeom[e]
+            var i = 0
+            while (i + 3 < g.size) {
+                val ay = g[i] / 1e6; val ax = g[i + 1] / 1e6; val by = g[i + 2] / 1e6; val bx = g[i + 3] / 1e6
+                val px = (lon - ax) * k; val py = lat - ay
+                val sx = (bx - ax) * k; val sy = by - ay
+                val len2 = sx * sx + sy * sy
+                val t = if (len2 < 1e-18) 0.0 else ((px * sx + py * sy) / len2).coerceIn(0.0, 1.0)
+                val dx = px - t * sx; val dy = py - t * sy
+                if (sqrt(dx * dx + dy * dy) * 111_320.0 <= maxM) { out += e; break }
+                i += 2
+            }
+        }
+        return out
+    }
+
     /** The edge whose drawn line passes closest to the point, if one is within [maxM] metres; null otherwise. */
     fun nearestEdge(lat: Double, lon: Double, maxM: Double = 60.0): Int? {
         val k = cos(Math.toRadians(lat))
