@@ -35,3 +35,5 @@ Third run (checked by Claude on the phone, no human needed):
 - Replay (invariant 6): Replay 20x shows the REPLAY chip and every stream reports REPLAY / non-real.
 - Daily check-in (#28): shown once, three taps, saved, not shown again after relaunch.
 - Stream stability (#5), partial: sensing ran 08:18 to 08:29 (11 minutes) with the screen on; the gauge stayed REAL on every 2-minute sample and thermal status stayed 0. Per-stream rates were not sampled during the run, so the "no dropped stream for 10 minutes" criterion is only partly met. (The last sample showed the Chhaya screen: someone opened it during the run.)
+
+Ticket sheet corrected (same day): #22 ticked [x] (its Done when, Diagnostics 7/7, was seen on the phone). #8 is [~]: steady 30 fps verified indoors, but no visible pulse trace yet and not tried in sun and shade. #23 is [~]: the vector, 12-minute gap and 160 bpm spike tests pass on the laptop; that the personalised filter is switched on in the live engine is not yet confirmed. #55 is [~]: REPLAY and REAL chips seen on Home and Chhaya during replay and live sensing; not yet checked on every screen.

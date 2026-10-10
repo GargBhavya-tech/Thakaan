@@ -23,7 +23,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 8 | Camera2 lock and torch capture | A | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
+| [~] | 8 | Camera2 lock and torch capture | A | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
 | [~] | 9 | PPG signal pipeline to heart rate | A | 🟥 CORE | 🔴 RED-OK | CP-A | #8 |
 | [~] | 10 | Signal-quality gates and retry UX | A | 🟥 CORE | 🔴 RED-OK | CP-A | #9 |
 | [~] | 11 | Quick and full checks | A | 🟥 CORE | 🔴 RED-OK | CP-A | #10 |
@@ -52,8 +52,8 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 22 | ECTemp core filter and test vectors | A | 🟥 CORE | 🔴 RED-OK | CP-A | #4, #6 |
-| [ ] | 23 | Personalisation, gating and start-of-shift | A | 🟥 CORE | 🔴 RED-OK | CP-B | #22, #11 |
+| [x] | 22 | ECTemp core filter and test vectors | A | 🟥 CORE | 🔴 RED-OK | CP-A | #4, #6 |
+| [~] | 23 | Personalisation, gating and start-of-shift | A | 🟥 CORE | 🔴 RED-OK | CP-B | #22, #11 |
 | [~] | 24 | Gagge / PHS heat-balance prior | A | 🟥 CORE | 🔴 RED-OK | CP-B | #13, #17, #18, #19, #22 |
 | [~] | 25 | Hydration deficit (P15) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #20, #24 |
 | [~] | 26 | Excess HR and idle-state drift (P9, P10) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #14, #23, #24 |
@@ -105,7 +105,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [ ] | 52 | Office Kit live during Red Light | C | 🟥 CORE | 🔴 RED-OK | CP-A | #3, #5 |
 | [~] | 53 | Supervisor console | C | 🟥 CORE | 🟢 GREEN | CP-B | #39, #52 |
 | [~] | 54 | Hash-chained exposure log and verifier | C | 🟥 CORE | 🔴 RED-OK | FINAL | #39, #53 |
-| [ ] | 55 | Provenance chips everywhere | C | 🟥 CORE | 🔴 RED-OK | FINAL | #5, #49, #53 |
+| [~] | 55 | Provenance chips everywhere | C | 🟥 CORE | 🔴 RED-OK | FINAL | #5, #49, #53 |
 | [~] | 56 | Airplane-mode proof | C | 🟥 CORE | 🔴 RED-OK | CP-B | #40, #48 |
 
 ## Phase 9: Optional and cut-first
