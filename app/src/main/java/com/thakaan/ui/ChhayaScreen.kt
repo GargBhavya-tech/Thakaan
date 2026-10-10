@@ -107,9 +107,11 @@ fun ChhayaScreen(onBack: () -> Unit) {
             }
             val snap by ShiftRuntime.snapshot.collectAsStateWithLifecycle()
             val live = snap
-            var demoLevel by remember { mutableStateOf(Level.WARMING) }
-            val level = live?.level ?: demoLevel
-            val tss = live?.tss ?: when (demoLevel) { Level.COOL -> 10; Level.WARMING -> 42; Level.STRAINED -> 65; Level.DANGER -> 90 }
+            // null means "follow the live level"; a chosen level is a demo override and is marked SIMULATED
+            var override by remember { mutableStateOf<Level?>(null) }
+            val level = override ?: live?.level ?: Level.WARMING
+            fun demoTss(l: Level) = when (l) { Level.COOL -> 10; Level.WARMING -> 42; Level.STRAINED -> 65; Level.DANGER -> 90 }
+            val tss = if (override != null || live == null) demoTss(level) else live.tss
             val g = data.graph
             val pos = ShiftRuntime.engine?.position
             var origin by remember { mutableStateOf(pos ?: (12.9655 to 77.5900)) }
@@ -132,14 +134,14 @@ fun ChhayaScreen(onBack: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = onBack) { Text("Back", fontSize = 16.sp) }
                     Text("Chhaya route", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    if (live != null) ProvenanceChip(live.provenance)
+                    if (live != null) ProvenanceChip(if (override != null) com.thakaan.core.Provenance.SIMULATED else live.provenance)
                 }
-                if (live == null) {
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Demo strain:", fontSize = 13.sp)
-                        Level.entries.forEach { l -> FilterChip(selected = demoLevel == l, onClick = { demoLevel = l }, label = { Text(l.word, fontSize = 13.sp) }) }
-                    }
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Strain:", fontSize = 13.sp)
+                    if (live != null) FilterChip(selected = override == null, onClick = { override = null }, label = { Text("Live (${live.level.word})", fontSize = 13.sp) })
+                    Level.entries.forEach { l -> FilterChip(selected = (override ?: if (live == null) Level.WARMING else null) == l, onClick = { override = l }, label = { Text(l.word, fontSize = 13.sp) }) }
                 }
+                if (override != null || live == null) Text("Demo strain: SIMULATED, not your real level.", fontSize = 12.sp, color = Color(0xFF8A5A00))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     MapLayer.entries.forEach { l -> FilterChip(selected = layer == l, onClick = { layer = l }, label = { Text(l.label, fontSize = 15.sp) }) }
                 }
@@ -218,7 +220,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                             val m = geom.size / 4 * 2
                             val o = Offset(px(geom[m + 1] / 1e6), py(geom[m] / 1e6))
                             drawCircle(FLOOD_RED, 36f, o, style = Stroke(6f))
-                            label(measurer, "FLOODED", o + Offset(40f, -14f), FLOOD_RED)
+                            label(measurer, "FLOODED", o + Offset(-30f, -64f), FLOOD_RED)
                         }
                         route?.stop?.let { s ->
                             val o = Offset(px(s.lon), py(s.lat))
