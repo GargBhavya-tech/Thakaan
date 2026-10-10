@@ -1,4 +1,4 @@
-package com.thakaan.chhaya
+﻿package com.thakaan.chhaya
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -125,6 +125,9 @@ class ShadeLayer(json: String) {
     private val shade: Array<IntArray>
     private val lowconf: IntArray
 
+    /** Measured corrections (see ShadeBelief): edge, minute of day and the layer value in, corrected sun fraction out. */
+    var overlay: ((Int, Int, Double) -> Double)? = null
+
     init {
         val o = JSONObject(json)
         val s = o.getJSONArray("slots")
@@ -155,6 +158,8 @@ class ShadeLayer(json: String) {
      */
     fun sunFraction(edge: Int, minuteOfDay: Int): Double {
         val c = computedSun(edge, minuteOfDay)
-        return if (isLowConfidence(edge)) c + (1.0 - c) * 0.5 else c
+        val base = if (isLowConfidence(edge)) c + (1.0 - c) * 0.5 else c
+        return overlay?.invoke(edge, minuteOfDay, base)?.coerceIn(0.0, 1.0) ?: base
     }
 }
+
