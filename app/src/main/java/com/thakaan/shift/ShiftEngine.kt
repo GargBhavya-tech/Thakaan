@@ -165,9 +165,39 @@ class ShiftEngine(
         val resting = stamp.state == MoveState.RESTING || (stamp.state == MoveState.STOPPED && (stamp.secSinceStop ?: 0) >= 60)
         if (resting && stamp.hrWeight() >= 1.0) {
             restHr = hrBpm
-            if (hrBpm > 90.0) { if (restHighSince == null) restHighSince = tNanos } else restHighSince = null
+            if (hrBpm > 90.0) { if (restHighSince == null) restHighSince = tNanos } else { restHighSince = null; chestHighSince = null; chestRestHr = null } // only a clean fingertip check clears the chest clock too
         }
     }
+
+    private val chestScg = com.thakaan.ml.ScgStream()
+    /** Newest chest-pocket pulse reading (null until the first look), for the UI. */
+    var lastChest: com.thakaan.ml.ScgReading? = null
+        private set
+
+    /**
+     * A chest-pocket pulse (#30). Fail-safe: this channel alone is never "fresh" evidence (it does not touch the heart-rate
+     * age or quality the risk engine reads), so losing it changes nothing. It can only RAISE concern: a sustained resting
+     * rate above 90 starts the same high-rest-HR clock the fingertip uses. A low chest rate never clears that clock; only
+     * a fingertip check does. Counted only when the worker is stopped or resting and the rate is a clean full-weight one.
+     */
+    internal fun onChestHeart(c: com.thakaan.ml.ScgReading) {
+        lastChest = c
+        val bpm = c.bpm ?: return
+        val st = lastStamp
+        val resting = st.state == MoveState.RESTING || (st.state == MoveState.STOPPED && (st.secSinceStop ?: 0) >= 60)
+        if (!resting || st.hrWeight() < 1.0 || c.quality < 0.5) return
+        if (bpm <= 90.0) { chestHighRun = 0; return } // a clean low reading only resets the run; it never clears the clock
+        // one stray high reading is not "sustained": need a short run before the clock starts
+        if (++chestHighRun < CHEST_HIGH_RUN) return
+        chestRestHr = maxOf(chestRestHr ?: 0.0, bpm)
+        if (chestHighSince == null) chestHighSince = c.tNanos
+        lastHrProv = Provenance.combine(lastHrProv, c.provenance) // a replayed or simulated chest stream must show on the snapshot
+    }
+    private var pendingChest: com.thakaan.ml.ScgReading? = null
+    private var chestHighRun = 0
+    private var chestRestHr: Double? = null
+    private var chestHighSince: Long? = null
+    private companion object { const val CHEST_HIGH_RUN = 3 }
 
     /** Current state stamp, for tagging a heart check with the state it was taken in. */
     val stamp: StateStamp get() = lastStamp
@@ -200,6 +230,7 @@ class ShiftEngine(
     /** Feed every hub reading. Returns a snapshot about once a second, otherwise null. */
     fun onReading(r: Reading): ShiftSnapshot? {
         if (t0 == null) t0 = r.tNanos
+        if (r.stream == Stream.ACCEL || r.stream == Stream.GYRO) chestScg.onReading(r)?.let { pendingChest = it }
         when (r.stream) {
             Stream.LIGHT -> { lux = r.values[0].toDouble(); luxProv = r.provenance }
             Stream.CCT -> cct = r.values[0].toDouble()
@@ -224,6 +255,7 @@ class ShiftEngine(
         val epoch = epochOf(tNanos)
         val stamp = stop.update(est)
         lastStamp = stamp; lastActivity = activity
+        pendingChest?.let { pendingChest = null; onChestHeart(it) } // after the stamp, so it is judged in the state it was taken in
         collapse.setRiding(activity == Activity.RIDING)
         val nowMs = tNanos / 1_000_000L
         val alarmNow = countdown.tick(nowMs)
@@ -279,6 +311,7 @@ class ShiftEngine(
         val band = hydration.band()
         val bodyIn = BodyInputs(
             hrAgeSec = hrAge, hrQuality = lastHrQuality, restHrBpm = restHr, restHrSustainedMin = restHighMin,
+            chestRestHrBpm = chestRestHr, chestRestHighMin = chestHighSince?.let { (tNanos - it) / 60e9 } ?: 0.0,
             coreTrendC = core, psi = psi, hydrationDeficitPct = band.midPct,
         )
         val sunNow: Boolean? = if (le.state == SunState.UNKNOWN) null else le.effectiveSun

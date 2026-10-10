@@ -121,5 +121,47 @@ class ShiftEngineTest {
         val after = ride(e, 1, 500f, 4f, startNanos = 600_000_000_000L)
         assertTrue(after.last().level < Level.DANGER)
     }
+
+    // ---- chest-pocket heart rate (#30): may only raise concern, never lower it, and must keep its provenance
+
+    /** Rests for [minutes] after a ride, offering [bpm] as a chest reading every 5 s (null = nothing offered). Returns the last snapshot. */
+    private fun restWithChest(bpm: Double?, prov: Provenance = Provenance.REAL, minutes: Int = 12, guardOpen: Boolean = false): ShiftSnapshot {
+        val e = engine(12)
+        ride(e, 2, 70_000f, 8f)
+        val b = ImuBuilder(fs = 50.0, startNanos = 200_000_000_000L)
+        b.idle(minutes * 60.0)
+        var last: ShiftSnapshot? = null; var lastOffer = 0L
+        for (s in b.samples) {
+            e.onReading(Reading(Stream.GYRO, s.tNanos, floatArrayOf(s.gx.toFloat(), s.gy.toFloat(), s.gz.toFloat()), Provenance.REAL))
+            e.onReading(Reading(Stream.ACCEL, s.tNanos, floatArrayOf(s.ax.toFloat(), s.ay.toFloat(), s.az.toFloat()), Provenance.REAL))?.let { last = it }
+            if (bpm != null && s.tNanos - lastOffer >= 5_000_000_000L) {
+                lastOffer = s.tNanos
+                e.onChestHeart(com.thakaan.ml.ScgReading(s.tNanos, bpm, if (guardOpen) 0.0 else 0.9, prov, null, null))
+            }
+        }
+        return last!!
+    }
+
+    @Test fun aHighChestRateWhileRestingRaisesConcernAndANullOrLowOneChangesNothing() {
+        val control = restWithChest(null)
+        val high = restWithChest(110.0)
+        val low = restWithChest(62.0)
+        assertTrue("high chest rate ${high.level} must not be below control ${control.level}", high.level >= control.level)
+        assertTrue("a sustained 110 at rest should raise the level (${high.level} vs ${control.level})", high.level > control.level)
+        assertEquals("a low chest rate must change nothing", control.tss.toDouble(), low.tss.toDouble(), 1e-9)
+        assertEquals(control.level, low.level)
+    }
+
+    @Test fun aReplayedChestStreamNeverShowsAsReal() {
+        val s = restWithChest(110.0, prov = Provenance.REPLAY)
+        assertTrue("snapshot provenance ${s.provenance}", s.provenance != Provenance.REAL)
+    }
+
+    @Test fun guardSwitchTheChestQualityGateIsWhatKeepsAWeakReadingOut() {
+        // a check that cannot fail proves nothing: with the quality gate defeated the weak reading would wrongly raise the score
+        val control = restWithChest(null)
+        val weak = restWithChest(110.0, guardOpen = true)
+        assertEquals("weak chest readings (quality 0) must be ignored", control.level, weak.level)
+    }
 }
 
