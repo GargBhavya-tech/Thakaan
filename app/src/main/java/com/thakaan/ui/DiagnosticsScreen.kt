@@ -123,6 +123,18 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     }
                 }
 
+                Section("Device self-tests") {
+                    val delivery = remember { AlertDelivery(ctx) }
+                    var ks by remember { mutableStateOf<List<com.thakaan.audit.SelfTestLine>?>(null) }
+                    var voices by remember { mutableStateOf<List<Pair<com.thakaan.risk.Lang, String>>?>(null) }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { ks = com.thakaan.audit.KeystoreSelfTest.run(ctx) }) { Text("Keystore signing", fontSize = 14.sp) }
+                        Button(onClick = { voices = delivery.voiceStatus() }) { Text("Voices", fontSize = 14.sp) }
+                    }
+                    ks?.forEach { Line(it.name, it.detail, ok = it.ok) }
+                    voices?.forEach { (l, s) -> Line("Voice ${l.tag}", s, ok = s == "voice installed") }
+                }
+
                 Section("Checks") {
                     val ec = remember { runCatching { EcTempVectors.checkAssets(ctx) }.getOrNull() }
                     Line("ECTemp vectors", ec?.let { "${it.summary} pass" } ?: "could not run", ok = ec != null && ec.passed == ec.total)

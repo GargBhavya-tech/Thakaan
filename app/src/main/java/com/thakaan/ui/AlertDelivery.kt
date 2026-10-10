@@ -24,6 +24,18 @@ class AlertDelivery(private val ctx: Context) {
         plan.speech?.let { speak(it, plan.speechLang) }
     }
 
+    /** Per language: whether the on-device engine has a voice. Used by Diagnostics so a missing voice is visible before a shift. */
+    fun voiceStatus(): List<Pair<Lang, String>> = Lang.entries.map { l ->
+        l to when {
+            !ready -> "engine not ready"
+            else -> when (tts.isLanguageAvailable(Locale.forLanguageTag(l.tag))) {
+                TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE, TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> "voice installed"
+                TextToSpeech.LANG_MISSING_DATA -> "voice data missing"
+                else -> "not supported"
+            }
+        }
+    }
+
     fun collapsePrompt(lang: Lang) = speak(AlertLadder.collapsePrompt(lang), lang)
 
     fun speak(text: String, lang: Lang) {
