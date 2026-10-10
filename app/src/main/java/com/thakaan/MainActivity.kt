@@ -71,7 +71,7 @@ class MainActivity : ComponentActivity() {
             val perms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
                 // Start whatever the grants allow; the service skips location if it was refused.
                 start()
-                ShiftRuntime.start(applicationContext, liveScope, profile = profile, onAlert = { delivery.deliver(it) })
+                ShiftRuntime.start(applicationContext, liveScope, profile = profile, onAlert = { delivery.deliver(it) }, onCheckDue = { delivery.checkDue(profile?.language ?: com.thakaan.risk.Lang.HI) })
                 applyCheckIn()
                 running = true
             }

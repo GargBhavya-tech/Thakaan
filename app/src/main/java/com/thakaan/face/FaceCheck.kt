@@ -38,13 +38,13 @@ class FatigueCalibrationStore(ctx: Context) {
  * (POS) and breathing from the skin colour and the fatigue signals from the eyelid, jaw and gaze scores, all in memory.
  * It never replaces the fingertip check and never lowers a level.
  */
-class FaceCheckSession(private val ctx: Context) {
+class FaceCheckSession(private val ctx: Context, private val lite: Boolean = false) {
     private val tracker = FaceTracker(ctx)
     private val camera = FrontCameraCapture(ctx)
     private val faceFrames = ArrayList<FaceFrame>()
     private val fatigueFrames = ArrayList<FatigueFrame>()
     private val rawClosure = ArrayList<Double>()
-    private val learned = com.thakaan.ml.LearnedPulseRunner(ctx)
+    private val learned by lazy { com.thakaan.ml.LearnedPulseRunner(ctx) }
     private val crops = ArrayList<ByteArray>()
     private var firstT = 0L
     private var startedElapsedMs = 0L
@@ -75,7 +75,7 @@ class FaceCheckSession(private val ctx: Context) {
                         if (obs.hasBlend) rawClosure += obs.eyeClosure
                         // consecutive crops only: a lost face starts a new run, and only the longest run is used
                         val box = obs.box
-                        if (box != null && learned.available) crops += learned.crop(bmp, box) else if (box == null && crops.size < MIN_RUN) crops.clear()
+                        if (!lite && box != null && learned.available) crops += learned.crop(bmp, box) else if (box == null && crops.size < MIN_RUN) crops.clear()
                     }
                 }
                 live = FaceLive(
@@ -102,16 +102,16 @@ class FaceCheckSession(private val ctx: Context) {
         }
         if (err != null) return FaceCheckOutcome(err, null, null, 0.0, ff.size, null)
         val newCal = if (baseline) FatigueCalibration.fromSamples(raw) else null
-        val rppg = FaceRppgRegions.analyse(ff) ?: FaceRppg.analyse(ff)
+        val rppg = if (lite) null else (FaceRppgRegions.analyse(ff) ?: FaceRppg.analyse(ff))
         val fatigue = FatigueSignals.analyse(tf, newCal ?: calibration ?: FatigueCalibration())
         val seconds = if (ff.size > 1) (ff.last().tNanos - ff.first().tNanos) / 1e9 else 0.0
         val fps = if (seconds > 1.0) ff.size / seconds else 30.0
-        val lp = if (cr.size > MIN_RUN) learned.analyse(cr, fps) else null
-        learned.close()
+        val lp = if (!lite && cr.size > MIN_RUN) learned.analyse(cr, fps) else null
+        if (!lite) learned.close()
         return FaceCheckOutcome(null, rppg, fatigue, seconds, ff.size, newCal, lp)
     }
 
-    fun abort() { camera.stop(); tracker.close(); learned.close() }
+    fun abort() { camera.stop(); tracker.close(); if (!lite) learned.close() }
 
     companion object {
         const val SETTLE_SEC = 3

@@ -118,13 +118,13 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
 
     fun route(
         originLat: Double, originLon: Double, destLat: Double, destLon: Double,
-        level: Level, tss: Int, minuteOfDay: Int, nowMs: Long = System.currentTimeMillis(),
+        level: Level, tss: Int, minuteOfDay: Int, nowMs: Long = System.currentTimeMillis(), sunUp: Boolean = true,
     ): Route? {
         val closed = floods?.closedEdges(nowMs) ?: emptySet()
         fun flood(a: Int) = if (closed.isNotEmpty() && g.arcEdge[a] in closed) FLOOD_PENALTY_SEC else 0.0
         val o = g.nearestNode(originLat, originLon)
         val d = g.nearestNode(destLat, destLon)
-        val sun = DoubleArray(g.edgeCount) { shade.sunFraction(it, minuteOfDay) }
+        val sun = DoubleArray(g.edgeCount) { if (sunUp) shade.sunFraction(it, minuteOfDay) else 0.0 }
         fun weighted(lam: Double): (Int) -> Double = { a ->
             val e = g.arcEdge[a]
             val t = arcTime(a)

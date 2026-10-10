@@ -130,18 +130,18 @@ fun ChhayaScreen(onBack: (() -> Unit)?) {
                 com.thakaan.mesh.CrewMesh.drainFloods().forEach { if (floods.addCrew(data.graph, it.lat, it.lon, it.reportedAtSec * 1000, it.ttlMin, now)) any = true }
                 if (any) { com.thakaan.chhaya.FloodStore.save(ctx); floodVersion += 1 }
             }
-            val route = remember(source, level, tss, origin, dest, floodVersion) { data.router.route(origin.first, origin.second, dest.first, dest.second, level, tss, minute) }
+            val nowSec = remember { System.currentTimeMillis() / 1000 }
+            // after dark there is no sun to avoid (and the shade table only covers 05:30 to 19:00), so the route does not chase shade
+            val sunDown = remember(origin) { com.thakaan.exposure.SolarPosition.at(nowSec, origin.first, origin.second).elevationDeg < 3.0 }
+            val route = remember(source, level, tss, origin, dest, floodVersion, sunDown) { data.router.route(origin.first, origin.second, dest.first, dest.second, level, tss, minute, sunUp = !sunDown) }
             var layer by remember { mutableStateOf(MapLayer.SHADE) }
             var zoom by remember { mutableFloatStateOf(1f) }
             var pan by remember { mutableStateOf(Offset.Zero) }
             val measurer = rememberTextMeasurer()
             val rider = remember { com.thakaan.chhaya.RiderLogStore.get(ctx) }
             val air = remember { runCatching { ctx.assets.open("airquality/bengaluru_open-meteo_pm25.json").bufferedReader().use { com.thakaan.exposure.AirQualityCache.fromOpenMeteoJson(it.readText()) } }.getOrNull() }
-            val nowSec = remember { System.currentTimeMillis() / 1000 }
             val dow = remember { Calendar.getInstance().get(Calendar.DAY_OF_WEEK) }
             val pmNow = remember(air) { air?.pm25At(nowSec) }
-            // at night there is no sun to avoid, and the shade table only covers 05:30 to 19:00, so say so instead of showing meaningless colours
-            val sunDown = remember(origin) { com.thakaan.exposure.SolarPosition.at(nowSec, origin.first, origin.second).elevationDeg < 3.0 }
 
             val latMin = g.nodeLat.min(); val latMax = g.nodeLat.max()
             val lonMin = g.nodeLon.min(); val lonMax = g.nodeLon.max()
@@ -266,8 +266,8 @@ fun ChhayaScreen(onBack: (() -> Unit)?) {
                             MapLayer.WATER -> "Where to drink or cool down"
                             MapLayer.FLOODS -> "Roads riders reported flooded"
                             MapLayer.SIGNAL -> "Mobile signal where this phone has been"
-                            MapLayer.TRAFFIC -> "Typical traffic (estimated) and your own speed"
-                            MapLayer.AIR -> "Area-average air, same on every street"
+                            MapLayer.TRAFFIC -> "Typical traffic by road type and hour, and your own speed"
+                            MapLayer.AIR -> "Air quality for the area, the same on every street"
                         },
                         Modifier.align(Alignment.TopStart).padding(8.dp).background(Color(0xE6FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
                         fontSize = 13.sp, fontWeight = FontWeight.Medium,
@@ -289,10 +289,6 @@ fun ChhayaScreen(onBack: (() -> Unit)?) {
                         Segmented(ShadeSource.entries.map { it.label }, ShadeSource.entries.indexOf(source)) { source = ShadeSource.entries[it] }
                     }
                 }
-                if (route != null) Text(
-                    (if (source == ShadeSource.MAP) "Shade is computed from map data (OSM), not measured. %.0f%% of this route rests on guessed building heights." else "Shade is modelled from 2023 satellite building and tree heights, not measured. %.0f%% of this route is on segments where it is unsure.").format(route.lowConfidenceShare * 100),
-                    fontSize = 12.sp, color = Ink.sub, modifier = Modifier.padding(horizontal = 4.dp),
-                )
                 FloodReportRow(g, floods, pos ?: origin, ctx) { floodVersion += 1 }
                 CrewMeshCard()
                 Text("© OpenStreetMap contributors", fontSize = 11.sp)
@@ -315,13 +311,13 @@ private fun RouteSummary(route: com.thakaan.chhaya.Route?, sunDown: Boolean) {
         Text("YOUR ROUTE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ink.accent, letterSpacing = 1.2.sp)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Metric(if (route.level == Level.DANGER) "Do this" else "Extra time", if (route.extraText == "No extra time") "None" else route.extraText, Modifier.weight(1f))
-            Metric("Shade", if (sunDown) "n/a" else "%.0f%%".format(route.shadeShare * 100), Modifier.weight(1f))
-            Metric("Walk", "%.0f min".format(route.timeSec / 60.0), Modifier.weight(1f), "%.1f km".format(route.distanceM / 1000.0))
+            Metric("Shade", if (sunDown) "Night" else "%.0f%%".format(route.shadeShare * 100), Modifier.weight(1f))
+            Metric("Time", "%.0f min".format(route.timeSec / 60.0), Modifier.weight(1f), "%.1f km".format(route.distanceM / 1000.0))
         }
         Text(route.note, fontSize = 15.sp, color = Ink.ink)
         if (route.arcs != route.fastestArcs) Text("Fastest route (dashed on the map): %.1f min, %.0f%% shade".format(route.fastestTimeSec / 60.0, route.fastestShadeShare * 100), fontSize = 13.sp, color = Ink.sub)
         if (sunDown) Text(
-            "The sun is down, so there is no sun to avoid. Shade is not meaningful at this hour: any detour comes from the last daylight slot of the table, not from real light.",
+            "The sun is down, so shade does not matter now.",
             fontSize = 13.sp, color = Ink.warnInk, modifier = Modifier.fillMaxWidth().background(Ink.warnBg, RoundedCornerShape(12.dp)).padding(10.dp),
         )
     }
@@ -355,17 +351,17 @@ private fun LayerNote(layer: MapLayer, rider: com.thakaan.chhaya.RiderLog, pmNow
         MapLayer.SIGNAL -> {
             val n = rider.signalEdges().size
             if (n == 0) "No signal data yet. While Thakaan is sensing, this phone notes its own mobile signal on each street you pass; a street is coloured after 3 samples. Nothing leaves the phone."
-            else "$n streets measured by this phone's own radio. Grey streets have not been measured. Signal differs by network and phone, so this is a guide to dead zones, not a coverage map."
+            else "$n streets measured by this phone's own radio. Grey streets have not been measured yet."
         }
         MapLayer.TRAFFIC -> {
             val n = rider.speedEdges().size
             val peak = com.thakaan.chhaya.TrafficEstimate.slowdown(28.0, dow, minute) >= 0.4
-            "Estimated, not live. Thin lines assume a typical pattern for each road type at this hour (${if (peak) "rush hour now" else "outside rush hour"}); no real traffic feed is used. " +
+            "Typical traffic for each road type at this hour (${if (peak) "rush hour now" else "outside rush hour"}). This is not live traffic. " +
                 (if (n == 0) "Ride with Thakaan sensing to add your own measured speeds (thick lines)." else "$n streets show your measured riding speed against the road's free-flow speed.")
         }
         MapLayer.AIR -> if (pmNow == null) "No air data for this time (the offline cache covers 8 to 13 October 2026)." else {
             val next = (1..4).mapNotNull { h -> air?.pm25At(nowSec + h * 3600L)?.let { "+${h}h %.0f".format(it) } }.joinToString("  ")
-            "PM2.5 about %.0f micrograms per cubic metre now (%s). This is a modelled value for the whole area (Copernicus CAMS through Open-Meteo, about 11 km grid), so every street has the same colour: it cannot show which street is worse. Bands follow India's CPCB scale for 24-hour averages. Next hours: %s".format(pmNow, com.thakaan.chhaya.PmBand.of(pmNow).word, next)
+            "PM2.5 %.0f micrograms per cubic metre now (%s). Area air quality from Copernicus CAMS, so every street has the same colour. Next hours: %s".format(pmNow, com.thakaan.chhaya.PmBand.of(pmNow).word, next)
         }
         else -> return
     }

@@ -20,9 +20,9 @@ class QuickCheckPlanTest {
     private fun tremor(valid: Boolean, lift: Boolean = false) = TremorResult(0.1, 0.2, 12.0, lift, valid, if (valid) "" else "needs at least 10 s of holding still")
     private fun fitts(valid: Boolean) = FittsResult(3.0, 0.1, 0.3, 40, valid, if (valid) "" else "too few taps")
 
-    @Test fun fitsTheNinetySecondBudget() {
+    @Test fun theGeneralCheckStaysWithinTwoAndAHalfMinutes() {
         val p = QuickCheckPlan()
-        assertTrue("total ${p.totalSeconds}s", p.totalSeconds <= 90)
+        assertTrue("total ${p.totalSeconds}s (the face check added 40 s to the original 90 s goal)", p.totalSeconds <= 130)
         assertFalse(CheckStepId.SPEECH in p.steps)
     }
 
@@ -30,7 +30,7 @@ class QuickCheckPlanTest {
         val p = QuickCheckPlan(speechAvailable = true)
         assertTrue(CheckStepId.SPEECH in p.steps)
         // the fingertip step grew to 35 s (the pulse must be checked for steadiness); a speech step will need trimming elsewhere to keep 90 s
-        assertTrue("with speech ${p.totalSeconds}s", p.totalSeconds <= 100)
+        assertTrue("with speech ${p.totalSeconds}s", p.totalSeconds <= 145)
     }
 
     @Test fun stepsRunInOrderAndEnd() {
@@ -58,6 +58,8 @@ class QuickCheckPlanTest {
         val o = QuickCheckOutcome()
         o.heart = heart(true); o.tremor = tremor(true); o.symptoms = setOf(Symptom.DIZZINESS)
         o.skipped[CheckStepId.TAPPING] = "worker skipped"
+        assertFalse("the face step is still neither done nor skipped", o.isComplete(p))
+        o.faceDone = true
         assertTrue(o.isComplete(p))
         assertTrue(o.summary().any { it.contains("skipped") && it.contains("worker skipped") })
     }
@@ -81,35 +83,34 @@ class QuickCheckPlanTest {
         assertTrue(plan.steps.contains(CheckStepId.SPEECH))
     }
 
-    @Test fun deliveryPartnersGetTheFaceCheckAndTapping() {
-        val p = QuickCheckPlan(speechAvailable = false, workType = WorkType.DELIVERY)
-        assertTrue(CheckStepId.FACE in p.steps && CheckStepId.FINGERTIP in p.steps && CheckStepId.TAPPING in p.steps)
-        assertEquals("the pulse first", CheckStepId.FINGERTIP, p.steps.first())
-        assertEquals("how do you feel last", CheckStepId.SYMPTOMS, p.steps.last())
-        assertTrue("with the face check it runs about two minutes, not 90 s: ${p.totalSeconds}", p.totalSeconds in 91..130)
+    @Test fun deliveryPartnersGetThePickupCheckFaceThenPulseThenHowTheyFeel() {
+        val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.DELIVERY)
+        assertEquals(listOf(CheckStepId.FACE, CheckStepId.FINGERTIP, CheckStepId.SYMPTOMS), p.steps)
+        assertTrue("about a minute and a half: ${p.totalSeconds}", p.totalSeconds in 80..100)
     }
 
-    @Test fun constructionWorkersGetTheShortGlovesAndHelmetCheck() {
+    @Test fun constructionWorkersGetPulseFaceHandHoldAndSymptoms() {
         val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.CONSTRUCTION)
-        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.TREMOR, CheckStepId.SYMPTOMS), p.steps)
-        assertFalse("no face behind goggles, no tapping in gloves, no spoken digits in noise", p.steps.any { it == CheckStepId.FACE || it == CheckStepId.TAPPING || it == CheckStepId.SPEECH })
-        assertTrue(p.totalSeconds <= 70)
+        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TREMOR, CheckStepId.SYMPTOMS), p.steps)
+        assertFalse("no tapping in gloves, no spoken digits in noise", p.steps.any { it == CheckStepId.TAPPING || it == CheckStepId.SPEECH })
+        assertTrue(p.totalSeconds <= 110)
     }
 
-    @Test fun securityWorkersGetNoFaceCheckAndNoSpokenNumbers() {
+    @Test fun securityWorkersGetNoSpokenNumbers() {
         val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.SECURITY)
-        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.TREMOR, CheckStepId.TAPPING, CheckStepId.SYMPTOMS), p.steps)
+        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TAPPING, CheckStepId.SYMPTOMS), p.steps)
     }
 
     @Test fun otherGigWorkersGetTheGeneralCheckAndItIsTheDefault() {
         assertEquals(QuickCheckPlan(true).steps, QuickCheckPlan(true, WorkType.OTHER_GIG).steps)
-        assertFalse(CheckStepId.FACE in QuickCheckPlan(true, WorkType.OTHER_GIG).steps)
+        assertTrue(CheckStepId.FACE in QuickCheckPlan(true, WorkType.OTHER_GIG).steps)
     }
 
-    @Test fun everyKindOfWorkStartsWithThePulseAndEndsWithHowDoYouFeel() {
+    @Test fun everyKindOfWorkHasThePulseAndTheFaceCheckAndEndsWithHowDoYouFeel() {
         WorkType.entries.forEach { w ->
             val steps = QuickCheckPlan(true, w).steps
-            assertEquals(w.name, CheckStepId.FINGERTIP, steps.first())
+            assertTrue(w.name, steps.first() == CheckStepId.FINGERTIP || steps.first() == CheckStepId.FACE)
+            assertTrue(w.name, CheckStepId.FACE in steps && CheckStepId.FINGERTIP in steps)
             assertEquals(w.name, CheckStepId.SYMPTOMS, steps.last())
         }
     }
@@ -134,8 +135,8 @@ class QuickCheckPlanTest {
         assertTrue(o.summary().any { it.contains("Look at the screen") && it.contains("skipped") })
     }
 
-    @Test fun onlyWorkWhereAFaceCanBeReadOffersTheFaceCheckOnItsOwn() {
-        assertTrue(WorkType.DELIVERY.facePossible && WorkType.OTHER_GIG.facePossible)
-        assertFalse(WorkType.CONSTRUCTION.facePossible || WorkType.SECURITY.facePossible)
+    @Test fun onlyDeliveryPartnersRide() {
+        assertTrue(WorkType.DELIVERY.rides)
+        assertFalse(WorkType.CONSTRUCTION.rides || WorkType.SECURITY.rides || WorkType.OTHER_GIG.rides)
     }
 }

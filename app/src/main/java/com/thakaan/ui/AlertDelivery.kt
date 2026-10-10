@@ -9,6 +9,14 @@ import com.thakaan.risk.AlertLadder
 import com.thakaan.risk.Lang
 import java.util.Locale
 
+private val CHECK_DUE_LINES = mapOf(
+    Lang.EN to "Time for your health check.",
+    Lang.HI to "अब अपनी जाँच करने का समय है।",
+    Lang.KN to "ಈಗ ನಿಮ್ಮ ಪರೀಕ್ಷೆ ಮಾಡುವ ಸಮಯ.",
+    Lang.TA to "உங்கள் பரிசோதனைக்கான நேரம் இது.",
+    Lang.TE to "మీ పరీక్ష చేసుకునే సమయం ఇది.",
+)
+
 /**
  * Speaks and vibrates an [AlertPlan] on the phone (#40). Speech uses the on-device TextToSpeech engine, so it works with
  * no network. If the voice for the worker's language is not installed it falls back to English and says so in
@@ -22,6 +30,18 @@ class AlertDelivery(private val ctx: Context) {
     fun deliver(plan: AlertPlan) {
         vibrate(plan.haptic)
         plan.speech?.let { speak(it, plan.speechLang) }
+    }
+
+    /** The reminder that a check is due: vibration, a spoken line in the worker's language, and a notification for a phone in a pocket. */
+    fun checkDue(lang: Lang) {
+        vibrate(longArrayOf(0, 300, 200, 300))
+        speak(CHECK_DUE_LINES.getValue(lang), lang)
+        val nm = ctx.getSystemService(android.app.NotificationManager::class.java)
+        nm.createNotificationChannel(android.app.NotificationChannel("checks", "Check reminders", android.app.NotificationManager.IMPORTANCE_HIGH))
+        val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.let { android.app.PendingIntent.getActivity(ctx, 0, it, android.app.PendingIntent.FLAG_IMMUTABLE) }
+        val n = androidx.core.app.NotificationCompat.Builder(ctx, "checks").setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Time for your check").setContentText("A short check keeps you safe in the heat.").setAutoCancel(true).setContentIntent(open).build()
+        nm.notify(1002, n)
     }
 
     /** Per language: whether the on-device engine has a voice. Used by Diagnostics so a missing voice is visible before a shift. */

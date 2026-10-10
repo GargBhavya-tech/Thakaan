@@ -39,6 +39,7 @@ import com.thakaan.face.FaceCheckSession
 import com.thakaan.face.FaceLive
 import com.thakaan.face.FatigueCalibrationStore
 import com.thakaan.face.FatigueSignals
+import com.thakaan.face.FatigueSummary
 import com.thakaan.shift.ShiftRuntime
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -66,7 +67,7 @@ fun FaceCheckScreen(onBack: () -> Unit) {
  * usable and gives one line for the Quick check summary.
  */
 @Composable
-fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? = null, onFinished: (Boolean, String) -> Unit = { _, _ -> }) {
+fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? = null, onFinished: (Boolean, String, FatigueSummary?) -> Unit = { _, _, _ -> }) {
     val ctx = LocalContext.current
     val store = remember { FatigueCalibrationStore(ctx) }
     var phase by remember { mutableStateOf(Phase.INTRO) }
@@ -87,11 +88,11 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
         while (!s.done()) { live = s.live(); delay(250) }
         val o = s.finish(store.load(), baseline)
         outcome = o
-        saved = saveResults(o, baseline, store)
+        saved = saveFaceResults(o, baseline, store)
         session = null
         phase = Phase.RESULT
         val usable = o.error == null && o.fatigue?.valid == true
-        onFinished(usable, if (usable) "Face check done" else "Face check not usable: ${o.error ?: o.fatigue?.reason?.prompt ?: "try again in better light"}")
+        onFinished(usable, if (usable) "Face check done" else "Face check not read: ${o.error ?: o.fatigue?.reason?.prompt ?: "try again in better light"}", o.fatigue)
     }
 
     val frame = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
@@ -100,7 +101,7 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
         when (phase) {
             Phase.INTRO -> {
                 Text(
-                    "Hold the phone at arm's length and look at the screen, in good light but not direct sun. Keep still for about 40 seconds. " +
+                    "Take off any helmet, goggles, sunglasses or cap. Hold the phone at arm's length and look at the screen, in good light but not direct sun. Keep still for about 40 seconds. " +
                         "It looks at your eyes and skin colour. Nothing is saved or sent. It does not replace the finger check.",
                     fontSize = 18.sp,
                 )
@@ -134,7 +135,7 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
 }
 
 /** Gives the engine what is safe to give: eyelid and yawn tests only; the face pulse is shown, never fed to the risk engine. */
-private fun saveResults(o: FaceCheckOutcome, baseline: Boolean, store: FatigueCalibrationStore): String {
+internal fun saveFaceResults(o: FaceCheckOutcome, baseline: Boolean, store: FatigueCalibrationStore): String {
     val f = o.fatigue ?: return "Nothing saved."
     if (!f.valid) return "Nothing saved: ${f.reason?.prompt ?: "not usable"}."
     val engine = ShiftRuntime.engine ?: return "Nothing saved: start sensing first."
@@ -160,23 +161,19 @@ private fun Result(o: FaceCheckOutcome?, saved: String, doneLabel: String, onAga
         Text("Check finished (${o.frames} frames)", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
         val r = o.rppg
         if (r != null && r.accepted && r.hrBpm != null) {
-            Text("Pulse about %.0f beats a minute (from the face: less certain than the finger)".format(r.hrBpm), fontSize = 18.sp)
-            r.respPerMin?.let { Text("Breathing about %.0f a minute".format(it), fontSize = 18.sp) }
+            Text("Pulse: %.0f beats a minute".format(r.hrBpm), fontSize = 18.sp)
+            r.respPerMin?.let { Text("Breathing: %.0f a minute".format(it), fontSize = 18.sp) }
         } else {
-            Text("Pulse: not reliable here. ${r?.prompt ?: ""}", fontSize = 18.sp)
-        }
-        o.learnedPulse?.let { lp ->
-            if (lp.bpm != null) Text("Second opinion (learned model): about %.0f beats a minute. Shown for comparison only.".format(lp.bpm), fontSize = 16.sp, color = Color.DarkGray)
-            else Text("Second opinion (learned model): no clear pulse (${lp.reason ?: "unclear"}).", fontSize = 16.sp, color = Color.DarkGray)
+            Text("Pulse not read. ${r?.prompt ?: "Hold the phone still in good light, not direct sun."}", fontSize = 18.sp)
         }
         val f = o.fatigue
         if (f != null && f.valid) {
-            Text("Blinks about %.0f a minute, yawns %d, long eye closures %d".format(f.blinksPerMin, f.yawns, f.longClosures), fontSize = 18.sp)
+            Text("Blinks: %.0f a minute, yawns: %d, long eye closures: %d".format(f.blinksPerMin, f.yawns, f.longClosures), fontSize = 18.sp)
         } else {
-            Text("Tiredness signs: no reading. ${f?.reason?.prompt ?: ""}", fontSize = 18.sp)
+            Text("Eyes not read. ${f?.reason?.prompt ?: "Look at the screen and keep still."}", fontSize = 18.sp)
         }
         Text(saved, fontSize = 16.sp, color = Color.DarkGray)
-        Text("Your numbers stay on this phone. It never replaces the finger check.", fontSize = 14.sp, color = Color.DarkGray)
+        Text("Your numbers stay on this phone.", fontSize = 14.sp, color = Color.DarkGray)
     }
     Button(onClick = onAgain, Modifier.fillMaxWidth().height(56.dp)) { Text("Again", fontSize = 20.sp) }
     OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text(doneLabel, fontSize = 18.sp) }

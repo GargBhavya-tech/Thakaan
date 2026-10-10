@@ -114,7 +114,7 @@ fun SettingsScreen(
 
                 SectionLabel("About")
                 Text(
-                    "Thakaan is a heat-strain wellbeing tool, not a medical device. It works on this phone without a network. Shade is computed from map data and satellite heights, not measured. © OpenStreetMap contributors.",
+                    "Thakaan is a heat-strain wellbeing tool, not a medical device. It works on this phone without a network. Shade is computed from map data (OpenStreetMap) and satellite heights, and some building heights are guessed. Traffic is typical for the hour, not live. Air quality is an area figure from Copernicus CAMS. The 20-minute outlook comes from a model, not a measurement. Camera pictures stay in memory and are never saved. © OpenStreetMap contributors.",
                     fontSize = 13.sp, color = Ink.sub, modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                 )
             }

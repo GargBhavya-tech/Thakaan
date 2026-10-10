@@ -29,6 +29,11 @@ object ShiftRuntime {
 
     /** The running shift's report data; replaced when a new shift starts and kept after it stops so the report can still be read. */
     @Volatile var log = ShiftLog(); private set
+
+    /** When the worker last finished a quick check (this shift), or null if not yet. The next check is due from this and the level. */
+    @Volatile var lastCheckEpochSec: Long? = null; private set
+    private var lastAnnounceSec = 0L
+    fun markChecked() { lastCheckEpochSec = System.currentTimeMillis() / 1000; lastAnnounceSec = 0L }
     private var job: Job? = null
     private var chain: ExposureChain? = null
     private var signer: ChainSigner? = null
@@ -41,8 +46,11 @@ object ShiftRuntime {
         profile: com.thakaan.settings.UserProfile? = null,
         /** Called when the level RISES (never when it falls), with the spoken and haptic plan in the worker's language. */
         onAlert: ((com.thakaan.risk.AlertPlan) -> Unit)? = null,
+        /** Called when a check is due (and again every 10 minutes while it is overdue). Not used for delivery riders, whose check is at pickup. */
+        onCheckDue: (() -> Unit)? = null,
     ) {
         stop()
+        lastCheckEpochSec = null; lastAnnounceSec = 0L
         val weather = try {
             context.assets.open("weather/bengaluru_open-meteo.json").bufferedReader().use { WeatherCache.fromOpenMeteoJson(it.readText()) }
         } catch (_: Exception) { null } // missing cache: WBGT unknown, which the risk engine treats as hot
@@ -63,6 +71,10 @@ object ShiftRuntime {
             SensorHub.readings.collect { r ->
                 e.onReading(r)?.let { s ->
                     _snapshot.value = s
+                    if (onCheckDue != null && profile?.workType != com.thakaan.settings.WorkType.DELIVERY && s.provenance == com.thakaan.core.Provenance.REAL) {
+                        val nowSec = System.currentTimeMillis() / 1000
+                        if (com.thakaan.shift.CheckSchedule.dueInSec(lastCheckEpochSec, nowSec, s.level) <= 0 && nowSec - lastAnnounceSec > 600) { lastAnnounceSec = nowSec; onCheckDue() }
+                    }
                     // rider log for the Signal and Traffic map layers: only a fresh REAL fix, never a replay
                     if (e.gnssTNanos != 0L && s.tNanos - e.gnssTNanos < 10_000_000_000L) {
                         com.thakaan.chhaya.RiderMapFeed.offer(

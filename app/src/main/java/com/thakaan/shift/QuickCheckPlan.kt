@@ -43,6 +43,8 @@ class QuickCheckOutcome {
     var symptoms: Set<Symptom>? = null
     /** The face step: [faceDone] only when the camera read something usable; [faceSummary] is the line for the summary. */
     var faceDone = false
+    /** What the face step read, for the pickup check's fit-to-ride decision. */
+    var fatigue: com.thakaan.face.FatigueSummary? = null
     var faceSummary: String? = null
     var effort: Int? = null
     val skipped = LinkedHashMap<CheckStepId, String>()
@@ -71,9 +73,8 @@ class QuickCheckOutcome {
     fun summary(): List<String> = buildList {
         heart?.let {
             add(
-                if (it.accepted) "Heart rate from your fingertip: about %.0f beats a minute".format(it.hrBpm ?: 0.0)
-                else "Heart check not trusted: ${it.prompt ?: "try again"}" +
-                    (it.bestEstimateBpm?.let { b -> " (best guess was about %.0f, not used)".format(b) } ?: ""),
+                if (it.accepted) "Pulse from your fingertip: %.0f beats a minute".format(it.hrBpm ?: 0.0)
+                else "Pulse not read: ${it.prompt ?: "try again"}",
             )
         }
         tremor?.let { add(if (!it.valid) "Hand hold not usable" else if (it.liftingConfound) "Hand hold taken just after lifting: noted, not scored" else "Hand hold done") }

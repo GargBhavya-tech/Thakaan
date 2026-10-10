@@ -89,6 +89,8 @@ class ShiftSnapshot(
     val airDoseText: String = "",
     /** Rain-onset cue words for a Home banner (#59), or null. A cue from light and the forecast, not a measured rain. */
     val rainCue: String? = null,
+    /** The next 20 minutes: chance of reaching Strained and what to do about it. Can only add concern, never promise recovery. */
+    val outlook: com.thakaan.risk.Outlook? = null,
 )
 
 /**
@@ -122,6 +124,7 @@ class ShiftEngine(
     private val ec = EcTempFilter(start = start)
     private val adaptive = AdaptiveEcTemp(start = start)
     private val forecastHistory = ArrayList<TssSample>()
+    private var lastWbgtSoon: Double? = null
 
     private var t0: Long? = null
     private var lux: Double? = null; private var luxProv = Provenance.REAL
@@ -305,6 +308,12 @@ class ShiftEngine(
             while (luxMinutes.isNotEmpty() && luxMinutes.first().first < idx - 15) luxMinutes.removeFirst()
             val before = luxMinutes.filter { it.first in (idx - 12)..(idx - 8) }.maxOfOrNull { it.second }
             rainCue = com.thakaan.chhaya.RainCue.detect(sun.elevationDeg, w?.relativeHumidityPct, w?.cloudPct, lux, before)
+            // heat index expected over the outlook horizon, from the cached forecast, once a minute
+            val soonEpoch = epoch + com.thakaan.risk.StrainOutlook.HORIZON_MIN * 60L
+            lastWbgtSoon = weather?.at(soonEpoch)?.let { ws ->
+                val solarSoon = if (le.effectiveSun) ws.ghiWm2 else 0.2 * ws.ghiWm2
+                wbgt.compute(WbgtInput(soonEpoch * 1000, lat, lon, solarSoon, ws.pressureHpa, ws.tempC, ws.relativeHumidityPct, max(0.5, ws.windMs)))?.wbgtC
+            }
             minuteIndex = idx
         }
 
@@ -334,12 +343,17 @@ class ShiftEngine(
             if (forecastHistory.size > 60) forecastHistory.removeAt(0)
         }
         val headline = StrainForecast.project(forecastHistory, if (le.effectiveSun) 1.0 else 0.3)?.headline
+        val outlook = com.thakaan.risk.StrainOutlook.estimate(
+            out.level, out.tss, out.tssLow, out.tssHigh, com.thakaan.risk.StrainOutlook.slopePerMin(forecastHistory),
+            lastWbgt, lastWbgtSoon, airQuality?.pm25At(epoch), airQuality?.pm25At(epoch + 3600), w?.windMs,
+        )
 
         return ShiftSnapshot(
             tNanos, out.level, out.tss, out.tssLow, out.tssHigh, out.drivers.map { it.text }, out.drivers.map { it.code }, trendOf(forecastHistory), out.anchors, out.changedFrom, out.provenance,
             activity, stamp.state, le.state, dose.minutesInSun, lastWbgt, rest.minutesSinceRest(tNanos), rest.restDebtMinutes(tNanos),
             band.text, headline, countdown.secondsLeft(nowMs), alarmNow || countdown.state == CountdownState.ALARM, airDose.summary(),
             when (rainCue) { com.thakaan.chhaya.RainCue.Level.LIKELY -> "Rain is likely starting: check for flooded roads"; com.thakaan.chhaya.RainCue.Level.POSSIBLE -> "Rain may be starting"; else -> null },
+            outlook,
         )
     }
 

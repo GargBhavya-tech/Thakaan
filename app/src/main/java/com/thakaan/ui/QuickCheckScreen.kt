@@ -78,7 +78,7 @@ import java.util.Calendar
  * Results go to the shift engine; raw frames and samples stay in RAM only. DEVICE-UNTESTED (the plan is unit-tested).
  */
 @Composable
-fun QuickCheckScreen(onBack: () -> Unit, workType: com.thakaan.settings.WorkType = com.thakaan.settings.WorkType.OTHER_GIG) {
+fun QuickCheckScreen(onBack: () -> Unit, workType: com.thakaan.settings.WorkType = com.thakaan.settings.WorkType.OTHER_GIG, onResult: ((QuickCheckOutcome) -> Unit)? = null) {
     val engine = ShiftRuntime.engine
     val ctx = LocalContext.current
     val recogniser = remember { com.thakaan.speech.DigitRecognizer(ctx) }
@@ -108,9 +108,9 @@ fun QuickCheckScreen(onBack: () -> Unit, workType: com.thakaan.settings.WorkType
                     else -> {
                         val s = step!!
                         Text("Step ${plan.steps.indexOf(s) + 1} of ${plan.steps.size}: ${s.label}", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-                        val advance = {
+                        val advance: () -> Unit = {
                             val n = plan.next(s)
-                            if (n == null) { finish(engine, outcome); finished = true } else { step = n; round = 0 }
+                            if (n == null) { finish(engine, outcome); ShiftRuntime.markChecked(); finished = true; onResult?.invoke(outcome) } else { step = n; round = 0 }
                         }
                         val retry = { round += 1 }
                         val skip: (String) -> Unit = { why -> outcome.skipped[s] = why; advance() }
@@ -159,7 +159,7 @@ private fun FaceStep(o: QuickCheckOutcome, advance: () -> Unit, skip: (String) -
         embedded = true,
         onDone = { if (o.faceDone) advance() else skip("no usable reading") },
         onSkip = { skip("worker skipped") },
-        onFinished = { ok, line -> o.faceDone = ok; o.faceSummary = line },
+        onFinished = { ok, line, fat -> o.faceDone = ok; o.faceSummary = line; o.fatigue = fat },
     )
 }
 
@@ -213,7 +213,6 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
         while (secs < total && failed == null) {
             delay(1000); secs += 1
             // running estimate for the person to compare with their own count: display only, never given to the risk engine
-            if (secs >= 10) liveBpm = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { com.thakaan.ppg.FingertipPos.liveBpm(synchronized(frames) { frames.takeLast(450).toList() }) }
         }
         capture.stop()
         if (failed == null) {
@@ -250,13 +249,12 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
             if (result.accepted && result.hrBpm != null && !dimmed) {
                 engine.onHeartCheck(SystemClock.elapsedRealtimeNanos(), result.hrBpm, 1.0, stamp, Provenance.REAL)
             } else {
-                failed = (if (dimmed) "The light dimmed because the phone is hot. Cool the phone in shade, then try again." else o.advice(CheckStepId.FINGERTIP)) +
-                    (result.bestEstimateBpm?.takeIf { !dimmed }?.let { " Best guess was about %.0f beats a minute, but it was not steady enough to trust.".format(it) } ?: "")
+                failed = if (dimmed) "The light dimmed because the phone is hot. Cool the phone in shade, then try again." else o.advice(CheckStepId.FINGERTIP)
             }
         }
         if (failed == null) {
-            // show the accepted rate for a few seconds so it can be compared with a manual count before the next step
-            o.heart?.hrBpm?.let { finalNote = "Your pulse: about %.0f beats a minute".format(it); delay(6000) }
+            // show the accepted rate for a few seconds before the next step
+            o.heart?.hrBpm?.let { finalNote = "Your pulse: %.0f beats a minute".format(it); delay(6000) }
             advance()
         }
     }
@@ -264,7 +262,7 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
         finalNote?.let { Text(it, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B7F3B)) }
         if (finalNote == null) {
             Text("${CheckStepId.FINGERTIP.seconds - secs} s", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text(liveBpm?.let { "Live estimate: about %.0f beats a minute (not final)".format(it) } ?: "Finding your pulse...", fontSize = 20.sp)
+            Text("Reading your pulse...", fontSize = 20.sp)
         }
         Waveform(wave)
     } else {

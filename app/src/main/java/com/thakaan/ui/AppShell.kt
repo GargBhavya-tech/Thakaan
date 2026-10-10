@@ -34,13 +34,13 @@ import com.thakaan.shift.CheckStepId
 import com.thakaan.shift.QuickCheckPlan
 
 private enum class Tab(val label: String, val glyph: Glyph) {
-    TODAY("Today", Glyph.TODAY), CHECK("Check", Glyph.CHECK), ROUTE("Route", Glyph.ROUTE), REPORT("Report", Glyph.REPORT),
+    RIDE("Ride", Glyph.RIDE), TODAY("Today", Glyph.TODAY), CHECK("Check", Glyph.CHECK), ROUTE("Route", Glyph.ROUTE), REPORT("Report", Glyph.REPORT),
 }
 
-private enum class Page { SETTINGS, QUICK, FACE, FACE_LIVE, SAFETY, DIAGNOSTICS }
+private enum class Page { SETTINGS, QUICK, FACE, FACE_LIVE, SAFETY, DIAGNOSTICS, PICKUP_CHECK, RIDING }
 
 /**
- * The app frame: four tabs (Today, Check, Route, Report) with a bottom bar, and everything else pushed on top as a page with a
+ * The app frame: four tabs with a bottom bar (Ride, Today, Route, Report for delivery partners; Today, Check, Route, Report for everyone else), and everything else pushed on top as a page with a
  * back stack, so back from Diagnostics returns to Settings and back from Settings returns to the tab you were on. The bottom
  * bar hides while a page is open so a check in progress is never one stray tap from leaving.
  */
@@ -55,7 +55,10 @@ fun AppShell(
     workType: WorkType,
     onWorkType: (WorkType) -> Unit,
 ) {
-    var tab by rememberSaveable { mutableStateOf(Tab.TODAY) }
+    val tabs = if (workType.rides) listOf(Tab.RIDE, Tab.TODAY, Tab.ROUTE, Tab.REPORT) else listOf(Tab.TODAY, Tab.CHECK, Tab.ROUTE, Tab.REPORT)
+    var chosenTab by rememberSaveable { mutableStateOf<Tab?>(null) }
+    val tab = chosenTab?.takeIf { it in tabs } ?: tabs.first()
+    val ride = remember { RideSession() }
     var stack by remember { mutableStateOf(listOf<Page>()) }
     fun push(p: Page) { stack = stack + p }
     fun pop() { stack = stack.dropLast(1) }
@@ -67,6 +70,8 @@ fun AppShell(
             onOpenSafety = { push(Page.SAFETY) }, onOpenDiagnostics = { push(Page.DIAGNOSTICS) }, onOpenFaceLive = { push(Page.FACE_LIVE) }, onBack = ::pop,
         )
         Page.QUICK -> QuickCheckScreen(onBack = ::pop, workType = workType)
+        Page.PICKUP_CHECK -> QuickCheckScreen(onBack = ::pop, workType = workType, onResult = { ride.checkDone(it); pop() })
+        Page.RIDING -> RidingPage(ride, onFinished = ::pop, onRest = { ride.startRest(it); pop() })
         Page.FACE -> FaceCheckScreen(onBack = ::pop)
         Page.FACE_LIVE -> FaceLiveScreen(onBack = ::pop)
         Page.SAFETY -> SafetyScreen(onBack = ::pop)
@@ -78,9 +83,9 @@ fun AppShell(
                     Column {
                         Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.line))
                         NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-                            Tab.entries.forEach { t ->
+                            tabs.forEach { t ->
                                 NavigationBarItem(
-                                    selected = tab == t, onClick = { tab = t },
+                                    selected = tab == t, onClick = { chosenTab = t },
                                     icon = { GlyphIcon(t.glyph, if (tab == t) Ink.accent else Ink.sub) },
                                     label = { Text(t.label, fontSize = 13.sp, fontWeight = if (tab == t) FontWeight.Bold else FontWeight.Medium) },
                                     colors = NavigationBarItemDefaults.colors(
@@ -95,6 +100,7 @@ fun AppShell(
             ) { inner ->
                 Box(Modifier.fillMaxSize().padding(inner)) {
                     when (tab) {
+                        Tab.RIDE -> RideTab(ride, running, onToggleHub, onStartCheck = { push(Page.PICKUP_CHECK) }, onStartRide = { push(Page.RIDING) }, onOpenSettings = { push(Page.SETTINGS) })
                         Tab.TODAY -> HomeScreen(running = running, replaying = replaying, workType = workType, onToggleHub = onToggleHub, onOpenSettings = { push(Page.SETTINGS) }, onOpenQuickCheck = { push(Page.QUICK) })
                         Tab.CHECK -> CheckScreen(workType = workType, onQuick = { push(Page.QUICK) }, onFace = { push(Page.FACE) })
                         Tab.ROUTE -> ChhayaScreen(onBack = null)
@@ -119,9 +125,9 @@ private fun CheckScreen(workType: WorkType, onQuick: () -> Unit, onFace: () -> U
                     Text("Set for: ${workType.label}. Change this in Settings.", fontSize = 13.sp, color = Ink.sub)
                     PrimaryAction("Start quick check", onClick = onQuick)
                 }
-                if (workType.facePossible) AppCard {
+                AppCard {
                     Text("Face check", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("About 40 seconds with the front camera: tiredness signs and a pulse estimate. The camera pictures stay in memory and are never saved.", fontSize = 15.sp, color = Ink.sub)
+                    Text("About 40 seconds with the front camera: your eyes and your pulse. Take off any helmet, goggles or cap first. The camera pictures stay in memory and are never saved.", fontSize = 15.sp, color = Ink.sub)
                     SecondaryAction("Start face check", onClick = onFace)
                 }
                 Text("These checks support the level; they never set it alone. Heat-strain wellbeing tool, not a medical device.", fontSize = 12.sp, color = Ink.sub, modifier = Modifier.padding(horizontal = 4.dp))

@@ -158,7 +158,7 @@ fun ListRow(title: String, subtitle: String? = null, onClick: () -> Unit, enable
     }
 }
 
-enum class Glyph { TODAY, CHECK, ROUTE, REPORT, GEAR, BACK }
+enum class Glyph { TODAY, CHECK, ROUTE, REPORT, GEAR, BACK, RIDE }
 
 /** Line icons drawn in code (the project carries no icon library). 24 dp box, 2 dp strokes, round caps. */
 @Composable
@@ -192,6 +192,15 @@ fun GlyphIcon(g: Glyph, tint: Color, modifier: Modifier = Modifier.size(24.dp)) 
                     drawLine(tint, Offset(w / 2 + (w * 0.30f * cos(a)).toFloat(), h / 2 + (h * 0.30f * sin(a)).toFloat()), Offset(w / 2 + (w * 0.42f * cos(a)).toFloat(), h / 2 + (h * 0.42f * sin(a)).toFloat()), st.width, StrokeCap.Round)
                 }
                 drawCircle(tint, w * 0.30f, Offset(w / 2, h / 2), style = st)
+            }
+            Glyph.RIDE -> { // a scooter: two wheels and a body
+                drawCircle(tint, w * 0.14f, Offset(w * 0.22f, h * 0.72f), style = st)
+                drawCircle(tint, w * 0.14f, Offset(w * 0.78f, h * 0.72f), style = st)
+                val p = Path().apply {
+                    moveTo(w * 0.22f, h * 0.72f); lineTo(w * 0.42f, h * 0.45f); lineTo(w * 0.64f, h * 0.45f); lineTo(w * 0.78f, h * 0.72f)
+                    moveTo(w * 0.42f, h * 0.45f); lineTo(w * 0.36f, h * 0.28f); lineTo(w * 0.50f, h * 0.28f)
+                }
+                drawPath(p, tint, style = st)
             }
             Glyph.BACK -> {
                 val p = Path().apply { moveTo(w * 0.62f, h * 0.15f); lineTo(w * 0.25f, h * 0.5f); lineTo(w * 0.62f, h * 0.85f) }
