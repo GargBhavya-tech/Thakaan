@@ -136,4 +136,18 @@ class FloodReportsTest {
         val old = FloodReports.fromJson("[{\"e\":5,\"lat\":12.97,\"lon\":77.59,\"at\":$NOW,\"until\":${NOW + 1000}}]")
         assertEquals(setOf(5), old.closedEdges(NOW))
     }
+
+    @Test fun aReportHeardOverTheCrewMeshClosesRoadsButNeverLiftsOne() {
+        val (edge, lat, lon) = middleOf(base(null))
+        val floods = FloodReports()
+        assertTrue(floods.addCrew(graph, lat, lon, NOW, 60, NOW))
+        assertTrue(edge in floods.closedEdges(NOW))
+        assertTrue(floods.active(NOW).single().fromCrew)
+        assertFalse("a shorter report for the same road changes nothing", floods.addCrew(graph, lat, lon, NOW, 30, NOW))
+        assertFalse("an expired report is ignored", FloodReports().addCrew(graph, lat, lon, NOW - 7_200_000L, 60, NOW))
+        assertFalse("nowhere near a road", FloodReports().addCrew(graph, 12.0, 70.0, NOW, 60, NOW))
+        val local = FloodReports(); local.report(graph, lat, lon, NOW, null)
+        assertFalse("a local 3-hour report is not replaced by a crew one that ends sooner", local.addCrew(graph, lat, lon, NOW, 60, NOW))
+        assertTrue(FloodReports.fromJson(floods.toJson()).active(NOW).single().fromCrew)
+    }
 }

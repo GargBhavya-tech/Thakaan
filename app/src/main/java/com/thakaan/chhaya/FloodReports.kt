@@ -25,7 +25,10 @@ object FloodPhotoCheck {
 }
 
 /** [edge] is the road nearest the report; [edges] is every road segment the flooded patch blocks (always includes [edge]). */
-class FloodReport(val edge: Int, val lat: Double, val lon: Double, val reportedAtMs: Long, val expiresAtMs: Long, val edges: Set<Int> = setOf(edge)) {
+class FloodReport(val edge: Int, val lat: Double, val lon: Double, val reportedAtMs: Long, val expiresAtMs: Long, val edges: Set<Int> = setOf(edge),
+    /** True when it arrived over the crew mesh instead of being made on this phone. */
+    val fromCrew: Boolean = false,
+) {
     fun active(nowMs: Long) = nowMs in reportedAtMs until expiresAtMs
 }
 
@@ -48,11 +51,11 @@ class FloodReports(private val reports: MutableList<FloodReport> = ArrayList()) 
 
         fun fromJson(s: String): FloodReports = try {
             val a = JSONArray(s)
-            FloodReports((0 until a.length()).map { val o = a.getJSONObject(it); val e = o.getInt("e"); val es = o.optJSONArray("es"); FloodReport(e, o.getDouble("lat"), o.getDouble("lon"), o.getLong("at"), o.getLong("until"), if (es == null) setOf(e) else (0 until es.length()).map { i -> es.getInt(i) }.toSet() + e) }.toMutableList())
+            FloodReports((0 until a.length()).map { val o = a.getJSONObject(it); val e = o.getInt("e"); val es = o.optJSONArray("es"); FloodReport(e, o.getDouble("lat"), o.getDouble("lon"), o.getLong("at"), o.getLong("until"), if (es == null) setOf(e) else (0 until es.length()).map { i -> es.getInt(i) }.toSet() + e, o.optBoolean("c", false)) }.toMutableList())
         } catch (_: Exception) { FloodReports() }
     }
 
-    @Synchronized fun toJson(): String = JSONArray(reports.map { JSONObject().put("e", it.edge).put("lat", it.lat).put("lon", it.lon).put("at", it.reportedAtMs).put("until", it.expiresAtMs).put("es", JSONArray(it.edges.toList())) }).toString()
+    @Synchronized fun toJson(): String = JSONArray(reports.map { JSONObject().put("e", it.edge).put("lat", it.lat).put("lon", it.lon).put("at", it.reportedAtMs).put("until", it.expiresAtMs).put("es", JSONArray(it.edges.toList())).put("c", it.fromCrew) }).toString()
 
     @Synchronized fun active(nowMs: Long): List<FloodReport> { reports.removeAll { nowMs >= it.expiresAtMs }; return reports.filter { it.active(nowMs) } }
 
@@ -66,6 +69,21 @@ class FloodReports(private val reports: MutableList<FloodReport> = ArrayList()) 
         val r = FloodReport(e, lat, lon, nowMs, nowMs + TTL_MS, g.edgesWithin(lat, lon, BLOCK_RADIUS_M) + e)
         reports += r
         return FloodResult(true, "Reported flooded. Routes avoid this road for 3 hours.", r)
+    }
+
+    /**
+     * A flood report heard over the crew mesh. It closes roads the same way a local one does, for the time the sender said (never
+     * longer than the 3-hour limit), and it can only add closures: the mesh cannot lift one. False if it matched no road, was
+     * already expired, or this phone already holds a report for that road that lasts at least as long.
+     */
+    @Synchronized fun addCrew(g: RoadGraph, lat: Double, lon: Double, reportedAtMs: Long, ttlMin: Int, nowMs: Long): Boolean {
+        val expires = reportedAtMs + minOf(ttlMin * 60_000L, TTL_MS)
+        if (nowMs >= expires) return false
+        val e = g.nearestEdge(lat, lon, MAX_SNAP_M) ?: return false
+        if (reports.any { it.edge == e && it.expiresAtMs >= expires }) return false
+        reports.removeAll { it.edge == e }
+        reports += FloodReport(e, lat, lon, reportedAtMs, expires, g.edgesWithin(lat, lon, BLOCK_RADIUS_M) + e, fromCrew = true)
+        return true
     }
 }
 

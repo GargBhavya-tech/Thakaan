@@ -12,6 +12,10 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- crew mesh: Bluetooth LE broadcast between nearby phones; scanning is never used to find where the phone is -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
     <!-- A dependency's manifest adds these; Thakaan needs none of them (no phone identity, no shared storage). -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />

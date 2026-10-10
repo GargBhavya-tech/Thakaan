@@ -119,6 +119,14 @@ fun ChhayaScreen(onBack: () -> Unit) {
             val minute = remember { Calendar.getInstance().let { it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE) } }
             var floodVersion by remember { mutableStateOf(0) }
             val floods = remember { com.thakaan.chhaya.FloodStore.get(ctx) }
+            val crew by com.thakaan.mesh.CrewMesh.state.collectAsStateWithLifecycle()
+            // flood reports heard over the crew mesh close roads here too (they can only add closures)
+            androidx.compose.runtime.LaunchedEffect(crew.floodVersion, data) {
+                var any = false
+                val now = System.currentTimeMillis()
+                com.thakaan.mesh.CrewMesh.drainFloods().forEach { if (floods.addCrew(data.graph, it.lat, it.lon, it.reportedAtSec * 1000, it.ttlMin, now)) any = true }
+                if (any) { com.thakaan.chhaya.FloodStore.save(ctx); floodVersion += 1 }
+            }
             val route = remember(source, level, tss, origin, dest, floodVersion) { data.router.route(origin.first, origin.second, dest.first, dest.second, level, tss, minute) }
             var layer by remember { mutableStateOf(MapLayer.SHADE) }
             var zoom by remember { mutableFloatStateOf(1f) }
@@ -263,6 +271,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                     )
                 }
                 FloodReportRow(g, floods, pos ?: origin, ctx) { floodVersion += 1 }
+                CrewMeshCard()
                 Text("© OpenStreetMap contributors", fontSize = 11.sp)
             }
         }

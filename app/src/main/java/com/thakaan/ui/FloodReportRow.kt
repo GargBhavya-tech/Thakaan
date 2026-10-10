@@ -60,7 +60,7 @@ fun FloodReportRow(g: RoadGraph, floods: FloodReports, where: Pair<Double, Doubl
                             val res = floods.report(g, where.first, where.second, System.currentTimeMillis(), problem)
                             FloodStore.save(ctx)
                             message = res.message; busy = false
-                            if (res.accepted) onChanged()
+                            if (res.accepted) { onChanged(); com.thakaan.mesh.CrewMesh.publishFlood(where.first, where.second) }
                         }
                     },
                     onError = { message = "Camera: $it"; busy = false },
@@ -71,6 +71,9 @@ fun FloodReportRow(g: RoadGraph, floods: FloodReports, where: Pair<Double, Doubl
             modifier = Modifier.fillMaxWidth(),
         ) { Text(if (granted) "Report flood here (takes a photo)" else "Allow camera to report floods", fontSize = 16.sp) }
         if (message.isNotEmpty()) Text(message, fontSize = 14.sp)
-        if (active > 0) Text("$active road(s) reported flooded; routes avoid them. Reports, not confirmed, depth unknown.", fontSize = 12.sp, color = Color(0xFFB71C1C))
+        if (active > 0) {
+            val crew = floods.active(System.currentTimeMillis()).count { it.fromCrew }
+            Text("$active road(s) reported flooded${if (crew > 0) " ($crew from the crew mesh)" else ""}; routes avoid them. Reports, not confirmed, depth unknown.", fontSize = 12.sp, color = Color(0xFFB71C1C))
+        }
     }
 }
