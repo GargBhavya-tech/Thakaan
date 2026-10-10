@@ -17,6 +17,9 @@ class FaceObservation(
     val motion: Double,
     /** The skin regions read for the pulse, for drawing on the live screen only. Pixel units of the (half-size) frame. */
     val rois: List<PixelRect> = emptyList(),
+    /** Mean (r, g, b) of each skin region separately and of a background patch, for tuning only. */
+    val roiMeans: List<DoubleArray> = emptyList(),
+    val background: DoubleArray? = null,
 ) {
     fun toFaceFrame() = FaceFrame(tNanos, r, g, b, box != null, motion)
     fun toFatigueFrame() = FatigueFrame(tNanos, eyeClosure, jawOpen, gazeX, gazeY, box != null && hasBlend)
@@ -81,13 +84,13 @@ object SkinRegions {
         val browTop = minOf(browLy, browRy, glabY)
         val foreheadCentreY = (topY + browTop) / 2
         val foreheadHalfH = ((browTop - topY) / 2.5).coerceAtLeast(0.01)
-        val foreheadHalfW = abs(browRx - browLx) * 0.35
+        val foreheadHalfW = abs(browRx - browLx) * 0.45
         val out = ArrayList<PixelRect>()
         out += rect((browLx + browRx) / 2, foreheadCentreY, foreheadHalfW, foreheadHalfH)
         val (cheekLx, cheekLy) = lm(CHEEK_L)
         val (cheekRx, cheekRy) = lm(CHEEK_R)
-        out += rect(cheekLx, cheekLy, faceW * 0.10, faceW * 0.10)
-        out += rect(cheekRx, cheekRy, faceW * 0.10, faceW * 0.10)
+        out += rect(cheekLx, cheekLy, faceW * 0.13, faceW * 0.13)
+        out += rect(cheekRx, cheekRy, faceW * 0.13, faceW * 0.13)
         return out.filter { it.area >= 16 }
     }
 }

@@ -65,18 +65,23 @@ class FaceTracker(private val ctx: Context) {
         val w = bitmap.width; val h = bitmap.height
         val rects = SkinRegions.regions({ i -> val p = pts[i.coerceIn(0, pts.size - 1)]; p.x().toDouble() to p.y().toDouble() }, w, h)
         var sr = 0.0; var sg = 0.0; var sb = 0.0; var n = 0
+        val perRoi = ArrayList<DoubleArray>()
         for (rc in rects) {
-            var y = rc.top
-            while (y < rc.bottom) {
-                var x = rc.left
-                while (x < rc.right) {
-                    val c = pixels[y * w + x]
-                    sr += (c shr 16) and 0xFF; sg += (c shr 8) and 0xFF; sb += c and 0xFF
-                    n++
-                    x += 2
-                }
-                y += 2
+            var rr = 0.0; var rg = 0.0; var rb = 0.0; var rn = 0
+            for (y in rc.top until rc.bottom) for (x in rc.left until rc.right) {   // every pixel: more pixels average away camera noise
+                val c = pixels[y * w + x]
+                rr += (c shr 16) and 0xFF; rg += (c shr 8) and 0xFF; rb += c and 0xFF
+                rn++
             }
+            if (rn > 0) { perRoi += doubleArrayOf(rr / rn, rg / rn, rb / rn); sr += rr; sg += rg; sb += rb; n += rn }
+        }
+        // a background patch in the top-left corner, if the face is not there: lighting changes show up in it too (recorded for tuning)
+        var bgMean: DoubleArray? = null
+        val bw = w / 6; val bh = h / 6
+        if (box.left * w > bw + 4 || box.top * h > bh + 4) {
+            var br = 0.0; var bg = 0.0; var bb = 0.0
+            for (y in 0 until bh) for (x in 0 until bw) { val c = pixels[y * w + x]; br += (c shr 16) and 0xFF; bg += (c shr 8) and 0xFF; bb += c and 0xFF }
+            val bn = (bw * bh).toDouble(); bgMean = doubleArrayOf(br / bn, bg / bn, bb / bn)
         }
         if (n == 0) return FaceObservation(tNanos, box, 0.0, 0.0, 0.0, false, 0.0, 0.0, 0.0, 0.0, motion)
 
@@ -86,7 +91,7 @@ class FaceTracker(private val ctx: Context) {
         val hasBlend = Blendshapes.usable(scores)
         return FaceObservation(
             tNanos, box, sr / n, sg / n, sb / n, hasBlend,
-            Blendshapes.eyeClosure(scores), Blendshapes.jawOpen(scores), Blendshapes.gazeX(scores), Blendshapes.gazeY(scores), motion, rects,
+            Blendshapes.eyeClosure(scores), Blendshapes.jawOpen(scores), Blendshapes.gazeX(scores), Blendshapes.gazeY(scores), motion, rects, perRoi, bgMean,
         )
     }
 

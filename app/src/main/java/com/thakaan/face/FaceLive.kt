@@ -48,12 +48,17 @@ class FaceLiveSession(private val ctx: Context) {
     private var lastRawEye: Pair<Double, Double>? = null
 
     // optional recording of the colour numbers (never pictures) so the pulse method can be tuned on real traces
-    private class Rec(val t: Long, val r: Double, val g: Double, val b: Double, val found: Boolean, val motion: Double, val eye: Double, val jaw: Double)
+    private class Rec(val t: Long, val r: Double, val g: Double, val b: Double, val found: Boolean, val motion: Double, val eye: Double, val jaw: Double, val rois: List<DoubleArray>, val bg: DoubleArray?)
     private val rec = ArrayList<Rec>()
     private val recAcc = ArrayList<FloatArray>()
     @Volatile var recording = false; private set
     private var recStartT = 0L
     private var accListener: SensorEventListener? = null
+
+    private fun extra(p: Rec): String {
+        fun tri(a: DoubleArray?) = if (a == null) ",,," else ",%.3f,%.3f,%.3f".format(a[0], a[1], a[2])
+        return tri(p.rois.getOrNull(0)) + tri(p.rois.getOrNull(1)) + tri(p.rois.getOrNull(2)) + tri(p.bg)
+    }
 
     fun recordedSeconds(): Int = synchronized(rec) { if (rec.size < 2) 0 else ((rec.last().t - rec.first().t) / 1_000_000_000L).toInt() }
 
@@ -81,9 +86,9 @@ class FaceLiveSession(private val ctx: Context) {
         val base = "face_live_${System.currentTimeMillis()}"
         val locked = camera.applied?.aeLocked == true
         File(ctx.filesDir, "$base.csv").bufferedWriter().use { w ->
-            w.write("t_ms,r,g,b,face,motion,eye_closure,jaw_open,ae_locked\n")
+            w.write("t_ms,r,g,b,face,motion,eye_closure,jaw_open,ae_locked,f_r,f_g,f_b,l_r,l_g,l_b,rc_r,rc_g,rc_b,bg_r,bg_g,bg_b\n")
             val t0 = r.first().t
-            for (p in r) w.write("%d,%.3f,%.3f,%.3f,%d,%.4f,%.3f,%.3f,%d\n".format((p.t - t0) / 1_000_000L, p.r, p.g, p.b, if (p.found) 1 else 0, p.motion, p.eye, p.jaw, if (locked) 1 else 0))
+            for (p in r) w.write("%d,%.3f,%.3f,%.3f,%d,%.4f,%.3f,%.3f,%d%s\n".format((p.t - t0) / 1_000_000L, p.r, p.g, p.b, if (p.found) 1 else 0, p.motion, p.eye, p.jaw, if (locked) 1 else 0, extra(p)))
         }
         File(ctx.filesDir, "${base}_acc.csv").bufferedWriter().use { w ->
             w.write("t_ms,ax,ay,az\n")
@@ -109,7 +114,7 @@ class FaceLiveSession(private val ctx: Context) {
                 val obs = tracker.track(bmp, px, t)
                 lastObs = obs
                 if (recording) synchronized(rec) {
-                    if (rec.size < MAX_REC_FRAMES) rec += Rec(t, obs.r, obs.g, obs.b, obs.box != null, obs.motion, obs.eyeClosure, obs.jawOpen)
+                    if (rec.size < MAX_REC_FRAMES) rec += Rec(t, obs.r, obs.g, obs.b, obs.box != null, obs.motion, obs.eyeClosure, obs.jawOpen, obs.roiMeans, obs.background)
                 }
                 synchronized(this) {
                     frames += obs.toFaceFrame(); fatigue += obs.toFatigueFrame()
