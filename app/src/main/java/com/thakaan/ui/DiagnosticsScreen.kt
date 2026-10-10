@@ -133,6 +133,14 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                         Button(onClick = { ks = com.thakaan.audit.KeystoreSelfTest.run(ctx) }) { Text("Keystore signing", fontSize = 14.sp) }
                         Button(onClick = { voices = delivery.voiceStatus() }) { Text("Voices", fontSize = 14.sp) }
                     }
+                    var face by remember { mutableStateOf<String?>(null) }
+                    Button(onClick = {
+                        val t = com.thakaan.face.FaceTracker(ctx)
+                        val err = t.open()
+                        t.close()
+                        face = err ?: "model loads from the app, no network used"
+                    }) { Text("Face model", fontSize = 14.sp) }
+                    face?.let { Line("Face model", it, ok = it.startsWith("model loads")) }
                     ks?.forEach { Line(it.name, it.detail, ok = it.ok) }
                     voices?.forEach { (l, s) -> Line("Voice ${l.tag}", s, ok = s == "voice installed") }
                 }

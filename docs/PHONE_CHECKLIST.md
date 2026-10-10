@@ -48,3 +48,13 @@ Build and install: `gradlew :app:installDebug` (JAVA_HOME = Android Studio's `jb
 - [ ] #53 console: run `python -I tools/console/serve.py`, tap Copy status on the phone, paste into the host page; the level and coarse reasons show, no raw numbers; the QR opens the read-only view on a second device.
 - [ ] #42 Safety tab: 5/5 PASS and each guard switch turns its row red.
 - [ ] #56 airplane mode: enable airplane mode, then run a full replay, a route and a quick check; nothing fails, and no network permission is listed in app info.
+
+## Face sensing (#31), all untested on the phone (written 2026-10-10, 335 laptop tests green)
+- [ ] Diagnostics, Device self-tests, "Face model": loads with **airplane mode on** (the model is inside the APK; no network).
+- [ ] Front camera: Face check opens, shows "Face found" when the face is centred, names the problem (closer, back, centre, cut off) otherwise.
+- [ ] Camera: steady frame rate and AE/AWB lock working on this phone (the screen shows "camera settling" until the lock is applied). If the frame rate is uneven the pulse is rejected as "camera dropped frames": record how often.
+- [ ] Rested baseline: tick "I feel rested", run once in good light, see "Saved as your normal". Then run three more normal checks: they should say "Compared with your normal" and nothing is flagged.
+- [ ] Fatigue signals: blink normally (blinks about 10 to 25 a minute), then deliberately close your eyes for 1 s three times (long closures should count 3), then fake a long yawn (yawn should count 1). Talking must not count as a yawn.
+- [ ] Squint: face a bright window; a squint reading must say "bright light is making you squint", not tiredness.
+- [ ] Face pulse next to a watch or pulse oximeter: five attempts. Record face HR vs reference. Until this is done, NO accuracy claim about the face pulse. Try darker and lighter skin among testers, and indoors vs shade; direct sun is expected to fail.
+- [ ] Forehead thermal check: not wired to a screen yet (logic only). Needs a screen and a temperature sensor source on this phone first.

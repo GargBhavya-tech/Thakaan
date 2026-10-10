@@ -60,6 +60,8 @@ dependencies {
     implementation("com.google.ai.edge.litert:litert-gpu:1.4.0")
     implementation("com.qualcomm.qti:qnn-runtime:2.51.0")
     implementation("com.qualcomm.qti:qnn-litert-delegate:2.51.0")
+    // Face landmarks and blendshapes for the optional face checks (#31); the model file is a local asset, no network at run time.
+    implementation("com.google.mediapipe:tasks-vision:0.10.21")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250107")

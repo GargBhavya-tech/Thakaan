@@ -28,6 +28,7 @@ import com.thakaan.settings.checkInDue
 import com.thakaan.ui.CheckInScreen
 import com.thakaan.ui.AlertDelivery
 import com.thakaan.ui.OnboardingScreen
+import com.thakaan.ui.FaceCheckScreen
 import com.thakaan.ui.QuickCheckScreen
 import com.thakaan.ui.SafetyScreen
 import com.thakaan.ui.HomeScreen
@@ -79,7 +80,9 @@ class MainActivity : ComponentActivity() {
             var chhaya by remember { mutableStateOf(false) }
             var safety by remember { mutableStateOf(false) }
             var quick by remember { mutableStateOf(false) }
+            var face by remember { mutableStateOf(false) }
             if (quick) { QuickCheckScreen(onBack = { quick = false }); return@setContent }
+            if (face) { FaceCheckScreen(onBack = { face = false }); return@setContent }
             if (chhaya) { ChhayaScreen(onBack = { chhaya = false }); return@setContent }
             if (safety) { SafetyScreen(onBack = { safety = false }); return@setContent }
             if (diagnostics) {
@@ -91,6 +94,7 @@ class MainActivity : ComponentActivity() {
                 onOpenChhaya = { chhaya = true },
                 onOpenSafety = { safety = true },
                 onOpenQuickCheck = { quick = true },
+                onOpenFaceCheck = { face = true },
                 running = running,
                 recording = recording,
                 replaying = replaying,

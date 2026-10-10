@@ -61,7 +61,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 28 | Onboarding and cool baseline | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #27 |
 | [~] | 29 | Adaptive R and drift handling | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #26 |
 | [ ] | 30 | Chest SCG (P3) | A | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #6, #13 |
-| [ ] | 31 | Face rPPG and forehead thermistor (P1, P14) | A | ⬜ SEED / PITCH-ONLY | 🟢 GREEN | Stretch | #6, #8 |
+| [~] | 31 | Face rPPG and forehead thermistor (P1, P14) | A | ⬜ SEED / PITCH-ONLY | 🟢 GREEN | Stretch | #6, #8 |
 
 ## Phase 5: Brain battery
 

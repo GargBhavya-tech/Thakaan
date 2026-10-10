@@ -1,4 +1,4 @@
-﻿# Pre-fetched assets (ticket #4)
+# Pre-fetched assets (ticket #4)
 
 Never download at demo time: venue Wi-Fi with 100+ teams is unreliable. Large files are not committed (see `.gitignore`); stage them on the laptop and push phone-side files by Office Kit. Fill this table as each asset is fetched and verified (it must open on the laptop; log size and date).
 
@@ -9,6 +9,7 @@ Never download at demo time: venue Wi-Fi with 100+ teams is unreliable. Large fi
 | `lwbgt` C source (Liljegren WBGT) | #19 | [x] | n/a | 0.4 MB | 2026-10-10 | builds via NDK 26.1 CMake (arm64) into libthakaan_wbgt.so |
 | `ectemp_vectors.json` (7 reference cases) | #22 | [x] | [x] | 0.1 MB | 2026-10-10 | assets/ectemp_vectors.json and app/src/main/assets/ |
 | Gemma 4 E2B `.litertlm` (~2 GB) | #57 | [x] | [ ] | 1915 MB | 2026-10-10 | assets/models/, gitignored; push to phone by Office Kit / adb |
+| MediaPipe `face_landmarker.task` (face detector, 478 landmarks, blendshapes) | #31 | [x] | [x] (inside the APK) | 3.76 MB | 2026-10-10 | app/src/main/assets/models/, gitignored; from storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/; library com.google.mediapipe:tasks-vision:0.10.21 from Google Maven |
 | OpenAQ API key | #58 | [ ] | n/a | | | stretch; never commit |
 | Chhaya graph + shade layer (generated) | #46, #47 | [x] | [x] | 1.0 MB | 2026-10-10 | tools/chhaya/build_graph.py + shade.py; copies in app/src/main/assets/chhaya |
 

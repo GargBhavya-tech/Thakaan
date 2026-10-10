@@ -42,3 +42,6 @@ tools/smoketest/build/
 .claude/scheduled_tasks.lock
 
 console/viewer_qr.svg
+
+# Face landmarker model (staged locally, listed in docs/ASSETS.md)
+app/src/main/assets/models/*.task

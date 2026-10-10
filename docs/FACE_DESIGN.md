@@ -1,6 +1,6 @@
 # Face sensing design (ticket 31 and what hangs off it)
 
-Status: design plus first code. Everything here is **optional, off the critical path and never replaces the fingertip pulse**. The ticket says so ("never let it replace fingertip"), and the research below is why.
+Status (2026-10-10): pulse, breathing, fatigue, forehead thermal logic, frame guidance and the camera, tracker and screen are written. 56 face tests pass on the laptop with synthetic data. **Nothing here has been run on the phone yet.** The forehead thermal check has logic only: no screen and no confirmed temperature-sensor source. Everything here is **optional, off the critical path and never replaces the fingertip pulse**. The ticket says so ("never let it replace fingertip"), and the research below is why.
 
 ## What is in scope
 
