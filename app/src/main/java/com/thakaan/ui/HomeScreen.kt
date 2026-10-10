@@ -69,6 +69,7 @@ fun HomeScreen(
     onOpenDiagnostics: () -> Unit,
     onOpenChhaya: () -> Unit = {},
     onOpenSafety: () -> Unit = {},
+    onOpenQuickCheck: () -> Unit = {},
 ) {
     MaterialTheme(colorScheme = SunScheme) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -133,6 +134,7 @@ fun HomeScreen(
                     Button(onClick = { copyToClipboard(ctx, "Thakaan status", ShiftRuntime.crewStatusSealed("Me", null, true)) }, enabled = snap != null) { Text("Copy status for console", fontSize = 14.sp) }
                     Button(onClick = { copyToClipboard(ctx, "Thakaan exposure log", ShiftRuntime.exportChain()) }, enabled = snap != null) { Text("Copy exposure log", fontSize = 14.sp) }
                 }
+                Button(onClick = onOpenQuickCheck, Modifier.fillMaxWidth()) { Text("Quick check (90 s)", fontSize = 20.sp) }
                 Button(onClick = onOpenChhaya, Modifier.fillMaxWidth()) { Text("Chhaya route (shade and water)", fontSize = 20.sp) }
                 Button(onClick = onOpenSafety, Modifier.fillMaxWidth()) { Text("Safety checks", fontSize = 18.sp) }
                 Button(onClick = onOpenDiagnostics, Modifier.fillMaxWidth()) { Text("Diagnostics", fontSize = 18.sp) }

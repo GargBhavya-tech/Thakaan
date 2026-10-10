@@ -21,6 +21,7 @@ import com.thakaan.sensorhub.SensorHubService
 import com.thakaan.sensorhub.StreamRecorder
 import com.thakaan.ui.ChhayaScreen
 import com.thakaan.ui.DiagnosticsScreen
+import com.thakaan.ui.QuickCheckScreen
 import com.thakaan.ui.SafetyScreen
 import com.thakaan.ui.HomeScreen
 import kotlinx.coroutines.delay
@@ -47,6 +48,8 @@ class MainActivity : ComponentActivity() {
             var diagnostics by remember { mutableStateOf(false) }
             var chhaya by remember { mutableStateOf(false) }
             var safety by remember { mutableStateOf(false) }
+            var quick by remember { mutableStateOf(false) }
+            if (quick) { QuickCheckScreen(onBack = { quick = false }); return@setContent }
             if (chhaya) { ChhayaScreen(onBack = { chhaya = false }); return@setContent }
             if (safety) { SafetyScreen(onBack = { safety = false }); return@setContent }
             if (diagnostics) {
@@ -57,6 +60,7 @@ class MainActivity : ComponentActivity() {
                 onOpenDiagnostics = { diagnostics = true },
                 onOpenChhaya = { chhaya = true },
                 onOpenSafety = { safety = true },
+                onOpenQuickCheck = { quick = true },
                 running = running,
                 recording = recording,
                 replaying = replaying,
