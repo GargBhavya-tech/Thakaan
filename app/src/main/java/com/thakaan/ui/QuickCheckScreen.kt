@@ -163,6 +163,8 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
     var secs by remember(round) { mutableIntStateOf(0) }
     var failed by remember(round) { mutableStateOf<String?>(null) }
     var wave by remember(round) { mutableStateOf(listOf<Float>()) }
+    var liveBpm by remember(round) { mutableStateOf<Double?>(null) }
+    var finalNote by remember(round) { mutableStateOf<String?>(null) }
 
     if (!granted) {
         Text("Thakaan needs the camera to read your pulse from your fingertip. Nothing is saved.", fontSize = 18.sp)
@@ -192,7 +194,11 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
     }
     LaunchedEffect(round, granted) {
         val total = CheckStepId.FINGERTIP.seconds
-        while (secs < total && failed == null) { delay(1000); secs += 1 }
+        while (secs < total && failed == null) {
+            delay(1000); secs += 1
+            // running estimate for the person to compare with their own count: display only, never given to the risk engine
+            if (secs >= 10) liveBpm = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { com.thakaan.ppg.FingertipPos.liveBpm(synchronized(frames) { frames.takeLast(450).toList() }) }
+        }
         capture.stop()
         if (failed == null) {
             val snap = synchronized(frames) { frames.toList() }
@@ -228,13 +234,22 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
             if (result.accepted && result.hrBpm != null && !dimmed) {
                 engine.onHeartCheck(SystemClock.elapsedRealtimeNanos(), result.hrBpm, 1.0, stamp, Provenance.REAL)
             } else {
-                failed = if (dimmed) "The light dimmed because the phone is hot. Cool the phone in shade, then try again." else o.advice(CheckStepId.FINGERTIP)
+                failed = (if (dimmed) "The light dimmed because the phone is hot. Cool the phone in shade, then try again." else o.advice(CheckStepId.FINGERTIP)) +
+                    (result.bestEstimateBpm?.takeIf { !dimmed }?.let { " Best guess was about %.0f beats a minute, but it was not steady enough to trust.".format(it) } ?: "")
             }
         }
-        if (failed == null) advance()
+        if (failed == null) {
+            // show the accepted rate for a few seconds so it can be compared with a manual count before the next step
+            o.heart?.hrBpm?.let { finalNote = "Your pulse: about %.0f beats a minute".format(it); delay(6000) }
+            advance()
+        }
     }
     if (failed == null) {
-        Text("${CheckStepId.FINGERTIP.seconds - secs} s", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        finalNote?.let { Text(it, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B7F3B)) }
+        if (finalNote == null) {
+            Text("${CheckStepId.FINGERTIP.seconds - secs} s", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(liveBpm?.let { "Live estimate: about %.0f beats a minute (not final)".format(it) } ?: "Finding your pulse...", fontSize = 20.sp)
+        }
         Waveform(wave)
     } else {
         StepFailed(failed!!, retry, skip)

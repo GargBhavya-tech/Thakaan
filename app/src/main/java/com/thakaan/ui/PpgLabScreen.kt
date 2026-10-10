@@ -65,6 +65,7 @@ fun PpgLabScreen(onBack: () -> Unit) {
             var redWave by remember { mutableStateOf(listOf<Float>()) }
             var greenWave by remember { mutableStateOf(listOf<Float>()) }
             var strength by remember { mutableStateOf("") }
+            var liveHr by remember { mutableStateOf("") }
             val frames = remember { ArrayList<PpgFrame>() }
             val capture = remember { CameraPpgCapture(ctx) }
 
@@ -89,6 +90,7 @@ fun PpgLabScreen(onBack: () -> Unit) {
                     secsLeft = (SECONDS - (SystemClock.elapsedRealtime() - startMs) / 1000).toInt().coerceAtLeast(0)
                     val snap = synchronized(frames) { frames.takeLast(240).toList() } // last 8 s at 30 fps
                     redWave = LiveWave.pulse(snap.map { it.red }); greenWave = LiveWave.pulse(snap.map { it.green })
+                    liveHr = com.thakaan.ppg.FingertipPos.liveBpm(synchronized(frames) { frames.takeLast(450).toList() })?.let { "live pulse estimate: about %.0f beats a minute".format(it) } ?: ""
                     strength = "pulse strength: red %.2f%%, green %.2f%%".format(LiveWave.strengthPct(snap.map { it.red }), LiveWave.strengthPct(snap.map { it.green }))
                 }
                 capture.stop()
@@ -118,6 +120,7 @@ fun PpgLabScreen(onBack: () -> Unit) {
                 Wave(redWave, Color(0xFFB00020))
                 Text("Green (pulse component, last 8 s)", fontSize = 14.sp)
                 Wave(greenWave, Color(0xFF1B7F3B))
+                if (liveHr.isNotEmpty()) Text(liveHr, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 if (strength.isNotEmpty()) Text(strength, fontSize = 15.sp)
                 if (!granted) {
                     Button(onClick = { ask.launch(Manifest.permission.CAMERA) }, Modifier.fillMaxWidth().height(56.dp)) { Text("Allow camera", fontSize = 20.sp) }

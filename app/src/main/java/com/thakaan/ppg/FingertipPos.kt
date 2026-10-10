@@ -15,6 +15,8 @@ class FingertipPosResult(
     val consistentFraction: Double,
     val windowHrs: List<Double>,
     val reason: String?,
+    /** Median of the window rates even when the capture was rejected, for display only ("best guess, not trusted"). */
+    val estimateBpm: Double? = null,
 )
 
 /**
@@ -68,12 +70,12 @@ object FingertipPos {
         val sorted = hrs.sorted()
         val median = if (sorted.size % 2 == 1) sorted[sorted.size / 2] else 0.5 * (sorted[sorted.size / 2 - 1] + sorted[sorted.size / 2])
         val frac = hrs.count { abs(it - median) <= CONSISTENT_TOLERANCE_BPM }.toDouble() / hrs.size
-        if (median !in MIN_HR..MAX_HR) return FingertipPosResult(false, null, frac, hrs, "rate out of range")
-        if (frac < MIN_CONSISTENT_FRACTION) return FingertipPosResult(false, null, frac, hrs, "the estimate kept changing")
+        if (median !in MIN_HR..MAX_HR) return FingertipPosResult(false, null, frac, hrs, "rate out of range", median)
+        if (frac < MIN_CONSISTENT_FRACTION) return FingertipPosResult(false, null, frac, hrs, "the estimate kept changing", median)
 
         // whole-capture agreement with the POS result and with two independent colour views
-        val whole = peakBpm(pos) ?: return FingertipPosResult(false, null, frac, hrs, "no clear pulse")
-        if (abs(whole - median) > CONSISTENT_TOLERANCE_BPM) return FingertipPosResult(false, null, frac, hrs, "whole capture disagrees")
+        val whole = peakBpm(pos) ?: return FingertipPosResult(false, null, frac, hrs, "no clear pulse", median)
+        if (abs(whole - median) > CONSISTENT_TOLERANCE_BPM) return FingertipPosResult(false, null, frac, hrs, "whole capture disagrees", median)
         val mr = r.average(); val mg = g.average(); val mb = b.average()
         // two independent projections that both carry the pulse well: green minus blue and green minus red (each normalised)
         val gMinusB = DoubleArray(r.size) { g[it] / mg - b[it] / mb }
@@ -81,8 +83,29 @@ object FingertipPos {
         val viewGb = peakBpm(core(Dsp.bandpass(gMinusB, FS, 0.7, 3.0)))
         val viewGr = peakBpm(core(Dsp.bandpass(gMinusR, FS, 0.7, 3.0)))
         val agree = listOf(viewGb, viewGr).count { it != null && abs(it - median) <= VIEW_TOLERANCE_BPM }
-        if (agree < 1) return FingertipPosResult(false, null, frac, hrs, "the colour views disagree")
-        return FingertipPosResult(true, median, frac, hrs, null)
+        if (agree < 1) return FingertipPosResult(false, null, frac, hrs, "the colour views disagree", median)
+        return FingertipPosResult(true, median, frac, hrs, null, median)
+    }
+
+    /**
+     * A running estimate for the screen while the finger is on the lens: POS over the last [seconds] seconds. DISPLAY ONLY,
+     * never fed to the risk engine and never called accepted. Null when there is no blue channel or too little data.
+     */
+    fun liveBpm(frames: List<PpgFrame>, seconds: Double = 10.0): Double? {
+        if (frames.size < 90) return null
+        val tEnd = frames.last().tNanos
+        val recent = frames.filter { (tEnd - it.tNanos) / 1e9 <= seconds }
+        if (recent.size < 90 || recent.sumOf { it.blue } / recent.size < 1.0) return null
+        return try {
+            val t0 = recent.first().tNanos
+            val t = DoubleArray(recent.size) { (recent[it].tNanos - t0) / 1e9 }
+            val r = Dsp.resampleUniform(t, DoubleArray(recent.size) { recent[it].red }, FS).second
+            val g = Dsp.resampleUniform(t, DoubleArray(recent.size) { recent[it].green }, FS).second
+            val b = Dsp.resampleUniform(t, DoubleArray(recent.size) { recent[it].blue }, FS).second
+            val trim = (FaceRppg.POS_WINDOW_SEC * FS).roundToInt()
+            val x = Dsp.bandpass(FaceRppg.pos(r, g, b, FS), FS, 0.7, 3.0)
+            peakBpm(if (x.size > 4 * trim) x.copyOfRange(trim, x.size - trim) else x)
+        } catch (_: IllegalArgumentException) { null }
     }
 
     /** Strongest spectral line between 45 and 170 bpm, on a 0.6 bpm grid. */

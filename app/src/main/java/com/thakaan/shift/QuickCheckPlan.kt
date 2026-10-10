@@ -54,7 +54,13 @@ class QuickCheckOutcome {
     }
 
     fun summary(): List<String> = buildList {
-        heart?.let { add(if (it.accepted) "Heart check done" else "Heart check not usable: ${it.prompt ?: "try again"}") }
+        heart?.let {
+            add(
+                if (it.accepted) "Heart rate from your fingertip: about %.0f beats a minute".format(it.hrBpm ?: 0.0)
+                else "Heart check not trusted: ${it.prompt ?: "try again"}" +
+                    (it.bestEstimateBpm?.let { b -> " (best guess was about %.0f, not used)".format(b) } ?: ""),
+            )
+        }
         tremor?.let { add(if (!it.valid) "Hand hold not usable" else if (it.liftingConfound) "Hand hold taken just after lifting: noted, not scored" else "Hand hold done") }
         fitts?.let { add(if (it.valid) "Tapping done" else "Tapping not usable") }
         symptoms?.let { add(if (it.isEmpty()) "No symptoms reported" else "Symptoms reported") }

@@ -37,11 +37,13 @@ class CheckResult(
     val respirationBpm: Double?,
     val captureSeconds: Double,
     val context: CheckContext,
+    /** For display only: the best guess of a REJECTED capture, shown as "not trusted". Never given to the risk engine. */
+    val bestEstimateBpm: Double? = null,
 )
 
 object Checks {
-    private fun rejected(kind: CheckKind, reasons: List<Reason>, secs: Double, ctx: CheckContext) = CheckResult(
-        kind, false, reasons, reasons.minByOrNull { it.ordinal }?.prompt, null, null, false, null, null, null, secs, ctx,
+    private fun rejected(kind: CheckKind, reasons: List<Reason>, secs: Double, ctx: CheckContext, estimate: Double? = null) = CheckResult(
+        kind, false, reasons, reasons.minByOrNull { it.ordinal }?.prompt, null, null, false, null, null, null, secs, ctx, estimate,
     )
 
     fun evaluate(kind: CheckKind, frames: List<PpgFrame>, ctx: CheckContext): CheckResult {
@@ -67,10 +69,10 @@ object Checks {
         if (!oldOk && !posOk) {
             // when the colour test ran and found the reading unsteady, say that, rather than a misleading "wipe the lens"
             val reasons = if (pos != null && basicsOk) listOf(Reason.UNSTEADY) else q.reasons
-            return rejected(kind, reasons, secs, ctx)
+            return rejected(kind, reasons, secs, ctx, pos?.estimateBpm ?: analysis.hrBpm)
         }
         // both accepted but far apart: neither can be trusted
-        if (oldOk && posOk && abs(analysis.hrBpm!! - pos!!.hrBpm!!) > 8.0) return rejected(kind, listOf(Reason.HR_DISAGREE), secs, ctx)
+        if (oldOk && posOk && abs(analysis.hrBpm!! - pos!!.hrBpm!!) > 8.0) return rejected(kind, listOf(Reason.HR_DISAGREE), secs, ctx, pos.estimateBpm)
 
         val hr = if (posOk) pos!!.hrBpm!! else analysis.hrBpm!!
         if (kind == CheckKind.QUICK) {
