@@ -16,6 +16,14 @@ The first text of this bible described the product as designed. Three things hav
 - HRV and PRV need at least 60 s of clean pulse. Windows under 60 s never produce RMSSD.
 - Provenance (REAL, REPLAY, SIMULATED), the safety invariant, the hash-chained log and the honest limitations are core, not add-ons.
 
+**Product changes (11 Oct 2026, app experience).** The app is meant to feel like a real app a worker opens on the job, not a lab. See "Worker panels and the app experience".
+
+- Four bottom tabs per kind of work, one calm design system, and every lab, recorder and developer tool moved into Settings.
+- The worker says what job they do (delivery partner, construction, police or security, other gig work). The job decides the tabs and the Quick check steps.
+- Delivery partners get a Ride panel: a pickup check that says fit to ride or rest, then a riding screen with turn-by-turn directions beside the live score, with the front camera switched on and off by speed and position.
+- Everyone else gets a shift panel: scheduled checks with a reminder, the score, and the chance of reaching Strained in the next 20 minutes from heat, dust and the trend, with one line of advice.
+- The worker never sees "not sure" wording. A clean number is shown only when the reading passed its gates; otherwise there is no number and one instruction.
+
 **Build decisions that differ from the first text** (each is marked **As built** where it applies):
 
 - Routing is our own Dijkstra over an OSM-derived graph, not GraphHopper or Valhalla.
@@ -364,6 +372,77 @@ Thakaan detects where the phone is and switches modes, so the same app serves a 
 
 **Honest state.** Activity, mode and stop detection are built with the five states Moving, Stopping, Stopped, Walking, Resting and two clocks (time since stop, time since posture change). A full device thermal governor that dims the screen and duty-cycles the NPU and GNSS is not built; only the capture guard is. **Site extras not built:** crew roll-call and the rotation advisor. **Built, not run on two phones:** buddy pairing over the crew mesh (a shared code; if one phone reaches Danger, the buddy's phone is alerted).
 
+## Worker panels and the app experience
+
+*Added 11 Oct 2026. Intent first; the "Honest state" paragraph at the end says what has and has not been seen on the phone.*
+
+### The idea
+
+A worker should open Thakaan and see one answer, not a diagnostic tool. The look is a "calm field instrument": warm off-white ground, dark ink text, one navy accent, amber for caution, red only for alert, tabular numerals so numbers do not jump, custom drawn icons, large tap targets, readable in sun. Everything that exists for development, the demo or the audit (record and replay, the console copy, Safety checks, Diagnostics, the face live view, sensor streams) lives in Settings, so the worker's screens stay clean and the judges can still open them.
+
+### Tabs by kind of work
+
+| Kind of work | Tabs | Panel |
+| --- | --- | --- |
+| Delivery partner | Ride, Today, Route, Report | Ride panel (pickup check, riding screen) |
+| Construction, police or security, other gig | Today, Check, Route, Report | Shift panel (scheduled checks, outlook) |
+
+The worker picks the job in onboarding (the "Your work" step) and can change it in Settings. An unknown value is treated as other gig work. Settings, Quick check, Face check, Safety and Diagnostics open as pages on top of the tabs and have a back arrow.
+
+### Quick check depends on the work
+
+The face check is no longer called optional. Every worker gets a Face check card in the Check tab. What differs is the order and which steps fit the gear the worker wears.
+
+| Work | Steps | Why |
+| --- | --- | --- |
+| Delivery partner | Face, fingertip, symptoms | Hands and voice are busy on a bike; the face is the quickest read |
+| Construction | Fingertip, face, tremor hold, symptoms | Gloves and noise rule out tapping and speech |
+| Police or security | Fingertip, face, Fitts tapping, symptoms | Caps and sunglasses come off for the face step; no quiet place for speech |
+| Other gig | Fingertip, face, tremor, tapping, speech, symptoms | The full set |
+
+The face step tells the worker to take off helmet, goggles, sunglasses or cap, hold the phone at arm's length in good light but not direct sun, and keep still for about 40 seconds. It reads eye closure, yawns and skin colour. Nothing is saved or sent. It never replaces the fingertip check.
+
+### One rule for how readings are shown
+
+The worker sees a clean number only when the reading passed its quality gates (enough clean pulse, a found face, a stable signal). When a reading did not pass, the screen shows no number and one instruction, for example "Do a quick check to read your pulse" or "Pulse not read, hold still and try again". It never shows a guess, a range or a hedge word beside a number.
+
+This keeps the fail-safe rule intact. Showing a failed signal as a sure number would be wrong, and a missing reading still holds or raises the level, never lowers it. Statements about data sources and limits (modelled air, listed water, the heat-strain wellbeing tool, not a medical device) live in Settings, About, and in the Diagnostics labs, which keep their pass and fail detail.
+
+### Delivery partner: the Ride panel
+
+1. **At pickup (restaurant).** The worker sets the drop point by tapping the offline map, then starts the pickup check: face, fingertip, symptoms, about 90 seconds.
+2. **The verdict.** One of four, never a fifth:
+   - **Fit to ride.** The face was read and the level is Cool or Warming with no symptoms and no sign of drowsiness. The map starts.
+   - **Rest 5 minutes and drink water.** Strained, any symptom, or drowsy eyes (eye closure at or above 15% of the time, two or more long closures, or two or more yawns).
+   - **Rest 10 minutes.** Danger. There is no "ride anyway" at Danger.
+   - **Look again.** The face could not be read. A missing or invalid face is never treated as fit.
+   At the rest verdicts below Danger the worker can still choose to ride; Thakaan sits on top of the job and never blocks it (rule 8), but it says plainly what it advises.
+3. **While riding.** One screen: the offline map with the route, the next instruction in big type ("Turn left in 150 m"), and the live score beside it. Directions are turn-by-turn from the same offline road graph; the graph has no street names, so a step says what to do and how far. A stub or hook at the start of the route is never announced.
+4. **The camera is off most of the time.** It runs in short windows so it does not burden or heat the phone:
+   - On when riding at 3 m/s or more for 8 seconds: a window of about 42 seconds, then an 80-second rest (30 seconds after a drowsy window).
+   - Off when stopped (under 1 m/s for 5 seconds), when within 150 m of the drop point, and when the phone is hot.
+   - Unknown speed is treated as riding, so losing GPS never turns the guard off.
+   A drowsy window shows a banner and vibrates. A collapse countdown ("Are you OK?") and the rest advice at Strained or Danger appear on every Ride screen.
+5. **Delivered.** A short summary. For demos indoors a Simulated ride moves along the route without GPS and is marked SIMULATED everywhere it appears.
+
+### Construction, police, security and other gig: the shift panel
+
+- **Scheduled checks.** A check comes due every 45 minutes at Cool, 30 at Warming, 15 at Strained and 10 at Danger. A card on Today says when one is due and a reminder is vibrated, spoken in the worker's language (hi, kn, ta, te, en) and posted as a notification; it repeats every 10 minutes while overdue. Each check is the worker's Quick check for their kind of work, with the face step included.
+- **Score and outlook.** Today shows the level and the strain gauge, and an outlook card: the chance of reaching Strained in the next 20 minutes, with one line of advice.
+- **How the outlook is made.** From the current strain score, its recent slope, the rise in WBGT expected from the weather forecast (heat), and a rising PM2.5 (dust). The spread is wider when the score is uncertain. It is a design estimate, not a fitted or calibrated probability. At Strained or Danger it says 100% and the advice changes to act now.
+- **Advice, one line, in the worker's language.** Drink water (low and rising), take a rest in shade (high chance or Strained), be cautious (heat rising but not there yet). The advice comes from fixed lines chosen by the engine; the language model never changes a level or the percentage (rule 5).
+
+### Maps and layers
+
+The Route tab has a Shade layer and layers for Water, Phone signal (the rider log of signal strength by road), Traffic (an assumed typical pattern by road class and hour, labelled assumed, not live) and Air (CPCB bands for modelled PM2.5). The legend wraps on narrow phones. After dark the Shade layer says the sun is down, and the router stops chasing shade. The flood-prone layer was dropped on purpose (it needed elevation and drain data downloads); reported floods still close roads.
+
+### Honest state
+
+- **Built, tests green:** work-type picker, tabs, design system, all wording rules, Quick check by work, pickup verdict rules, camera policy, directions, simulated ride, scheduled checks, outlook, layers.
+- **Seen on the phone:** the redesigned screens, the work-type picker and Check tab text, the face step running inside Quick check, the shift panel with the outlook card and the check-due reminder, the Ride tab, pickup check wording and the Look again and Rest verdicts, the simulated riding screen with camera On and Off.
+- **Not verified:** the riding camera on a real moving bike with a real face, drowsy detection and its vibration, the Fit verdict with a readable face, the Delivered summary, an outlook above 0% in real heat, the Signal layer (the test phone has no SIM), and the first-run reminder, which did not appear once and is unexplained.
+- **Not claimed:** the outlook percentage is not calibrated; the drowsiness limits are design values, not tuned on riders; the face check is a wellbeing cue, not a drowsiness test or a medical one.
+
 ## Supervisor console and Office Kit
 
 The supervisor sees crew risk levels and alerts, never raw heart rate or voice.
@@ -441,6 +520,7 @@ The home screen is one big strain gauge a rider can read in half a second at a r
 
 1. Language pick.
 2. Body size (age, sex, weight, height), heat experience.
+   *Your work:* delivery partner, construction, police or security, other gig. This sets the tabs and the Quick check steps.
 3. Emergency number and what is shared.
 4. Daily 3-tap check-in (slept, ate, unwell), shown once per day.
 5. Cool baseline: fingertip check, sit-to-stand, tremor, tapping, speech code, 30 s walk (partly built).
@@ -450,8 +530,13 @@ The home screen is one big strain gauge a rider can read in half a second at a r
 | Screen | Contents |
 | --- | --- |
 | Home / gauge | Level with colour, shape and words, confidence halo, forecast "Strained in about N min", sun dose, rest and water debt, air dose today, provenance chip, one big action, Replay 20x |
+| Ride (delivery) | Drop-point map, route time and distance, Simulated ride switch, Start pickup check |
+| Pickup check | Face, fingertip, symptoms, then the verdict: fit to ride, rest 5 minutes and water, rest 10 minutes, or look again |
+| Riding | Offline map and the next turn in big type beside the live score; camera On or Off, speed; drowsy banner; collapse countdown |
+| Today (shift panel) | Level and gauge, four numbers, check-due card, outlook card with the chance of Strained in the next 20 minutes and one line of advice |
+| Settings | Your work, Demo tools (record, replay), Share, Checks and labs, Sensor streams, About with sources and limits |
 | Chhaya map | Route with shaded segments, water and shade pins, "+2 min, 70% shade" chip, layers (Shade, Water, Floods, Phone signal, Traffic, Air), flood report, OSM credit |
-| Quick check | Fingertip with live waveform and perfusion ring, tremor hold, Fitts tapping, speech code, symptoms; about 95 s with speech |
+| Quick check | Steps depend on the work (see Worker panels): face, fingertip with live waveform and perfusion ring, tremor hold, Fitts tapping, speech code, symptoms; 85 to 125 s |
 | Alert takeover | Level colour, one instruction, route to shade, "I'm OK" / "I'm resting" |
 | Cooling coach | 10-minute timer, steps, re-check at the end |
 | Shift report | Time at each level, peaks, changes, gaps, provenance mix, levels-only copy |
@@ -760,4 +845,7 @@ F_e is very large (the road is effectively closed) for an edge with an active re
 | --- | --- |
 | Shadow model | A learned model that runs beside the rule-based path, is shown on Diagnostics, and never decides a level |
 | Crew mesh | Bluetooth LE extended advertising between nearby phones for flood reports and buddy alerts |
+| Pickup check | The delivery partner's check at the restaurant that gives the verdict: fit to ride, rest, or look again |
+| Outlook | The estimated chance of reaching Strained in the next 20 minutes, from heat, dust and the strain trend; a design estimate, not calibrated |
+| Camera window | A short stretch of front-camera watching while riding, switched on and off by speed, position and heat |
 | Claim ledger | The list in `docs/PITCH.md` of every number the pitch may say, with its source and state |
