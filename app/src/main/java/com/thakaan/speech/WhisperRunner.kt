@@ -22,6 +22,24 @@ class WhisperRunner(private val dir: File) : AutoCloseable {
         private const val CROSS = 4 * 6 * 1500 * 64
         private const val VOCAB = 51865
         val LANGUAGES = listOf("en", "hi", "kn")
+
+        /** Reads a 16-bit PCM WAV (any rate, mono or stereo) as mono 16 kHz floats, or null if it is not one. For the self-test clip. */
+        fun readWav(f: File): FloatArray? {
+            val b = java.nio.ByteBuffer.wrap(f.readBytes()).order(ByteOrder.LITTLE_ENDIAN)
+            if (b.limit() < 44 || b.getInt(0) != 0x46464952 || b.getInt(8) != 0x45564157) return null
+            var pos = 12; var rate = 0; var ch = 0; var bits = 0; var dataAt = -1; var dataLen = 0
+            while (pos + 8 <= b.limit()) {
+                val id = b.getInt(pos); val len = b.getInt(pos + 4)
+                if (id == 0x20746d66) { ch = b.getShort(pos + 10).toInt(); rate = b.getInt(pos + 12); bits = b.getShort(pos + 22).toInt() }
+                if (id == 0x61746164) { dataAt = pos + 8; dataLen = minOf(len, b.limit() - dataAt); break }
+                pos += 8 + len + (len and 1)
+            }
+            if (dataAt < 0 || bits != 16 || ch !in 1..2 || rate <= 0) return null
+            val n = dataLen / (2 * ch)
+            val mono = FloatArray(n) { i -> var v = 0f; for (c in 0 until ch) v += b.getShort(dataAt + (i * ch + c) * 2) / 32768f; v / ch }
+            val outN = (n.toLong() * 16000 / rate).toInt()
+            return FloatArray(outN) { i -> val t = i * rate / 16000.0; val a = t.toInt().coerceAtMost(n - 1); val c = (a + 1).coerceAtMost(n - 1); val fr = (t - a).toFloat(); mono[a] * (1 - fr) + mono[c] * fr }
+        }
     }
 
     private val tok = WhisperTokenizer(dir)

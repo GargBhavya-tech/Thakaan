@@ -39,6 +39,14 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+    private companion object {
+        /**
+         * Live sensing belongs to the process, not to the screen: the sensor service keeps running when the screen is closed or
+         * swiped away, so the engine that turns its readings into a level must too. Stopped only by Stop sensing.
+         */
+        val liveScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // The demo and the 10-minute stream test run with the screen on.
@@ -66,11 +74,11 @@ class MainActivity : ComponentActivity() {
                 CheckInScreen(onAnswer = { slept, ate, unwell -> checkIns.save(DailyCheckIn(today(), slept, ate, unwell)); checkInShown = false })
                 return@setContent
             }
-            var running by remember { mutableStateOf(false) }
+            var running by remember { mutableStateOf(ShiftRuntime.isRunning) }
             val perms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
                 // Start whatever the grants allow; the service skips location if it was refused.
                 start()
-                ShiftRuntime.start(applicationContext, lifecycleScope, profile = profile, onAlert = { delivery.deliver(it) })
+                ShiftRuntime.start(applicationContext, liveScope, profile = profile, onAlert = { delivery.deliver(it) })
                 applyCheckIn()
                 running = true
             }

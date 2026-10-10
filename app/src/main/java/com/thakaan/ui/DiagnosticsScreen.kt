@@ -142,6 +142,21 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     }
                     Button(onClick = { chestLab = true }) { Text("Chest lab", fontSize = 14.sp) }
                     Button(onClick = { speechLab = true }) { Text("Speech lab (Whisper)", fontSize = 14.sp) }
+                    var whisperTest by remember { mutableStateOf<String?>(null) }
+                    val wscope = androidx.compose.runtime.rememberCoroutineScope()
+                    Button(onClick = {
+                        whisperTest = "running (the first run loads three models)..."
+                        wscope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                            whisperTest = try {
+                                val dir = com.thakaan.inference.ModelFiles.file(ctx, com.thakaan.inference.ModelFiles.WHISPER)
+                                val clip = java.io.File(dir, "selftest.wav")
+                                val pcm = if (clip.exists()) com.thakaan.speech.WhisperRunner.readWav(clip) else null
+                                if (pcm == null) "no selftest.wav next to the model files (push with tools/push_models.sh whisper)"
+                                else com.thakaan.speech.WhisperRunner(dir).use { w -> val r = w.transcribe(pcm, "en"); "heard \"${r.text}\" in %.1f s".format(r.millis / 1000.0) }
+                            } catch (t: Throwable) { "failed: ${t.message}" }
+                        }
+                    }) { Text("Whisper self-test", fontSize = 14.sp) }
+                    whisperTest?.let { Line("Whisper self-test (expects: ten minutes, dizzy)", it, ok = it.startsWith("heard") && it.contains("dizzy", ignoreCase = true)) }
                     var face by remember { mutableStateOf<String?>(null) }
                     Button(onClick = {
                         val t = com.thakaan.face.FaceTracker(ctx)
@@ -235,6 +250,16 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 
 @Composable
 private fun Line(label: String, value: String, ok: Boolean) {
+    val shown = (if (ok) "✓ " else "✗ ") + value
+    val color = if (ok) Color(0xFF1B7F3B) else Color(0xFF9B0000)
+    if (value.length > 24 || label.length + value.length > 40) {
+        // long results go under their label so they read as a sentence instead of a squeezed column
+        Column(Modifier.fillMaxWidth().border(1.dp, Color.Gray, RoundedCornerShape(8.dp)).padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, fontSize = 15.sp)
+            Text(shown, fontSize = 15.sp, color = color, fontWeight = FontWeight.SemiBold)
+        }
+        return
+    }
     Row(
         Modifier.fillMaxWidth().border(1.dp, Color.Gray, RoundedCornerShape(8.dp)).padding(10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -242,6 +267,6 @@ private fun Line(label: String, value: String, ok: Boolean) {
     ) {
         Text(label, fontSize = 15.sp)
         // Colour plus a word/mark so it still reads without colour.
-        Text((if (ok) "✓ " else "✗ ") + value, fontSize = 15.sp, color = if (ok) Color(0xFF1B7F3B) else Color(0xFF9B0000), fontWeight = FontWeight.SemiBold)
+        Text(shown, fontSize = 15.sp, color = color, fontWeight = FontWeight.SemiBold)
     }
 }

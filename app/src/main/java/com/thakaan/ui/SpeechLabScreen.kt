@@ -83,7 +83,7 @@ fun SpeechLabScreen(onBack: () -> Unit) {
                             val res = withContext(Dispatchers.Default) {
                                 runCatching { WhisperRunner(ModelFiles.file(ctx, ModelFiles.WHISPER)).use { it.transcribe(pcm, lang) } }
                             }
-                            res.onSuccess { transcript = it.text.ifEmpty { "(nothing heard)" }; status = "Done in %.1f s, language %s. The recording was dropped.".format(it.millis / 1000.0, it.language) }
+                            res.onSuccess { transcript = it.text.let { t -> if (t.isEmpty() || (t.startsWith("[") && t.endsWith("]"))) "(no speech heard)" else t }; status = "Done in %.1f s, language %s. The recording was dropped.".format(it.millis / 1000.0, it.language) }
                                 .onFailure { status = "Failed: ${it.message}" }
                             busy = false
                         }

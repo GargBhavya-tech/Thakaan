@@ -79,6 +79,9 @@ object ShiftRuntime {
         }
     }
 
+    /** True while the engine is collecting readings (live or replay). The screen reads this so it does not forget a running shift. */
+    val isRunning: Boolean get() = job?.isActive == true
+
     fun stop() { job?.cancel(); job = null }
 
     fun exportChain(): String? = chain?.export()
