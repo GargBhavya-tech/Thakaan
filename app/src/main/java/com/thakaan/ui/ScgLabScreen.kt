@@ -103,7 +103,7 @@ fun ScgLabScreen(onBack: () -> Unit) {
                     DoubleArray(a.size) { i -> while (j + 1 < g.size && g[j + 1][0] <= a[i][0]) j++; sqrt((g[j][1] * g[j][1] + g[j][2] * g[j][2] + g[j][3] * g[j][3]).toDouble()) }
                 }
                 val rec = ScgRecording(t, DoubleArray(a.size) { a[it][1].toDouble() }, DoubleArray(a.size) { a[it][2].toDouble() }, DoubleArray(a.size) { a[it][3].toDouble() }, gm)
-                val r = withContext(Dispatchers.Default) { ScgPipeline.analyse(rec) { w -> shadow.denoiseScg(w) } }
+                val r = withContext(Dispatchers.Default) { ScgPipeline.analyseWith(rec, false, { w -> shadow.denoiseScg(w) }, ScgPipeline.LAB_TOLERANCE_BPM) }
                 result = r
                 val f = File(ctx.filesDir, "scg_lab_${System.currentTimeMillis()}.csv")
                 f.bufferedWriter().use { w ->

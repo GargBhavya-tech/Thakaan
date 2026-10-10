@@ -73,6 +73,13 @@ object ScgPipeline {
     const val METHOD_AGREEMENT = 0.08  // beat spacing and autocorrelation must agree within 8%
     const val MIN_STILL_WINDOWS = 6
     const val TOLERANCE_BPM = 4.0
+    /**
+     * The Chest lab (display only) accepts window rates within this many beats of the middle one. Set from two real recordings
+     * against a counted pulse of 70 (2026-10-10): their medians read 70.6 and 73.2, with 78% and 89% of the windows within 6 beats and
+     * 56% and 67% within 4. One person and one counted pulse, so the continuous stream that feeds the risk engine stays at
+     * [TOLERANCE_BPM] until there is more.
+     */
+    const val LAB_TOLERANCE_BPM = 6.0
     const val MIN_CONSISTENCY = 0.7
 
     private fun median(v: List<Double>): Double { val s = v.sorted(); return if (s.size % 2 == 1) s[s.size / 2] else 0.5 * (s[s.size / 2 - 1] + s[s.size / 2]) }
@@ -81,7 +88,11 @@ object ScgPipeline {
      * [cancelMotion] runs an adaptive filter that subtracts what the rotation sensor explains from the beat band before
      * detection (ticket #30 "gyro-referenced adaptive cancelling"). Off by default until real recordings show it helps.
      */
-    fun analyse(rec: ScgRecording, cancelMotion: Boolean = false, denoise: ((DoubleArray) -> DoubleArray?)? = null): ScgResult {
+    fun analyse(rec: ScgRecording, cancelMotion: Boolean = false, denoise: ((DoubleArray) -> DoubleArray?)? = null): ScgResult =
+        analyseWith(rec, cancelMotion, denoise, TOLERANCE_BPM)
+
+    /** [analyse] with the window-agreement tolerance given: the stream keeps [TOLERANCE_BPM], the lab passes [LAB_TOLERANCE_BPM]. */
+    fun analyseWith(rec: ScgRecording, cancelMotion: Boolean, denoise: ((DoubleArray) -> DoubleArray?)?, toleranceBpm: Double): ScgResult {
         if (rec.t.size < 2 * FS * WINDOW_SEC || rec.t.last() - rec.t.first() < 2 * WINDOW_SEC) return ScgResult(null, null, 0, 0, 0.0, '-', "Too short: record at least 30 seconds")
         val t = DoubleArray(rec.t.size) { rec.t[it] - rec.t[0] }
         val fail = ScgResult(null, null, 0, 0, 0.0, '-', "The sensor delivered irregular data")
@@ -158,21 +169,21 @@ object ScgPipeline {
         val model = modelled.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { median(it) }
         // breathing is too slow for one 5 s window: read it once over the whole recording, only if it was still enough
         val resp = if (still >= MIN_STILL_WINDOWS) dominantFrequencyBpm(sway.maxByOrNull { Dsp.std(it) }!!, 0.1, 0.7) else null
-        val unconfirmed = underLockout.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { u -> val md = median(u); if (u.count { abs(it - md) <= TOLERANCE_BPM }.toDouble() / u.size >= MIN_CONSISTENCY) md else null }
+        val unconfirmed = underLockout.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { u -> val md = median(u); if (u.count { abs(it - md) <= toleranceBpm }.toDouble() / u.size >= MIN_CONSISTENCY) md else null }
         val strength = beatBand.maxOf { Dsp.std(it) }
         val repeat = if (repeatR.isEmpty()) 0.0 else median(repeatR)
         fun res(c: Double?, m: Double?, cons: Double, why: String?) = ScgResult(c, m, windows, still, cons, axisName, why, quality, resp, if (c == null) unconfirmed else null, if (c == null && unconfirmed != null) "read only from windows the posture lockout had dropped, because the phone was moved at the start" else null, lostMotion, lostRot, lostGaps, lostLock, strength, repeat)
         if (still < MIN_STILL_WINDOWS) return res(null, null, 0.0, "Not still enough: sit still with the phone against your chest")
         if (classical.size < MIN_STILL_WINDOWS) return res(null, model, 0.0, "No clear heartbeat vibration found")
         val med = median(classical)
-        val consistency = classical.count { abs(it - med) <= TOLERANCE_BPM }.toDouble() / classical.size
+        val consistency = classical.count { abs(it - med) <= toleranceBpm }.toDouble() / classical.size
         if (consistency < MIN_CONSISTENCY) {
             // Shown as an unconfirmed estimate, never accepted: the 4 beat tolerance was tuned on simulated data, and a resting pulse
             // drifts by a few beats over 45 s, so the spread is reported next to the number.
             val sorted = classical.sorted(); val lo = sorted[(sorted.size * 0.1).toInt()]; val hi = sorted[((sorted.size - 1) * 0.9).toInt()]
             val base = res(null, model, consistency, "The rate kept changing: not trusted")
             return ScgResult(null, model, base.windows, base.stillWindows, consistency, base.axis, base.reason, base.motionQuality, base.breathsPerMin, med,
-                "the window readings ranged from %.0f to %.0f, and only %.0f%% were within %.0f beats of the middle one (70%% are needed)".format(lo, hi, consistency * 100, TOLERANCE_BPM),
+                "the window readings ranged from %.0f to %.0f, and only %.0f%% were within %.0f beats of the middle one (70%% are needed)".format(lo, hi, consistency * 100, toleranceBpm),
                 base.lostToMotion, base.lostToRotation, base.lostToGaps, base.lostToLockout, base.beatBandRms, base.repeatStrength)
         }
         return res(med, model, consistency, null)

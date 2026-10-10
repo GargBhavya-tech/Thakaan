@@ -80,4 +80,32 @@ class ScgLockoutTest {
         assertTrue(r.unconfirmedWhy!!.contains("ranged from"))
         assertEquals(72.0, r.unconfirmedBpm!!, 10.0)
     }
+
+    /** A chest recording whose pulse wanders around [center] by [swing] beats with a period of [periodSec], like a resting pulse does. */
+    private fun wandering(center: Double, swing: Double, periodSec: Double, seed: Long = 11): ScgRecording {
+        val rnd = Random(seed); val fs = 200.0; val n = (45 * fs).toInt()
+        val beats = ArrayList<Double>(); var tb = 0.5
+        while (tb < 45) { beats += tb; tb += 60.0 / (center + swing * sin(2 * PI * tb / periodSec)) }
+        val t = DoubleArray(n) { it / fs }
+        val z = DoubleArray(n) { i -> var v = 9.81 + 0.02 * sin(2 * PI * 0.25 * t[i]) + 0.01 * rnd.nextGaussian(); for (b in beats) { val k = t[i] - b; if (k > 0 && k < 0.2) v += 0.25 * exp(-k / 0.035) * sin(2 * PI * 16 * k) }; v }
+        return ScgRecording(t, DoubleArray(n) { 0.01 * rnd.nextGaussian() }, DoubleArray(n) { 0.5 + 0.01 * rnd.nextGaussian() }, z, DoubleArray(n) { 0.02 })
+    }
+
+    @Test fun theLabAcceptsARestingPulseThatWandersByAFewBeatsAndReadsItsMiddle() {
+        val r = ScgPipeline.analyseWith(wandering(70.0, 5.0, 14.0), false, null, ScgPipeline.LAB_TOLERANCE_BPM)
+        assertTrue(r.reason ?: "", r.accepted)
+        assertEquals(70.0, r.classicalBpm!!, 5.0)
+    }
+
+    @Test fun theWiderLabToleranceStillRejectsNoiseAndAHugeDrift() {
+        var accepted = 0
+        for (seed in 1L..8L) if (ScgPipeline.analyseWith(recording(null, null, seed = seed), false, null, ScgPipeline.LAB_TOLERANCE_BPM).accepted) accepted++
+        assertEquals("noise is never accepted", 0, accepted)
+        assertFalse("a pulse that swings 15 beats either way is not one steady rate", ScgPipeline.analyseWith(wandering(72.0, 15.0, 14.0), false, null, ScgPipeline.LAB_TOLERANCE_BPM).accepted)
+    }
+
+    @Test fun theContinuousStreamKeepsTheTightTolerance() {
+        assertEquals(4.0, ScgPipeline.TOLERANCE_BPM, 0.0)
+        assertEquals(6.0, ScgPipeline.LAB_TOLERANCE_BPM, 0.0)
+    }
 }
