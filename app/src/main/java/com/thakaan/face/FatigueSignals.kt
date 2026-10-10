@@ -1,5 +1,7 @@
 package com.thakaan.face
 
+import com.thakaan.brain.BrainResult
+import com.thakaan.brain.BrainTest
 import com.thakaan.ppg.Dsp
 import kotlin.math.sqrt
 
@@ -148,4 +150,14 @@ object FatigueSignals {
         close()
         return yawns
     }
+
+    /**
+     * What the brain battery gets from one window. Only a valid window gives results; a squint, a lost face or a short
+     * window gives none, and "no result" is never read as "fine". The phone is mounted for this test, so placement is "mounted".
+     */
+    fun toBrainResults(s: FatigueSummary, tNanos: Long, hourOfDay: Double, deviceId: String): List<BrainResult> =
+        if (!s.valid) emptyList() else listOf(
+            BrainResult(BrainTest.FACE_PERCLOS, s.perclos, tNanos, hourOfDay, deviceId, "mounted"),
+            BrainResult(BrainTest.FACE_YAWN_RATE, s.yawnsPerMin, tNanos, hourOfDay, deviceId, "mounted"),
+        )
 }

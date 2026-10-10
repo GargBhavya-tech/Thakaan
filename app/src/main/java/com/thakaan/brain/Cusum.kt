@@ -16,6 +16,8 @@ enum class BrainTest(val family: BrainFamily, val higherIsWorse: Boolean) {
     SPEECH_RATE(BrainFamily.VOICE, false),
     SPEECH_WRONG(BrainFamily.VOICE, true),
     RIDING_ENTROPY(BrainFamily.NAVIGATION, true),
+    FACE_PERCLOS(BrainFamily.FACE, true),
+    FACE_YAWN_RATE(BrainFamily.FACE, true),
 }
 
 /** One stored result. Scores are only ever compared with the same worker, same device, same placement, same time of day. */
@@ -156,6 +158,7 @@ class BrainBattery(
             BrainTest.TREMOR to 0.0005, BrainTest.GAIT_STRIDE_CV to 0.01, BrainTest.GAIT_SWAY to 0.05,
             BrainTest.FITTS_THROUGHPUT to 0.15, BrainTest.FITTS_ERRORS to 0.02, BrainTest.PVT_SPEED to 0.15,
             BrainTest.SPEECH_RATE to 0.2, BrainTest.SPEECH_WRONG to 0.1, BrainTest.RIDING_ENTROPY to 0.05,
+            BrainTest.FACE_PERCLOS to 0.02, BrainTest.FACE_YAWN_RATE to 0.3,
         )
     }
 }
