@@ -109,17 +109,19 @@ fun ChhayaScreen(onBack: () -> Unit) {
                             drawLine(c, Offset(x(geom[i + 1] / 1e6), y(geom[i] / 1e6)), Offset(x(geom[i + 3] / 1e6), y(geom[i + 2] / 1e6)), strokeWidth = 2f)
                         }
                     }
-                    floods.active(System.currentTimeMillis()).forEach { fr ->
-                        val geom = g.edgeGeom[fr.edge]
-                        for (i in 0 until geom.size - 2 step 2) {
-                            drawLine(Color(0xFFD50000), Offset(x(geom[i + 1] / 1e6), y(geom[i] / 1e6)), Offset(x(geom[i + 3] / 1e6), y(geom[i + 2] / 1e6)), strokeWidth = 8f)
-                        }
-                    }
                     route?.arcs?.forEach { a ->
                         val pts = g.arcPolyline(a)
                         for (i in 0 until pts.size - 1) {
                             drawLine(Color(0xFF0D47A1), Offset(x(pts[i].second), y(pts[i].first)), Offset(x(pts[i + 1].second), y(pts[i + 1].first)), strokeWidth = 9f, cap = StrokeCap.Round)
                         }
+                    }
+                    floods.active(System.currentTimeMillis()).forEach { fr ->
+                        val geom = g.edgeGeom[fr.edge]
+                        for (i in 0 until geom.size - 2 step 2) {
+                            drawLine(Color(0xFFD50000), Offset(x(geom[i + 1] / 1e6), y(geom[i] / 1e6)), Offset(x(geom[i + 3] / 1e6), y(geom[i + 2] / 1e6)), strokeWidth = 12f, cap = StrokeCap.Round)
+                        }
+                        val m = geom.size / 4 * 2
+                        drawCircle(Color(0xFFD50000), 34f, Offset(x(geom[m + 1] / 1e6), y(geom[m] / 1e6)), style = Stroke(6f))
                     }
                     g.pois.filter { it.type == PoiType.WATER || it.type == PoiType.SHELTER }.forEach { p ->
                         drawCircle(if (p.type == PoiType.WATER) Color(0xFF00B0FF) else Color(0xFF6A1B9A), 8f, Offset(x(p.lon), y(p.lat)))
