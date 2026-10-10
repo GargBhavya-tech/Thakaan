@@ -64,12 +64,7 @@ fun HomeScreen(
                     IconAction(Glyph.GEAR, "Settings", onOpenSettings)
                 }
 
-                if (s != null && (s.collapseSecondsLeft > 0 || s.collapseAlarm)) {
-                    AppCard(tint = Ink.alertBg, border = Ink.alertInk) {
-                        Text(if (s.collapseAlarm) "Alarm: help is being called" else "Are you OK? Say haan or tap. ${s.collapseSecondsLeft} s", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Ink.alertInk, style = Tabular)
-                        PrimaryAction(if (s.collapseAlarm) "I'm OK, stop the alarm" else "I'm OK", onClick = { ShiftRuntime.engine?.resolveCollapse() }, danger = true)
-                    }
-                }
+                if (s != null) CollapseBanner(s)
 
                 if (replaying) AppCard(tint = Color(0xFFF1E6F7), border = Color(0xFF6A1B9A)) {
                     Text("Replaying a recorded shift. Nothing on this screen is live.", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4A148C))
@@ -176,5 +171,14 @@ private fun CheckDueCard(level: Level, workType: com.thakaan.settings.WorkType, 
         Text(CheckSchedule.dueText(due), fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text(quickCheckBlurb(workType), fontSize = 15.sp, color = Ink.sub)
         SecondaryAction("Check now", onClick = onCheck)
+    }
+}
+
+/** The "Are you OK?" countdown, and the alarm once it runs out, with the one button that answers it. Shown on every screen a worker can be on. */
+@Composable
+internal fun CollapseBanner(s: com.thakaan.shift.ShiftSnapshot) {
+    if (s.collapseSecondsLeft > 0 || s.collapseAlarm) AppCard(tint = Ink.alertBg, border = Ink.alertInk) {
+        Text(if (s.collapseAlarm) "Alarm: help is being called" else "Are you OK? Say haan or tap. ${s.collapseSecondsLeft} s", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Ink.alertInk, style = Tabular)
+        PrimaryAction(if (s.collapseAlarm) "I'm OK, stop the alarm" else "I'm OK", onClick = { ShiftRuntime.engine?.resolveCollapse() }, danger = true)
     }
 }

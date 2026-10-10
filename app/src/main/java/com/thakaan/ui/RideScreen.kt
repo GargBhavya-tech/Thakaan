@@ -150,12 +150,15 @@ fun RideTab(
             val dow = remember { Calendar.getInstance().get(Calendar.DAY_OF_WEEK) }
             val origin = ShiftRuntime.engine?.position ?: DEMO_ORIGIN
             val plan = remember(ride.dest, nav) { nav?.let { RideNav.plan(it, origin, ride.dest, minute, dow) } }
+            val snapNow by ShiftRuntime.snapshot.collectAsStateWithLifecycle()
+            val bounds = remember(nav) { nav?.graph?.let { g -> doubleArrayOf(g.nodeLat.min(), g.nodeLat.max(), g.nodeLon.min(), g.nodeLon.max()) } }
 
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Ride", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Ink.ink, modifier = Modifier.weight(1f).padding(start = 4.dp))
                     IconAction(Glyph.GEAR, "Settings", onOpenSettings)
                 }
+                snapNow?.let { CollapseBanner(it) }
                 when (ride.stage) {
                     RideSession.Stage.WAITING -> {
                         if (!running) AppCard(tint = Ink.warnBg, border = Ink.warnInk) {
@@ -168,7 +171,7 @@ fun RideTab(
                             Text("Tap the map to set where you are delivering.", fontSize = 15.sp, color = Ink.sub)
                             if (nav != null) {
                                 RideMap(
-                                    nav.graph, plan?.nav, origin, 0.0, ride.dest, follow = false, onTap = { ride.dest = it },
+                                    nav.graph, plan?.nav, origin, 0.0, ride.dest, follow = false, onTap = { p -> if (bounds != null && p.first in bounds[0]..bounds[1] && p.second in bounds[2]..bounds[3]) ride.dest = p },
                                     modifier = Modifier.fillMaxWidth().aspectRatio(1.1f).clip(RoundedCornerShape(12.dp)),
                                 )
                                 if (plan != null) Text("%.1f km, about %.0f min by road".format(plan.route.distanceM / 1000.0, plan.etaMin), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Ink.ink)
@@ -327,6 +330,12 @@ fun RidingPage(ride: RideSession, onFinished: () -> Unit, onRest: (Int) -> Unit)
 
             Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 NavBanner(plan, progress, ride.simulate, gpsFresh)
+                snap?.let { sn ->
+                    CollapseBanner(sn)
+                    if (sn.level >= Level.STRAINED && sn.collapseSecondsLeft == 0 && !sn.collapseAlarm) AppCard(tint = Ink.alertBg, border = Ink.alertInk) {
+                        Text(sn.outlook?.advice ?: "Stop, rest in shade and drink water now.", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ink.alertInk)
+                    }
+                }
                 if (drowsyBanner) AppCard(tint = Ink.alertBg, border = Ink.alertInk) {
                     Text("Drowsy signs. Pull over safely and rest.", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Ink.alertInk)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

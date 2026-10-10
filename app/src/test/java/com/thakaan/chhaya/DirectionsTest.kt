@@ -71,6 +71,22 @@ class DirectionsTest {
         assertEquals(Maneuver.RIGHT, t[0].maneuver)
     }
 
+    @Test fun aHookInTheFirstFortyMetresIsNotAnnounced() {
+        val r = NavRoute(walk(90.0 to 15.0, 270.0 to 15.0, 0.0 to 200.0))
+        assertTrue("a stub that doubles back at the start gives no instruction: ${r.steps.map { it.maneuver }}", turns(r).isEmpty())
+    }
+
+    @Test fun aRouteThatLoopsBackToItsStartBeginsWhereItReturns() {
+        val r = NavRoute(walk(90.0 to 100.0, 270.0 to 100.0, 0.0 to 300.0))
+        assertTrue("the stub is dropped, the road north is the route: ${r.totalM}", r.totalM in 285.0..320.0)
+        assertTrue("and there is no U-turn: ${r.steps.map { it.maneuver }}", turns(r).isEmpty())
+    }
+
+    @Test fun aRouteThatDoesNotComeBackIsLeftAlone() {
+        val r = NavRoute(walk(0.0 to 200.0, 90.0 to 200.0))
+        assertEquals(400.0, r.totalM, 5.0)
+    }
+
     @Test fun nextStepLooksAhead() {
         val r = NavRoute(walk(0.0 to 200.0, 90.0 to 200.0))
         assertEquals(Maneuver.RIGHT, r.nextStep(50.0)!!.maneuver)

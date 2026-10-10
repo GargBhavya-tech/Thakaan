@@ -27,7 +27,7 @@ class Projection(val progressM: Double, val lateralM: Double)
  * one (the sharper wins).
  */
 class NavRoute(rawPoints: List<Pair<Double, Double>>) {
-    val points: List<Pair<Double, Double>> = rawPoints.filterIndexed { i, p -> i == 0 || p != rawPoints[i - 1] }
+    val points: List<Pair<Double, Double>> = trimLeadingSpur(rawPoints.filterIndexed { i, p -> i == 0 || p != rawPoints[i - 1] })
     val cumM: DoubleArray
     val totalM: Double
     val steps: List<NavStep>
@@ -61,7 +61,7 @@ class NavRoute(rawPoints: List<Pair<Double, Double>>) {
         val kept = groups.mapNotNull { g ->
             val sum = g.sumOf { it.second }
             if (abs(sum) < MIN_TURN_DEG) null else g.maxByOrNull { abs(it.second) }!!.first to sum
-        }
+        }.filter { cumM[it.first] >= FIRST_TURN_MIN_M }
         val out = ArrayList<NavStep>()
         out += NavStep(Maneuver.START, 0.0, points.first().first, points.first().second)
         for ((i, d) in kept) out += NavStep(classify(d), cumM[i], points[i].first, points[i].second)
@@ -105,6 +105,23 @@ class NavRoute(rawPoints: List<Pair<Double, Double>>) {
         const val WINDOW_M = 15.0
         const val MIN_TURN_DEG = 35.0
         const val MERGE_M = 30.0
+        /** A turn in the first 40 m is not announced: the route often starts on a short stub that doubles back, and a fix is not that exact. */
+        const val FIRST_TURN_MIN_M = 40.0
+        /** A route that leaves its start along a stub and comes back to within 12 m of it (the start was snapped to the end of a dead end) begins where it returns. */
+        const val SPUR_MIN_M = 40.0
+        const val SPUR_MAX_M = 300.0
+        const val SPUR_RETURN_M = 12.0
+
+        fun trimLeadingSpur(p: List<Pair<Double, Double>>): List<Pair<Double, Double>> {
+            if (p.size < 4) return p
+            var cum = 0.0; var cut = 0
+            for (i in 1 until p.size) {
+                cum += metres(p[i - 1], p[i])
+                if (cum > SPUR_MAX_M) break
+                if (cum > SPUR_MIN_M && metres(p[i], p[0]) < SPUR_RETURN_M) cut = i
+            }
+            return if (cut > 0) p.drop(cut) else p
+        }
 
         fun metres(a: Pair<Double, Double>, b: Pair<Double, Double>): Double {
             val k = cos(Math.toRadians((a.first + b.first) / 2))
