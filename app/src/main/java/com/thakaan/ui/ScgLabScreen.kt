@@ -125,6 +125,8 @@ fun ScgLabScreen(onBack: () -> Unit) {
                         r.classicalBpm?.let { "Chest pulse: about %.0f beats a minute".format(it) } ?: "Chest pulse: not found (${r.reason})",
                         fontSize = 24.sp, fontWeight = FontWeight.Bold, color = if (r.accepted) Color(0xFF1B5E20) else Color(0xFFB00020),
                     )
+                    r.unconfirmedBpm?.let { Text("Not confirmed: about %.0f beats a minute, read only from windows the posture lockout had dropped (the phone was moved at the start). Not trusted until compared with a fingertip or watch.".format(it), fontSize = 16.sp, color = Color(0xFF8A5A00)) }
+                    if (!r.accepted) Text("Windows lost: movement %d, rotation %d, posture lockout %d, sensor gaps %d (of %d)".format(r.lostToMotion, r.lostToRotation, r.lostToLockout, r.lostToGaps, r.windows), fontSize = 14.sp, color = Color.DarkGray)
                     r.modelBpm?.let { Text("Learned denoiser: about %.0f (second opinion, trained on simulated data)".format(it), fontSize = 16.sp) }
                     Text("Still windows %d of %d, rate agreement %.0f%%, axis ${r.axis}".format(r.stillWindows, r.windows, r.consistency * 100), fontSize = 14.sp, color = Color.DarkGray)
                     Text("Compare with your fingertip or watch at the same time. A match within a few beats is a pass.", fontSize = 14.sp)

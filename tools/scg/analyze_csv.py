@@ -1,6 +1,6 @@
 """Explains why a Chest lab recording was rejected, window by window, using the same gates as ScgPipeline.kt.
 
-Usage:  python tools/scg/analyze_csv.py path/to/scg_lab_<ts>.csv
+Usage:  python tools/scg/analyze_csv.py path/to/scg_lab_<ts>.csv   (SETTLE=0 python ... to ignore the posture lockout and see what is under it)
 Pull a recording off the phone first:
   adb exec-out run-as com.thakaan cat files/scg_lab_<ts>.csv > scg_lab_<ts>.csv
 
@@ -10,6 +10,7 @@ It prints (1) how the sensor delivered samples (rate, holes), (2) for each 5 s w
 whether they agree, (3) the strongest repeat periods seen, so a double-rate (second heart sound counted) or half-rate
 reading is visible. It changes nothing: the gates here mirror the app's constants so the two can be compared.
 """
+import os
 import sys
 import numpy as np
 from scipy.interpolate import CubicSpline
@@ -17,7 +18,7 @@ from scipy.signal import butter, sosfiltfilt
 
 FS = 100.0
 WIN = 5.0; STEP = 2.5
-MAX_BODY_MOTION = 0.15; MAX_GYRO_RMS = 0.15; MAX_TILT_DEG = 4.0; POSTURE_SETTLE_SEC = 30.0; MAX_GAP_SEC = 0.1
+MAX_BODY_MOTION = 0.15; MAX_GYRO_RMS = 0.15; MAX_TILT_DEG = 4.0; POSTURE_SETTLE_SEC = float(os.environ.get('SETTLE', 30.0)); MAX_GAP_SEC = 0.1
 METHOD_AGREEMENT = 0.08; MIN_STILL = 6
 
 

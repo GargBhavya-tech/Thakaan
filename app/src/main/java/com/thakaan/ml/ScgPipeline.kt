@@ -30,6 +30,14 @@ class ScgResult(
     val motionQuality: Double = 0.0,
     /** Breaths a minute from the slow chest sway, when the recording was still enough to read it. */
     val breathsPerMin: Double? = null,
+    /**
+     * What the windows would have said if the posture lockout had not dropped them: a rate from still, hole-free windows whose two
+     * methods agreed and which agree with each other. Shown as "about N, not confirmed" only; never accepted and never used as a
+     * heart rate, because the lockout exists for a reason and has not been checked against a reference pulse.
+     */
+    val unconfirmedBpm: Double? = null,
+    /** Windows lost to each gate (one window can lose to several), so a rejected recording says what went wrong. */
+    val lostToMotion: Int = 0, val lostToRotation: Int = 0, val lostToGaps: Int = 0, val lostToLockout: Int = 0,
 ) {
     val accepted: Boolean get() = classicalBpm != null && reason == null
 }
@@ -90,6 +98,8 @@ object ScgPipeline {
         val classical = ArrayList<Double>(); val modelled = ArrayList<Double>()
         val axisVotes = IntArray(3)
         var windows = 0; var still = 0
+        var lostMotion = 0; var lostRot = 0; var lostGaps = 0; var lostLock = 0
+        val underLockout = ArrayList<Double>()
         var qualitySum = 0.0
         var prevGravity: DoubleArray? = null
         var settleUntil = -1.0
@@ -105,7 +115,19 @@ object ScgPipeline {
             val rot = gyro?.let { gm -> sqrt(gm.copyOfRange(a, a + win).sumOf { it * it } / win) } ?: 0.0
             qualitySum += (1.0 - maxOf(motion / (2 * MAX_BODY_MOTION), rot / (2 * MAX_GYRO_RMS))).coerceIn(0.0, 1.0)
             val hole = gaps.any { it.second > t0 && it.first < t1 }
-            val steady = motion <= MAX_BODY_MOTION && rot <= MAX_GYRO_RMS && !hole && t0 >= settleUntil
+            val locked = t0 < settleUntil
+            if (motion > MAX_BODY_MOTION) lostMotion++
+            if (rot > MAX_GYRO_RMS) lostRot++
+            if (hole) lostGaps++
+            if (locked) lostLock++
+            val steadyIgnoringLockout = motion <= MAX_BODY_MOTION && rot <= MAX_GYRO_RMS && !hole
+            val steady = steadyIgnoringLockout && !locked
+            if (steadyIgnoringLockout && locked) {
+                // only to tell the worker what was under the lockout: the same two methods must agree, and nothing here is accepted
+                val w = ScgHeart.normalise(principal(beatBand, a, win).first)
+                val pk = ScgHeart.beats(w).bpm; val ac = autocorrBpm(w)
+                if (pk != null && ac != null && abs(pk - ac) <= METHOD_AGREEMENT * ac) underLockout += pk
+            }
             if (steady) {
                 still++
                 val (wave, axis) = principal(beatBand, a, win)
@@ -126,7 +148,8 @@ object ScgPipeline {
         val model = modelled.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { median(it) }
         // breathing is too slow for one 5 s window: read it once over the whole recording, only if it was still enough
         val resp = if (still >= MIN_STILL_WINDOWS) dominantFrequencyBpm(sway.maxByOrNull { Dsp.std(it) }!!, 0.1, 0.7) else null
-        fun res(c: Double?, m: Double?, cons: Double, why: String?) = ScgResult(c, m, windows, still, cons, axisName, why, quality, resp)
+        val unconfirmed = underLockout.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { u -> val md = median(u); if (u.count { abs(it - md) <= TOLERANCE_BPM }.toDouble() / u.size >= MIN_CONSISTENCY) md else null }
+        fun res(c: Double?, m: Double?, cons: Double, why: String?) = ScgResult(c, m, windows, still, cons, axisName, why, quality, resp, if (c == null) unconfirmed else null, lostMotion, lostRot, lostGaps, lostLock)
         if (still < MIN_STILL_WINDOWS) return res(null, null, 0.0, "Not still enough: sit still with the phone against your chest")
         if (classical.size < MIN_STILL_WINDOWS) return res(null, model, 0.0, "No clear heartbeat vibration found")
         val med = median(classical)
