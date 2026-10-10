@@ -59,7 +59,7 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
             Level.STRAINED -> (STRAINED_SHARE * fastestSec).coerceIn(STRAINED_BUDGET_SEC, STRAINED_CAP_SEC)
             else -> 0.0
         }
-        const val MAX_LAMBDA = 3.0
+        const val MAX_LAMBDA = 6.0
         const val ISLAND_PENALTY = 0.15
         const val ARTERIAL_KMH = 28.0
         const val EXPOSED_SEAT_PENALTY_SEC = 90.0
@@ -159,7 +159,7 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
         if (level == Level.DANGER) return dangerRoute(o, sun, ::build, weighted(MAX_LAMBDA), fastestTime)
 
         val budget = detourBudgetSec(level, fastestTime)
-        val lamFull = max(lambdaFor(tss), if (level == Level.STRAINED) 1.0 else 0.5)
+        val lamFull = max(lambdaFor(tss), if (level == Level.STRAINED) 2.5 else 1.0)
         // largest share of lambda whose route still fits the detour budget
         var lam = lamFull
         var arcs = pathTo(search(o, false, weighted(lam)), o, d, false) ?: return null
