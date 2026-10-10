@@ -120,7 +120,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 60 | Metrics table | C | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #39, #48 |
+| [~] | 60 | Metrics table (docs/METRICS.md: 7 rows measured and labelled development-time, 5 rows need a reference device, a hand log or a stopwatch; no held-out session exists) | C | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #39, #48 |
 | [ ] | 61 | Demo built and rehearsed | C | 🟥 CORE | 🔴 RED-OK | FINAL | #42, #45, #51, #56 |
 | [~] | 62 | Limitations slide and challenge answers (drafted in LIMITATIONS_SLIDE.md; Done-when needs each teammate to answer cold, and 'who pays' is undecided) | C | 🟥 CORE | ⚪ PRE-BUILD | CP-A | — |
 | [ ] | 63 | Backup recording | C | 🟥 CORE | 🔴 RED-OK | FINAL | #61 |
