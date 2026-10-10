@@ -285,7 +285,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                 Legend(layer)
                 LayerNote(layer, rider, pmNow, air, nowSec, dow, minute)
                 if (layer == MapLayer.SHADE && sunDown) Text(
-                    "The sun is down, so there is no sun to avoid. The shade colours and the shade percentage below are not meaningful at this hour, and the route is the fastest one.",
+                    "The sun is down, so there is no sun to avoid. The shade colours and the shade percentage below are not meaningful at this hour: any detour comes from the last daylight slot of the table, not from real light.",
                     fontSize = 13.sp, color = Color(0xFF8A5A00), modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF4E0), RoundedCornerShape(8.dp)).padding(8.dp),
                 )
                 if (route == null) {
