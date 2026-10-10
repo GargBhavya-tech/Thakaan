@@ -11,7 +11,7 @@ object ModelFiles {
     const val GEMMA = "gemma-4-E2B-it-gpu.litertlm"
     const val VOSK_EN = "vosk-model-small-en-in-0.4"
     const val VOSK_HI = "vosk-model-small-hi-0.22"
-    const val WHISPER = "whisper-small.tflite"
+    const val WHISPER = "whisper-tiny"   // folder: AudioEncoder, TextDecoder, MelSpectrogram (.tflite), vocab.json, added_tokens.json
 
     fun dir(ctx: Context): File = File(ctx.filesDir, "models").also { it.mkdirs() }
     fun file(ctx: Context, name: String): File = File(dir(ctx), name)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pushes the large model files to the phone's private app folder (never bundled in the APK, never downloaded by the app).
 # Needs the phone connected with USB debugging and the debug build installed (run-as only works on debuggable builds).
-#   tools/push_models.sh [gemma|vosk|all]   (default: all)
+#   tools/push_models.sh [gemma|vosk|whisper|all]   (default: all)
 # Sources: assets/models/gemma-4-E2B-it-gpu.litertlm and the unzipped Vosk folders under $VOSK_DIR.
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
@@ -34,5 +34,9 @@ if [[ "$WHAT" == gemma || "$WHAT" == all ]]; then
 fi
 if [[ "$WHAT" == vosk || "$WHAT" == all ]]; then
   for d in "$VOSK_DIR"/vosk-model-*; do [[ -d "$d" ]] && push_dir "$d"; done
+fi
+if [[ "$WHAT" == whisper || "$WHAT" == all ]]; then
+  W="$(dirname "$0")/../assets/models/whisper-tiny"
+  [[ -d "$W" ]] && push_dir "$W"
 fi
 echo "on the phone:"; "$ADB" shell "run-as $PKG ls -la $DEST"

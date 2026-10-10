@@ -55,6 +55,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
     if (lab) { PpgLabScreen(onBack = { lab = false }); return }
     var chestLab by remember { mutableStateOf(false) }
     if (chestLab) { ScgLabScreen(onBack = { chestLab = false }); return }
+    var speechLab by remember { mutableStateOf(false) }
+    if (speechLab) { SpeechLabScreen(onBack = { speechLab = false }); return }
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Color.White) {
             val ctx = LocalContext.current
@@ -139,6 +141,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                         Button(onClick = { lab = true }) { Text("PPG lab", fontSize = 14.sp) }
                     }
                     Button(onClick = { chestLab = true }) { Text("Chest lab", fontSize = 14.sp) }
+                    Button(onClick = { speechLab = true }) { Text("Speech lab (Whisper)", fontSize = 14.sp) }
                     var face by remember { mutableStateOf<String?>(null) }
                     Button(onClick = {
                         val t = com.thakaan.face.FaceTracker(ctx)
@@ -182,7 +185,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                                 val here = com.thakaan.inference.ModelFiles.present(ctx, v.modelDir)
                                 val loaded = if (!here) "not on this phone" else try { org.vosk.Model(com.thakaan.inference.ModelFiles.file(ctx, v.modelDir).absolutePath).close(); "loads" } catch (t: Throwable) { "failed: ${t.message}" }
                                 v.name to loaded
-                            }
+                            } + listOf("Whisper-tiny" to if (com.thakaan.inference.ModelFiles.present(ctx, com.thakaan.inference.ModelFiles.WHISPER)) "files present" else "not on this phone")
                         }) { Text("Speech", fontSize = 14.sp) }
                     }
                     Button(onClick = {
@@ -202,7 +205,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     shadeText?.let { Line("Shade from camera", it, ok = it.startsWith("overhead")) }
                     small?.forEach { Line(it.name, "${it.status}: ${it.detail}", ok = it.status == "runs") }
                     gemma?.let { Line("Gemma 4 E2B", it, ok = it.startsWith("loaded")) }
-                    speech?.forEach { (n, s) -> Line("Vosk $n", s, ok = s == "loads") }
+                    speech?.forEach { (n, s) -> Line(if (n.startsWith("Whisper")) n else "Vosk $n", s, ok = s == "loads" || s == "files present") }
                 }
 
                 Section("Checks") {
