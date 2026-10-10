@@ -187,6 +187,11 @@ fun ChhayaScreen(onBack: () -> Unit) {
                                 for (i in 0 until geom.size - 2 step 2) seg(c, geom, i, 5f)
                             }
                         }
+                        // the plain fastest route, faint and dashed, so the shadier route can be compared with it
+                        if (route != null && route.arcs != route.fastestArcs) route.fastestArcs.forEach { a ->
+                            val pts = g.arcPolyline(a)
+                            for (i in 0 until pts.size - 1) drawLine(Color(0xFF455A64), Offset(px(pts[i].second), py(pts[i].first)), Offset(px(pts[i + 1].second), py(pts[i + 1].first)), strokeWidth = 5f, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(14f, 10f)))
+                        }
                         // route: all white edges first, then the blue line, so joints between segments stay solid
                         route?.arcs?.forEach { a ->
                             val pts = g.arcPolyline(a)
@@ -245,6 +250,10 @@ fun ChhayaScreen(onBack: () -> Unit) {
                         Text(route.chip, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ROUTE_BLUE)
                         Text(route.note, fontSize = 16.sp)
                         Text("%.1f km, %.1f min walking".format(route.distanceM / 1000.0, route.timeSec / 60.0), fontSize = 14.sp)
+                        if (route.arcs != route.fastestArcs) Text(
+                            "Fastest route (dashed grey): %.1f min, %.0f%% shade".format(route.fastestTimeSec / 60.0, route.fastestShadeShare * 100),
+                            fontSize = 14.sp, color = Color(0xFF455A64),
+                        )
                     }
                     Text(
                         (if (source == ShadeSource.MAP) "Shade is computed from map data (OSM), not measured. %.0f%% of this route rests on guessed building heights." else "Shade is modelled from 2023 satellite building and tree heights, not measured. %.0f%% of this route is on segments where it is unsure.").format(route.lowConfidenceShare * 100),
@@ -271,7 +280,7 @@ private fun DrawScope.label(m: TextMeasurer, text: String, at: Offset, color: Co
 private fun Legend(layer: MapLayer) {
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         when (layer) {
-            MapLayer.SHADE -> { Swatch(SHADE_GREEN, "Shade"); Swatch(PART_SHADE, "Part shade"); Swatch(SUN, "Full sun"); Swatch(ROUTE_BLUE, "Your route") }
+            MapLayer.SHADE -> { Swatch(SHADE_GREEN, "Shade"); Swatch(PART_SHADE, "Part shade"); Swatch(SUN, "Full sun"); Swatch(ROUTE_BLUE, "Your route"); Swatch(Color(0xFF455A64), "Fastest (dashed)") }
             MapLayer.WATER -> { Dot(WATER_BLUE, "Water (listed, not verified)"); Dot(SHELTER_PURPLE, "Shelter"); Swatch(ROUTE_BLUE, "Route") }
             MapLayer.FLOODS -> { Swatch(FLOOD_RED, "Reported flooded (3 h)"); Swatch(ROUTE_BLUE, "Route avoids it") }
         }

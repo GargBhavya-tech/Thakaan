@@ -64,8 +64,8 @@ class ChhayaRouterTest {
             if (graph.metresBetween(o.first, o.second, d.first, d.second) < 800) return@repeat
             val w = route(Level.WARMING, 40, o = o, d = d) ?: return@repeat
             val s = route(Level.STRAINED, 65, o = o, d = d) ?: return@repeat
-            assertTrue("warming extra ${w.extraSec}", w.extraSec <= ChhayaRouter.WARMING_BUDGET_SEC + 1e-6)
-            assertTrue("strained extra ${s.extraSec}", s.extraSec <= ChhayaRouter.STRAINED_BUDGET_SEC + 1e-6)
+            assertTrue("warming extra ${w.extraSec}", w.extraSec <= ChhayaRouter.detourBudgetSec(Level.WARMING, w.fastestTimeSec) + 1e-6)
+            assertTrue("strained extra ${s.extraSec}", s.extraSec <= ChhayaRouter.detourBudgetSec(Level.STRAINED, s.fastestTimeSec) + 1e-6)
             checked++
         }
         assertTrue("only $checked pairs checked", checked >= 10)
@@ -97,7 +97,7 @@ class ChhayaRouterTest {
         assertNull(cool.stop)
         assertNotNull("water stop inserted at Strained", strained.stop)
         assertEquals(PoiType.WATER, strained.stop!!.type)
-        assertTrue(strained.extraSec <= ChhayaRouter.STRAINED_BUDGET_SEC + 1e-6)
+        assertTrue(strained.extraSec <= ChhayaRouter.detourBudgetSec(Level.STRAINED, strained.fastestTimeSec) + 1e-6)
         assertTrue("Danger goes to the nearest cool stop, not the destination", danger.distanceM < cool.distanceM)
         assertTrue(danger.note.startsWith("Danger"))
     }
@@ -143,5 +143,15 @@ class ChhayaRouterTest {
     private fun Random.pick(): Pair<Double, Double> {
         val i = nextInt(graph.nodeCount)
         return graph.nodeLat[i] to graph.nodeLon[i]
+    }
+
+    @Test fun theDetourBudgetScalesWithTheTripButHasAFloorAndACap() {
+        assertEquals(60.0, ChhayaRouter.detourBudgetSec(Level.WARMING, 300.0), 1e-9)      // 5 min trip: floor of 1 min
+        assertEquals(180.0, ChhayaRouter.detourBudgetSec(Level.WARMING, 1800.0), 1e-9)    // 30 min trip: 10% = 3 min
+        assertEquals(300.0, ChhayaRouter.detourBudgetSec(Level.WARMING, 7200.0), 1e-9)    // 2 h trip: capped at 5 min
+        assertEquals(180.0, ChhayaRouter.detourBudgetSec(Level.STRAINED, 600.0), 1e-9)    // 10 min trip: 25% = 2.5 min, floor 3 min
+        assertEquals(450.0, ChhayaRouter.detourBudgetSec(Level.STRAINED, 1800.0), 1e-9)   // 30 min trip: 7.5 min
+        assertEquals(600.0, ChhayaRouter.detourBudgetSec(Level.STRAINED, 7200.0), 1e-9)   // capped at 10 min
+        assertEquals(0.0, ChhayaRouter.detourBudgetSec(Level.COOL, 1800.0), 1e-9)
     }
 }

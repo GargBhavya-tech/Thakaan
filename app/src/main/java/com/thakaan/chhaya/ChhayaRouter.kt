@@ -21,6 +21,9 @@ class Route(
     val lambdaUsed: Double,
     /** How many edges of this route carry an active flood report. Non-zero only when no way round was found. */
     val floodedEdges: Int = 0,
+    /** The plain fastest route and its shade share, so the screen can show what the shadier route changed. */
+    val fastestArcs: List<Int> = emptyList(),
+    val fastestShadeShare: Double = shadeShare,
 ) {
     val extraSec: Double get() = max(0.0, timeSec - fastestTimeSec)
     /** The chip on the map: extra time first, shade share second. */
@@ -28,6 +31,7 @@ class Route(
 
     /** Extra time in the unit that does not round it away: seconds under 90 s, minutes above ("+0 min" beside a longer total looked wrong). */
     val extraText: String get() = when {
+        level == Level.DANGER -> "Stop now" // the route goes to the nearest cool stop, not the destination: no detour to compare
         extraSec < 5.0 -> "No extra time"
         extraSec < 90.0 -> "+${extraSec.roundToInt()} s"
         else -> "+${(extraSec / 60.0).roundToInt()} min"
@@ -37,13 +41,24 @@ class Route(
 /**
  * Strain-aware routing (#48). Edge cost = travel time x (1 + lambda(TSS) x sun fraction) + a heat-island penalty on
  * sunny arterials. At Cool lambda is exactly 0, so the route IS the fastest route; a rider is never made to spend time
- * they did not need to spend. Detour budgets: Warming +1 min, Strained +3 min; Danger drops the destination and goes to
+ * they did not need to spend. Detour budgets scale with the trip: Warming 10% of the fastest time (1 to 5 min), Strained 25% (3 to 10 min); Danger drops the destination and goes to
  * the nearest cool seated stop.
  */
 class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, private val floods: FloodReports? = null) {
     companion object {
-        const val WARMING_BUDGET_SEC = 60.0
-        const val STRAINED_BUDGET_SEC = 180.0
+        /** Detour allowed beyond the fastest route: a share of the trip time, never below a floor and never above a cap. */
+        const val WARMING_BUDGET_SEC = 60.0      // floor (the original fixed budget)
+        const val STRAINED_BUDGET_SEC = 180.0    // floor
+        const val WARMING_SHARE = 0.10
+        const val STRAINED_SHARE = 0.25
+        const val WARMING_CAP_SEC = 300.0
+        const val STRAINED_CAP_SEC = 600.0
+
+        fun detourBudgetSec(level: Level, fastestSec: Double): Double = when (level) {
+            Level.WARMING -> (WARMING_SHARE * fastestSec).coerceIn(WARMING_BUDGET_SEC, WARMING_CAP_SEC)
+            Level.STRAINED -> (STRAINED_SHARE * fastestSec).coerceIn(STRAINED_BUDGET_SEC, STRAINED_CAP_SEC)
+            else -> 0.0
+        }
         const val MAX_LAMBDA = 3.0
         const val ISLAND_PENALTY = 0.15
         const val ARTERIAL_KMH = 28.0
@@ -130,8 +145,11 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
                 if (shade.isLowConfidence(e)) lowLen += g.edgeLenM[e]
             }
             val wet = if (closed.isEmpty()) 0 else arcs.count { g.arcEdge[it] in closed }
+            var fLen = 0.0; var fShade = 0.0
+            for (a in fastestArcs) { val e = g.arcEdge[a]; fLen += g.edgeLenM[e]; fShade += g.edgeLenM[e] * (1.0 - sun[e]) }
             return Route(level, arcs, len, timeOf(arcs), fastestTime, if (len > 0) shadeLen / len else 1.0, if (len > 0) lowLen / len else 0.0, stop,
-                if (wet > 0) "$note. Crosses a road reported flooded: go slowly or turn back" else note, lam, wet)
+                if (wet > 0) "$note. Crosses a road reported flooded: go slowly or turn back" else note, lam, wet,
+                fastestArcs, if (fLen > 0) fShade / fLen else 1.0)
         }
 
         if (level == Level.COOL) {
@@ -140,7 +158,7 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
 
         if (level == Level.DANGER) return dangerRoute(o, sun, ::build, weighted(MAX_LAMBDA), fastestTime)
 
-        val budget = if (level == Level.WARMING) WARMING_BUDGET_SEC else STRAINED_BUDGET_SEC
+        val budget = detourBudgetSec(level, fastestTime)
         val lamFull = max(lambdaFor(tss), if (level == Level.STRAINED) 1.0 else 0.5)
         // largest share of lambda whose route still fits the detour budget
         var lam = lamFull
@@ -155,7 +173,7 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, priv
             }
             arcs = best; lam = bestLam
         }
-        if (level == Level.WARMING) return build(arcs, null, "Shadier route within +1 min", lam)
+        if (level == Level.WARMING) return build(arcs, null, "Shadier route within +${(budget / 60.0).roundToInt()} min", lam)
 
         // Strained: insert the best listed water stop whose total detour stays inside the budget
         val fromO = search(o, false, weighted(lam))
