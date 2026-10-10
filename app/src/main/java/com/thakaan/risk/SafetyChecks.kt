@@ -4,8 +4,8 @@ package com.thakaan.risk
 class SafetyResult(val id: Int, val name: String, val passed: Boolean, val detail: String)
 
 /**
- * The five scenarios behind the Safety checks tab. Each runs a fresh [RiskEngine] with the given [Guards]; flipping the
- * guard that scenario protects OFF must turn it red, which is what makes "5/5 PASS" mean something on stage.
+ * The six scenarios behind the Safety checks tab. Each runs a fresh [RiskEngine] with the given [Guards]; flipping the
+ * guard that scenario protects OFF must turn it red, which is what makes "6/6 PASS" mean something on stage.
  */
 object SafetyChecks {
     private const val MIN = 60_000_000_000L
@@ -15,7 +15,7 @@ object SafetyChecks {
 
     private fun fresh(psi: Double?, age: Double = 60.0) = BodyInputs(hrAgeSec = age, hrQuality = 0.9, psi = psi)
 
-    fun runAll(g: Guards = Guards()): List<SafetyResult> = listOf(noFreshHr(g), staleHr(g), gnssLost(g), brainFamilies(g), llmIgnored(g))
+    fun runAll(g: Guards = Guards()): List<SafetyResult> = listOf(noFreshHr(g), staleHr(g), gnssLost(g), brainFamilies(g), llmIgnored(g), weatherMissing(g))
 
     /** 1. A body reading showed high strain, then heart readings stop: the level must hold, not drift down. */
     fun noFreshHr(g: Guards): SafetyResult {
@@ -70,5 +70,12 @@ object SafetyChecks {
         val afterDown = e.acceptLlmSuggestion(Level.COOL)
         val afterUp = e.acceptLlmSuggestion(Level.DANGER)
         return SafetyResult(5, "LLM proposes another level", before == afterDown && before == afterUp, "engine $before, LLM asked for COOL and DANGER, still $afterUp")
+    }
+
+    /** 6. The weather cache is missing: with a calm body and no sun, unknown WBGT must still be at least Warming, never Cool. */
+    fun weatherMissing(g: Guards): SafetyResult {
+        val e = RiskEngine(g)
+        val o = e.update(RiskInputs(0L, ExposureInputs(null, 0.0, 0.0, 9.0, 0, false), fresh(psi = 0.2)))
+        return SafetyResult(6, "Weather missing counts as hot", o.level >= Level.WARMING, "level ${o.level} with no weather data")
     }
 }

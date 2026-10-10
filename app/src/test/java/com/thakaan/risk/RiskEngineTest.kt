@@ -156,11 +156,11 @@ class RiskEngineTest {
         }
     }
 
-    // ---------------------------------------------------------------- the five safety scenarios and their guard switches
+    // ---------------------------------------------------------------- the six safety scenarios and their guard switches
 
-    @Test fun allFiveSafetyChecksPass() {
+    @Test fun allSixSafetyChecksPass() {
         val r = SafetyChecks.runAll()
-        assertEquals(5, r.size)
+        assertEquals(6, r.size)
         r.forEach { assertTrue("check ${it.id} ${it.name}: ${it.detail}", it.passed) }
     }
 
@@ -171,6 +171,7 @@ class RiskEngineTest {
         assertTrue("shade", 3 in failing(Guards(unknownShadeIsSun = false)))
         assertTrue("brain", 4 in failing(Guards(brainFamiliesFloorStrained = false)))
         assertTrue("llm", 5 in failing(Guards(llmCannotChangeLevel = false)))
+        assertTrue("weather", 6 in failing(Guards(missingWbgtIsHot = false)))
         assertFalse("the switches are independent", 5 in failing(Guards(holdWhenEvidenceStale = false)))
     }
 }

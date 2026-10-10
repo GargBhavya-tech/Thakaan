@@ -32,7 +32,7 @@ import com.thakaan.risk.SafetyChecks
 
 /**
  * Safety checks tab (#42): five scenarios that run the real risk engine, with a switch per guard. Turning a guard OFF must
- * turn the scenario it protects red, which is what makes "5/5 PASS" mean something. DEVICE-UNTESTED (logic is unit-tested).
+ * turn the scenario it protects red, which is what makes "6/6 PASS" mean something. DEVICE-UNTESTED (logic is unit-tested).
  */
 @Composable
 fun SafetyScreen(onBack: () -> Unit) {

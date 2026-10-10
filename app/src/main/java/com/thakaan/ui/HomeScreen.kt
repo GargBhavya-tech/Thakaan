@@ -100,6 +100,9 @@ fun HomeScreen(
                             if (s.collapseAlarm) "Alarm: help is being called" else "Are you OK? Say haan or tap. ${s.collapseSecondsLeft}s",
                             fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9B0000),
                         )
+                        Button(onClick = { ShiftRuntime.engine?.resolveCollapse() }, Modifier.fillMaxWidth().height(64.dp)) {
+                            Text(if (s.collapseAlarm) "I'm OK, stop the alarm" else "I'm OK", fontSize = 22.sp)
+                        }
                     }
                     s.forecastHeadline?.let { Text(it, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
                     s.drivers.take(3).forEach { Text("- $it", fontSize = 18.sp) }

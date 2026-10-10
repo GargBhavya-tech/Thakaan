@@ -184,6 +184,8 @@ class ShiftEngine(
     fun onSymptoms(tNanos: Long, set: Set<Symptom>, effort: Int?, trigger: String) = symptoms.record(tNanos, set, effort, trigger)
     fun onRecoveryPassed() { recoveryPassed = true }
     fun confirmSafe() = countdown.confirmSafe()
+    /** The worker (or a bystander) says "I'm OK": ends the countdown, or clears a running alarm so it does not stay on for ever. */
+    fun resolveCollapse() = countdown.resolve()
 
     // ------------------------------------------------------------------ sensor stream
 
