@@ -54,8 +54,8 @@ import java.io.File
  */
 @Composable
 fun PpgLabScreen(onBack: () -> Unit) {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val ctx = LocalContext.current
             var granted by remember { mutableStateOf(ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) }
             val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }

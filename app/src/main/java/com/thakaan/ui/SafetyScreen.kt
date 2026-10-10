@@ -36,8 +36,8 @@ import com.thakaan.risk.SafetyChecks
  */
 @Composable
 fun SafetyScreen(onBack: () -> Unit) {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var g by remember { mutableStateOf(Guards()) }
             val results = remember(g) { SafetyChecks.runAll(g) }
             val passed = results.count { it.passed }

@@ -52,8 +52,8 @@ private enum class Phase { INTRO, RUNNING, RESULT }
  */
 @Composable
 fun FaceCheckScreen(onBack: () -> Unit) {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val ctx = LocalContext.current
             val store = remember { FatigueCalibrationStore(ctx) }
             var phase by remember { mutableStateOf(Phase.INTRO) }

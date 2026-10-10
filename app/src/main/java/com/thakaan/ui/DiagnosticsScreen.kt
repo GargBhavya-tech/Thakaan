@@ -57,8 +57,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
     if (chestLab) { ScgLabScreen(onBack = { chestLab = false }); return }
     var speechLab by remember { mutableStateOf(false) }
     if (speechLab) { SpeechLabScreen(onBack = { speechLab = false }); return }
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val ctx = LocalContext.current
             val stats by SensorHub.stats.collectAsStateWithLifecycle()
             var nowNs by remember { mutableLongStateOf(SystemClock.elapsedRealtimeNanos()) }

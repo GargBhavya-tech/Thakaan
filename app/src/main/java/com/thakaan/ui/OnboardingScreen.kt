@@ -53,8 +53,8 @@ fun OnboardingScreen(onDone: (UserProfile) -> Unit) {
         flow.next(); tick++
         if (flow.step == OnboardingStep.DONE) flow.build()?.let(onDone)
     }
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 tick.let { Text("Set up Thakaan", fontSize = 26.sp, fontWeight = FontWeight.Bold) }
                 when (flow.step) {

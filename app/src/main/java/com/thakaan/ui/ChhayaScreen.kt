@@ -96,14 +96,14 @@ private val SIGNAL_WEAK = Color(0xFFE6A100)
  * move, tap to set the destination. Fully offline. Shade is computed, not measured, and the screen says so.
  */
 @Composable
-fun ChhayaScreen(onBack: () -> Unit) {
+fun ChhayaScreen(onBack: (() -> Unit)?) {
     val ctx = LocalContext.current
     var source by remember { mutableStateOf(ShadeSource.MAP) }
     val data = remember(source) { load(ctx, source) }
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             if (data == null) {
-                Column(Modifier.padding(16.dp)) { Button(onClick = onBack) { Text("Back") }; Text("Map data is missing from this build.", fontSize = 20.sp) }
+                Column(Modifier.padding(16.dp)) { if (onBack != null) Button(onClick = onBack) { Text("Back") }; Text("Map data is missing from this build.", fontSize = 20.sp) }
                 return@Surface
             }
             val snap by ShiftRuntime.snapshot.collectAsStateWithLifecycle()
@@ -148,8 +148,8 @@ fun ChhayaScreen(onBack: () -> Unit) {
 
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Button(onClick = onBack) { Text("Back", fontSize = 16.sp) }
-                    Text("Chhaya route", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    if (onBack != null) Button(onClick = onBack) { Text("Back", fontSize = 16.sp) }
+                    Text("Route", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 4.dp))
                     if (live != null) ProvenanceChip(if (override != null) com.thakaan.core.Provenance.SIMULATED else live.provenance)
                 }
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {

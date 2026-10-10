@@ -41,12 +41,12 @@ import com.thakaan.shift.ShiftRuntime
  * its own line, never as Cool time. Not a medical report.
  */
 @Composable
-fun ShiftReportScreen(onBack: () -> Unit) {
+fun ShiftReportScreen(onBack: (() -> Unit)?) {
     val ctx = LocalContext.current
     val snap by ShiftRuntime.snapshot.collectAsStateWithLifecycle()
     val log = ShiftRuntime.log
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Shift report", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 if (log.isEmpty) {
@@ -94,7 +94,7 @@ fun ShiftReportScreen(onBack: () -> Unit) {
                     Text("The copy has minutes at each level and the highest level only: no strain number, symptoms or air dose.", fontSize = 12.sp, color = Color.DarkGray)
                 }
                 Text("Heat-strain wellbeing tool, not a medical device. Levels are not temperatures.", fontSize = 12.sp, color = Color.DarkGray)
-                OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text("Back", fontSize = 18.sp) }
+                if (onBack != null) OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text("Back", fontSize = 18.sp) }
             }
         }
     }

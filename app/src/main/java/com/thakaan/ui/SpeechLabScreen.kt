@@ -58,8 +58,8 @@ fun SpeechLabScreen(onBack: () -> Unit) {
     val askMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { mic = it }
     val here = remember { ModelFiles.present(ctx, ModelFiles.WHISPER) }
 
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Speech lab (Whisper)", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 if (!here) {

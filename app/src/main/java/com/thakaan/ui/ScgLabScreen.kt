@@ -50,8 +50,8 @@ import kotlin.math.sqrt
  */
 @Composable
 fun ScgLabScreen(onBack: () -> Unit) {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val ctx = LocalContext.current
             var running by remember { mutableStateOf(false) }
             var secsLeft by remember { mutableStateOf(SECONDS) }

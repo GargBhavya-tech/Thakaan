@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun CheckInScreen(onAnswer: (sleptWell: Boolean?, ate: Boolean?, unwell: Boolean?) -> Unit) {
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var slept by remember { mutableStateOf<Boolean?>(null) }
             var ate by remember { mutableStateOf<Boolean?>(null) }
             var unwell by remember { mutableStateOf<Boolean?>(null) }

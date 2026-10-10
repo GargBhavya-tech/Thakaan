@@ -19,9 +19,6 @@ import com.thakaan.sensorhub.Replayer
 import com.thakaan.sensorhub.SensorHub
 import com.thakaan.sensorhub.SensorHubService
 import com.thakaan.sensorhub.StreamRecorder
-import com.thakaan.ui.ChhayaScreen
-import com.thakaan.ui.ShiftReportScreen
-import com.thakaan.ui.DiagnosticsScreen
 import com.thakaan.settings.DailyCheckIn
 import com.thakaan.settings.PrefsCheckInStore
 import com.thakaan.settings.PrefsProfileStore
@@ -29,11 +26,7 @@ import com.thakaan.settings.checkInDue
 import com.thakaan.ui.CheckInScreen
 import com.thakaan.ui.AlertDelivery
 import com.thakaan.ui.OnboardingScreen
-import com.thakaan.ui.FaceCheckScreen
-import com.thakaan.ui.FaceLiveScreen
-import com.thakaan.ui.QuickCheckScreen
-import com.thakaan.ui.SafetyScreen
-import com.thakaan.ui.HomeScreen
+import com.thakaan.ui.AppShell
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -86,31 +79,7 @@ class MainActivity : ComponentActivity() {
             var replaying by remember { mutableStateOf(false) }
             val sessionFile = remember { File(filesDir, "session.thkr") }
             val recorder = remember { StreamRecorder(sessionFile) }
-            var diagnostics by remember { mutableStateOf(false) }
-            var chhaya by remember { mutableStateOf(false) }
-            var safety by remember { mutableStateOf(false) }
-            var shiftReport by remember { mutableStateOf(false) }
-            if (shiftReport) { ShiftReportScreen(onBack = { shiftReport = false }); return@setContent }
-            var quick by remember { mutableStateOf(false) }
-            var face by remember { mutableStateOf(false) }
-            if (quick) { QuickCheckScreen(onBack = { quick = false }); return@setContent }
-            var faceLive by remember { mutableStateOf(false) }
-            if (faceLive) { FaceLiveScreen(onBack = { faceLive = false }); return@setContent }
-            if (face) { FaceCheckScreen(onBack = { face = false }); return@setContent }
-            if (chhaya) { ChhayaScreen(onBack = { chhaya = false }); return@setContent }
-            if (safety) { SafetyScreen(onBack = { safety = false }); return@setContent }
-            if (diagnostics) {
-                DiagnosticsScreen(onBack = { diagnostics = false })
-                return@setContent
-            }
-            HomeScreen(
-                onOpenDiagnostics = { diagnostics = true },
-                onOpenChhaya = { chhaya = true },
-                onOpenShiftReport = { shiftReport = true },
-                onOpenSafety = { safety = true },
-                onOpenQuickCheck = { quick = true },
-                onOpenFaceCheck = { face = true },
-                onOpenFaceLive = { faceLive = true },
+            AppShell(
                 running = running,
                 recording = recording,
                 replaying = replaying,

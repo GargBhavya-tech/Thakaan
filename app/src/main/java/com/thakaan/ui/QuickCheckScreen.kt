@@ -89,8 +89,8 @@ fun QuickCheckScreen(onBack: () -> Unit) {
     var round by remember { mutableIntStateOf(0) }
     var finished by remember { mutableStateOf(false) }
 
-    MaterialTheme {
-        Surface(Modifier.fillMaxSize(), color = Color.White) {
+    ThakaanTheme {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Quick check", fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 when {
