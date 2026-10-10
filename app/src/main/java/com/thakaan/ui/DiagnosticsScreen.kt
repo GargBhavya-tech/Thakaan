@@ -33,6 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.thakaan.exposure.Wbgt
+import com.thakaan.exposure.WbgtInput
+import com.thakaan.exposure.WbgtNative
+import com.thakaan.risk.SafetyChecks
 import com.thakaan.body.EcTempVectors
 import com.thakaan.inference.Backend
 import com.thakaan.inference.ModelHost
@@ -123,7 +127,13 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     val ec = remember { runCatching { EcTempVectors.checkAssets(ctx) }.getOrNull() }
                     Line("ECTemp vectors", ec?.let { "${it.summary} pass" } ?: "could not run", ok = ec != null && ec.passed == ec.total)
                     ec?.failures?.forEach { Line("  failed", it, ok = false) }
-                    Line("Safety checks", "not run yet (#42)", ok = false)
+                    // 35 C, 40% RH, strong sun, light wind at midday in Bengaluru: Liljegren WBGT must land in a plausible hot range.
+                    val wb = remember {
+                        Wbgt().compute(WbgtInput(1_760_000_000_000L + 6 * 3_600_000L, 12.97, 77.59, 800.0, 910.0, 35.0, 40.0, 1.5))
+                    }
+                    Line("WBGT native (lwbgt)", if (!WbgtNative.available) "library did not load" else wb?.let { "loads; sample WBGT %.1f C".format(it.wbgtC) } ?: "loads, sample failed", ok = wb != null && wb.wbgtC in 22.0..38.0)
+                    val sc = remember { SafetyChecks.runAll() }
+                    Line("Safety checks", "${sc.count { it.passed }}/${sc.size} pass", ok = sc.all { it.passed })
                 }
             }
         }

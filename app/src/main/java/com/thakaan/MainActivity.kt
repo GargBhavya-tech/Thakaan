@@ -36,6 +36,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // The demo and the 10-minute stream test run with the screen on.
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Edge-to-edge is enforced on new Android versions: keep every screen clear of the status bar and camera cutout.
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { v, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            androidx.core.view.WindowInsetsCompat.CONSUMED
+        }
         val store = PrefsProfileStore(applicationContext)
         val delivery = AlertDelivery(applicationContext)
         setContent {
