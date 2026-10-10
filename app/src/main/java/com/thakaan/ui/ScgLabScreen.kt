@@ -55,7 +55,8 @@ fun ScgLabScreen(onBack: () -> Unit) {
             val ctx = LocalContext.current
             var running by remember { mutableStateOf(false) }
             var secsLeft by remember { mutableStateOf(SECONDS) }
-            var status by remember { mutableStateOf("Sit still. Hold the phone flat against your chest, screen facing out. Press Start, breathe normally and do not talk.") }
+            var prep by remember { mutableStateOf(0) }
+            var status by remember { mutableStateOf("Sit still. Hold the phone flat against your chest, screen facing out. Press Start, then you have 10 seconds to put it there. Breathe normally and do not talk.") }
             var result by remember { mutableStateOf<ScgResult?>(null) }
             var rateInfo by remember { mutableStateOf("") }
             val shadow = remember { ShadowModels(ctx) }
@@ -64,6 +65,10 @@ fun ScgLabScreen(onBack: () -> Unit) {
             LaunchedEffect(running) {
                 if (!running) return@LaunchedEffect
                 result = null
+                // Time to put the phone on the chest first: lifting it there tilts it, and a tilt locks the recording out for 30 s.
+                prep = PREP_SECONDS
+                while (running && prep > 0) { delay(1000); prep-- }
+                if (!running) return@LaunchedEffect
                 val sm = ctx.getSystemService(Context.SENSOR_SERVICE) as SensorManager
                 val acc = ArrayList<FloatArray>(); val gyr = ArrayList<FloatArray>()
                 val t0 = SystemClock.elapsedRealtimeNanos()
@@ -112,7 +117,8 @@ fun ScgLabScreen(onBack: () -> Unit) {
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Chest vibration lab", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text(status, fontSize = 16.sp)
-                if (running) Text("$secsLeft s left. Stay still.", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                if (running && prep > 0) Text("Put the phone on your chest now: $prep s", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D47A1))
+                else if (running) Text("$secsLeft s left. Stay still.", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 if (rateInfo.isNotEmpty()) Text("Sensor: $rateInfo", fontSize = 14.sp, color = Color.DarkGray)
                 result?.let { r ->
                     Text(
@@ -123,7 +129,7 @@ fun ScgLabScreen(onBack: () -> Unit) {
                     Text("Still windows %d of %d, rate agreement %.0f%%, axis ${r.axis}".format(r.stillWindows, r.windows, r.consistency * 100), fontSize = 14.sp, color = Color.DarkGray)
                     Text("Compare with your fingertip or watch at the same time. A match within a few beats is a pass.", fontSize = 14.sp)
                 }
-                if (!running) Button(onClick = { secsLeft = SECONDS; running = true }, Modifier.fillMaxWidth().height(64.dp)) { Text("Start (45 s)", fontSize = 22.sp) }
+                if (!running) Button(onClick = { secsLeft = SECONDS; prep = 0; running = true }, Modifier.fillMaxWidth().height(64.dp)) { Text("Start (45 s)", fontSize = 22.sp) }
                 else OutlinedButton(onClick = { running = false; status = "Stopped." }, Modifier.fillMaxWidth()) { Text("Stop", fontSize = 18.sp) }
                 OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text("Back", fontSize = 18.sp) }
             }
@@ -132,3 +138,4 @@ fun ScgLabScreen(onBack: () -> Unit) {
 }
 
 private const val SECONDS = 45
+private const val PREP_SECONDS = 10
