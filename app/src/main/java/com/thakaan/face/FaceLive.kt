@@ -4,7 +4,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.PowerManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.SystemClock
+import java.io.File
 import com.thakaan.ppg.GuardDecision
 import com.thakaan.ppg.ThermalGuard
 
@@ -42,6 +47,52 @@ class FaceLiveSession(private val ctx: Context) {
     @Volatile private var computing = false
     private var lastRawEye: Pair<Double, Double>? = null
 
+    // optional recording of the colour numbers (never pictures) so the pulse method can be tuned on real traces
+    private class Rec(val t: Long, val r: Double, val g: Double, val b: Double, val found: Boolean, val motion: Double, val eye: Double, val jaw: Double)
+    private val rec = ArrayList<Rec>()
+    private val recAcc = ArrayList<FloatArray>()
+    @Volatile var recording = false; private set
+    private var recStartT = 0L
+    private var accListener: SensorEventListener? = null
+
+    fun recordedSeconds(): Int = synchronized(rec) { if (rec.size < 2) 0 else ((rec.last().t - rec.first().t) / 1_000_000_000L).toInt() }
+
+    fun startRecording() {
+        synchronized(rec) { rec.clear(); recAcc.clear() }
+        recStartT = 0L
+        val sm = ctx.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val l = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) { synchronized(rec) { recAcc += floatArrayOf((SystemClock.elapsedRealtimeNanos() / 1_000_000L).toFloat(), e.values[0], e.values[1], e.values[2]) } }
+            override fun onAccuracyChanged(s: Sensor?, a: Int) {}
+        }
+        sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sm.registerListener(l, it, SensorManager.SENSOR_DELAY_GAME) }
+        accListener = l
+        recording = true
+    }
+
+    /** Stops and writes two small CSV files in the app's private folder (colour means over time, and phone motion). Returns the file name. */
+    fun stopRecording(): String? {
+        recording = false
+        (ctx.getSystemService(Context.SENSOR_SERVICE) as SensorManager).let { sm -> accListener?.let { sm.unregisterListener(it) } }
+        accListener = null
+        val r: List<Rec>; val a: List<FloatArray>
+        synchronized(rec) { r = rec.toList(); a = recAcc.toList(); rec.clear(); recAcc.clear() }
+        if (r.size < 30) return null
+        val base = "face_live_${System.currentTimeMillis()}"
+        val locked = camera.applied?.aeLocked == true
+        File(ctx.filesDir, "$base.csv").bufferedWriter().use { w ->
+            w.write("t_ms,r,g,b,face,motion,eye_closure,jaw_open,ae_locked\n")
+            val t0 = r.first().t
+            for (p in r) w.write("%d,%.3f,%.3f,%.3f,%d,%.4f,%.3f,%.3f,%d\n".format((p.t - t0) / 1_000_000L, p.r, p.g, p.b, if (p.found) 1 else 0, p.motion, p.eye, p.jaw, if (locked) 1 else 0))
+        }
+        File(ctx.filesDir, "${base}_acc.csv").bufferedWriter().use { w ->
+            w.write("t_ms,ax,ay,az\n")
+            val tA = a.firstOrNull()?.get(0) ?: 0f
+            for (p in a) w.write("%.0f,%.3f,%.3f,%.3f\n".format(p[0] - tA, p[1], p[2], p[3]))
+        }
+        return "$base.csv"
+    }
+
     fun error(): String? = error
     fun oxygenOffset(): Double? = o2.offsetPct()
 
@@ -57,6 +108,9 @@ class FaceLiveSession(private val ctx: Context) {
                 if (firstT == 0L) firstT = t
                 val obs = tracker.track(bmp, px, t)
                 lastObs = obs
+                if (recording) synchronized(rec) {
+                    if (rec.size < MAX_REC_FRAMES) rec += Rec(t, obs.r, obs.g, obs.b, obs.box != null, obs.motion, obs.eyeClosure, obs.jawOpen)
+                }
                 synchronized(this) {
                     frames += obs.toFaceFrame(); fatigue += obs.toFatigueFrame()
                     if (obs.hasBlend) lastRawEye = obs.eyeClosure to obs.jawOpen
@@ -92,10 +146,11 @@ class FaceLiveSession(private val ctx: Context) {
     fun view(): LiveView = LiveView(shown, lastObs, frameNo, vitals, camera.applied?.aeLocked == true)
 
     fun stop() {
+        if (recording) stopRecording()
         camera.stop(); tracker.close()
         synchronized(this) { frames.clear(); fatigue.clear() }
         shown = null; vitals = null; lastObs = null
     }
 
-    companion object { const val KEEP_SEC = 75L }
+    companion object { const val KEEP_SEC = 75L; const val MAX_REC_FRAMES = 30 * 180 }
 }

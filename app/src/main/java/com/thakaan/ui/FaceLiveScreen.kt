@@ -73,12 +73,17 @@ fun FaceLiveScreen(onBack: () -> Unit) {
             val store = remember { OxygenCalibrationStore(ctx) }
             var oximeter by remember { mutableStateOf("") }
             var calNote by remember { mutableStateOf("") }
+            var recNote by remember { mutableStateOf("") }
+            var recSecs by remember { mutableStateOf(0) }
+            var recOn by remember { mutableStateOf(false) }
 
             DisposableEffect(Unit) { onDispose { session?.stop() } }
             LaunchedEffect(session) {
                 val s = session ?: return@LaunchedEffect
                 while (true) {
                     view = s.view()
+                    recSecs = s.recordedSeconds()
+                    if (recOn && recSecs >= 170) { recNote = s.stopRecording()?.let { "Saved $it (kept on this phone only)." } ?: "Too little to save."; recOn = false }
                     s.error()?.let { problem = it; s.stop(); session = null; return@LaunchedEffect }
                     delay(100)
                 }
@@ -104,6 +109,12 @@ fun FaceLiveScreen(onBack: () -> Unit) {
                     val v = view
                     Preview(v)
                     Cards(v)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Engineering: record the skin-colour numbers (never pictures) to a file on this phone, so the pulse method can be tuned.", fontSize = 13.sp, color = Color.DarkGray)
+                        if (!recOn) OutlinedButton(onClick = { session?.startRecording(); recOn = true; recNote = "" }, Modifier.fillMaxWidth()) { Text("Record this session (up to 3 min)", fontSize = 16.sp) }
+                        else Button(onClick = { recNote = session?.stopRecording()?.let { "Saved $it (kept on this phone only)." } ?: "Too little to save."; recOn = false }, Modifier.fillMaxWidth()) { Text("Stop and save recording ($recSecs s)", fontSize = 16.sp) }
+                        if (recNote.isNotEmpty()) Text(recNote, fontSize = 14.sp)
+                    }
                     OxygenCalibration(v, store, oximeter, { oximeter = it }, calNote) { calNote = it }
                     OutlinedButton(onClick = { session?.stop(); session = null; view = null }, Modifier.fillMaxWidth()) { Text("Stop", fontSize = 18.sp) }
                 }
