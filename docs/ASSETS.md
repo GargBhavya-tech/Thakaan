@@ -15,6 +15,7 @@ Never download at demo time: venue Wi-Fi with 100+ teams is unreliable. Large fi
 | SegFormer-B0 Cityscapes `segformer_b0_cityscapes.tflite` (sky / tree / building view) | #47 cross-check | [x] | [x] (inside the APK) | 15 MB | 2026-10-10 | nvidia/segformer-b0-finetuned-cityscapes-512-1024 (NVIDIA Source Code License: non-commercial research use only); converted by `tools/models/convert_segformer.py`. Replaces the YOLO-seg idea: YOLO/DeepLab classes have no sky, tree or building |
 | Four small models trained on SIMULATED data: `activity_cnn.tflite`, `scg_denoiser.tflite`, `strain_gru.tflite`, `los_xgboost.json` | #7, #30, #44, #36 | [x] | [x] (inside the APK) | 0.2 MB | 2026-10-10 | `tools/models/train_models.py` (fixed seeds); gitignored; shadow models, never deciding a level |
 | Whisper-small TFLite | #34 | [ ] | [ ] | | | not fetched: no ready-made TFLite of Whisper-small exists (only tiny/base from argmaxinc/whisperkit-litert, ~290 MB for base); Vosk is used instead |
+| Open-Meteo hourly PM2.5 cache (Bengaluru, 7 days; modelled CAMS value, CC BY 4.0) | #58 | [x] | [x] (inside the APK) | 4 KB | 2026-10-10 | assets/airquality/, replaces the OpenAQ key which was not obtained; verified by `tools/verify_assets.py` (docs/ASSET_LOG.md) |
 | OpenAQ API key | #58 | [ ] | n/a | | | stretch; never commit |
 | Chhaya graph + shade layer (generated) | #46, #47 | [x] | [x] | 1.0 MB | 2026-10-10 | tools/chhaya/build_graph.py + shade.py; copies in app/src/main/assets/chhaya |
 

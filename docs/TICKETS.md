@@ -14,7 +14,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 1 | Scope and submission lock (name + track locked; roles, demo teammate open: see DECISIONS.md) | all | 🟥 CORE | ⚪ PRE-BUILD | before coding | — |
 | [~] | 2 | Loaner smoke test (10 of 11 items measured, GNSS L5 needs outdoor re-run: see SMOKE_TEST.md) | all | 🟥 CORE | 🔴 RED-OK | first hour | — |
 | [ ] | 3 | Office Kit loop rehearsed | all | 🟥 CORE | ⚪ PRE-BUILD | CP-A | — |
-| [~] | 4 | Assets pre-fetched | all | 🟥 CORE | 🟢 GREEN | first Green window | — |
+| [x] | 4 | Assets pre-fetched | all | 🟥 CORE | 🟢 GREEN | first Green window | — |
 | [~] | 5 | App skeleton, sensor hub and provenance (10-min run OK for IMU + light, all REAL; GNSS stream needs outdoor check; OriginOS lock/battery settings by hand) | C | 🟥 CORE | 🔴 RED-OK | CP-A | #2 |
 | [x] | 6 | Inference seam and Diagnostics screen | C | 🟥 CORE | 🟢 GREEN | CP-A | #5 |
 | [~] | 7 | Stream recorder and replay harness (unit tests + phone replay verified; 5-min walking recording still to do) | C | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |

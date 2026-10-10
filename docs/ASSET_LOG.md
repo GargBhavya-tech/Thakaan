@@ -1,6 +1,6 @@
 # Asset log (ticket #4)
 
-Generated 2026-10-10 14:04 by `tools/verify_assets.py`. Every file below was opened on the laptop; size and date are as found.
+Generated 2026-10-10 14:50 by `tools/verify_assets.py`. Every file below was opened on the laptop; size and date are as found.
 
 | Asset | File | Size (bytes) | Date | Opened by | Result | Note |
 | --- | --- | ---: | --- | --- | --- | --- |
@@ -34,7 +34,7 @@ Generated 2026-10-10 14:04 by `tools/verify_assets.py`. Every file below was ope
 | --- | --- |
 | assets/ectemp_vectors.json | in the APK |
 | assets/weather/bengaluru_open-meteo.json | in the APK |
-| assets/airquality/bengaluru_open-meteo_pm25.json | MISSING from the APK |
+| assets/airquality/bengaluru_open-meteo_pm25.json | in the APK |
 | assets/models/face_landmarker.task | in the APK |
 | assets/models/efficientphys.tflite | in the APK |
 | assets/models/segformer_b0_cityscapes.tflite | in the APK |
@@ -43,6 +43,6 @@ Generated 2026-10-10 14:04 by `tools/verify_assets.py`. Every file below was ope
 | assets/models/strain_gru.tflite | in the APK |
 | assets/models/los_xgboost.json | in the APK |
 | assets/chhaya/graph.json | in the APK |
-| files/models/gemma-4-E2B-it-gpu.litertlm | NOT on the phone |
-| files/models/vosk-model-small-en-in-0.4 | NOT on the phone |
-| files/models/vosk-model-small-hi-0.22 | NOT on the phone |
+| files/models/gemma-4-E2B-it-gpu.litertlm | on the phone |
+| files/models/vosk-model-small-en-in-0.4 | on the phone |
+| files/models/vosk-model-small-hi-0.22 | on the phone |
