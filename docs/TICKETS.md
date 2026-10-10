@@ -4,7 +4,7 @@ Generated from `docs/Thakaan — Build Map v1.md` (65 tickets). Tick a box only 
 
 Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 🟥 CORE · 🟨 SUPPORTING · ⬜ SEED. Light: ⚪ PRE-BUILD · 🟢 GREEN · 🔴 RED-OK.
 
-**Status note:** `[~]` = code written and laptop unit tests green, but the device-only part (camera, GNSS, light sensor, speech, haptics, NPU, human-in-the-loop) is UNTESTED on the phone. #41 is `[x]` because its Test runs on the laptop (150+ tests, guard-off-must-fail proofs). Tickets 9-11, 13-21, 32-40, 42 are in this state; see docs/PHONE_CHECKLIST.md when it exists.
+**Status note:** `[~]` = code written and laptop unit tests green, but the device-only part (camera, GNSS, light sensor, speech, haptics, NPU, human-in-the-loop) is UNTESTED on the phone. #41 is `[x]` because its Test runs on the laptop (150+ tests, guard-off-must-fail proofs). Tickets 9-11, 13-21, 24-27, 29, 32-40, 42, 46-48, 50, 54 are in this state; see docs/PHONE_CHECKLIST.md when it exists.
 
 
 ## Phase 0: Pre-build decisions and foundations
@@ -54,12 +54,12 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ ] | 22 | ECTemp core filter and test vectors | A | 🟥 CORE | 🔴 RED-OK | CP-A | #4, #6 |
 | [ ] | 23 | Personalisation, gating and start-of-shift | A | 🟥 CORE | 🔴 RED-OK | CP-B | #22, #11 |
-| [ ] | 24 | Gagge / PHS heat-balance prior | A | 🟥 CORE | 🔴 RED-OK | CP-B | #13, #17, #18, #19, #22 |
-| [ ] | 25 | Hydration deficit (P15) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #20, #24 |
-| [ ] | 26 | Excess HR and idle-state drift (P9, P10) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #14, #23, #24 |
-| [ ] | 27 | Sit-to-stand and perfusion collapse (P13, P17) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #14 |
+| [~] | 24 | Gagge / PHS heat-balance prior | A | 🟥 CORE | 🔴 RED-OK | CP-B | #13, #17, #18, #19, #22 |
+| [~] | 25 | Hydration deficit (P15) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #20, #24 |
+| [~] | 26 | Excess HR and idle-state drift (P9, P10) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #14, #23, #24 |
+| [~] | 27 | Sit-to-stand and perfusion collapse (P13, P17) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #14 |
 | [ ] | 28 | Onboarding and cool baseline | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #27 |
-| [ ] | 29 | Adaptive R and drift handling | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #26 |
+| [~] | 29 | Adaptive R and drift handling | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #26 |
 | [ ] | 30 | Chest SCG (P3) | A | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #6, #13 |
 | [ ] | 31 | Face rPPG and forehead thermistor (P1, P14) | A | ⬜ SEED / PITCH-ONLY | 🟢 GREEN | Stretch | #6, #8 |
 
@@ -91,11 +91,11 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 46 | OSM bundle and offline graph | B | 🟥 CORE | 🟢 GREEN | CP-B | #4 |
-| [ ] | 47 | Computed shadow layer | B | 🟥 CORE | 🟢 GREEN | CP-B | #46 |
-| [ ] | 48 | Strain-aware routing | B | 🟥 CORE | 🔴 RED-OK | CP-B | #39, #47 |
+| [~] | 46 | OSM bundle and offline graph | B | 🟥 CORE | 🟢 GREEN | CP-B | #4 |
+| [~] | 47 | Computed shadow layer | B | 🟥 CORE | 🟢 GREEN | CP-B | #46 |
+| [~] | 48 | Strain-aware routing | B | 🟥 CORE | 🔴 RED-OK | CP-B | #39, #47 |
 | [ ] | 49 | Chhaya map screen | B | 🟥 CORE | 🔴 RED-OK | CP-B | #48 |
-| [ ] | 50 | Light-map logging and aggregation | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #16, #21, #46 |
+| [~] | 50 | Light-map logging and aggregation | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #16, #21, #46 |
 | [ ] | 51 | Recorded ride and 20x replay | B | 🟥 CORE | 🔴 RED-OK | CP-B | #7, #49 |
 
 ## Phase 8: Systems, Office Kit and console
@@ -104,7 +104,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ ] | 52 | Office Kit live during Red Light | C | 🟥 CORE | 🔴 RED-OK | CP-A | #3, #5 |
 | [ ] | 53 | Supervisor console | C | 🟥 CORE | 🟢 GREEN | CP-B | #39, #52 |
-| [ ] | 54 | Hash-chained exposure log and verifier | C | 🟥 CORE | 🔴 RED-OK | FINAL | #39, #53 |
+| [~] | 54 | Hash-chained exposure log and verifier | C | 🟥 CORE | 🔴 RED-OK | FINAL | #39, #53 |
 | [ ] | 55 | Provenance chips everywhere | C | 🟥 CORE | 🔴 RED-OK | FINAL | #5, #49, #53 |
 | [ ] | 56 | Airplane-mode proof | C | 🟥 CORE | 🔴 RED-OK | CP-B | #40, #48 |
 
@@ -126,6 +126,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [ ] | 63 | Backup recording | C | 🟥 CORE | 🔴 RED-OK | FINAL | #61 |
 | [ ] | 64 | Pitch narrative, both formats | C | 🟥 CORE | 🔴 RED-OK | FINAL | #60, #61, #62 |
 | [ ] | 65 | Real-worker feedback | C | 🟨 SUPPORTING | ⚪ PRE-BUILD | FINAL | — |
+
 
 
 
