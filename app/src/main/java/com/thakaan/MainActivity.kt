@@ -1,4 +1,4 @@
-package com.thakaan
+﻿package com.thakaan
 
 import android.Manifest
 import android.content.Intent
@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.thakaan.shift.ShiftRuntime
 import com.thakaan.sensorhub.Replayer
 import com.thakaan.sensorhub.SensorHub
 import com.thakaan.sensorhub.SensorHubService
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
             val perms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
                 // Start whatever the grants allow; the service skips location if it was refused.
                 start()
+                ShiftRuntime.start(applicationContext, lifecycleScope)
                 running = true
             }
             var recording by remember { mutableStateOf(false) }
@@ -55,6 +57,7 @@ class MainActivity : ComponentActivity() {
                         lifecycleScope.launch { recorder.stop() }
                         recording = false
                         startService(Intent(this, SensorHubService::class.java).setAction(SensorHubService.ACTION_STOP))
+                        ShiftRuntime.stop()
                         running = false
                     } else {
                         perms.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS))
@@ -73,6 +76,7 @@ class MainActivity : ComponentActivity() {
                     if (sessionFile.exists()) {
                         replaying = true
                         SensorHub.reset()
+                        ShiftRuntime.start(applicationContext, lifecycleScope, sessionFile.lastModified() / 1000 - 600)
                         lifecycleScope.launch {
                             val ticker = launch { while (true) { SensorHub.snapshot(); logStats(); delay(1000) } }
                             Replayer().play(sessionFile, speed)
@@ -96,3 +100,5 @@ class MainActivity : ComponentActivity() {
         ContextCompat.startForegroundService(this, Intent(this, SensorHubService::class.java))
     }
 }
+
+

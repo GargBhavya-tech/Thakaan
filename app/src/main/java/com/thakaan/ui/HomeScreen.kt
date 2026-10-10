@@ -1,4 +1,4 @@
-package com.thakaan.ui
+﻿package com.thakaan.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -40,7 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.thakaan.core.Provenance
+import com.thakaan.risk.Level
 import com.thakaan.risk.mockLevelFor
+import com.thakaan.shift.ShiftRuntime
 import com.thakaan.sensorhub.SensorHub
 import com.thakaan.sensorhub.Stream
 
@@ -69,6 +71,7 @@ fun HomeScreen(
     MaterialTheme(colorScheme = SunScheme) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             val stats by SensorHub.stats.collectAsStateWithLifecycle()
+            val snap by ShiftRuntime.snapshot.collectAsStateWithLifecycle()
             var mode by remember { mutableStateOf(Mode.RIDER) }
             var mockTss by remember { mutableFloatStateOf(18f) }
 
@@ -85,14 +88,31 @@ fun HomeScreen(
                     }
                 }
 
-                Gauge(tss = mockTss.toInt())
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    // The mock TSS is not a measurement, so it is always labelled SIMULATED.
-                    ProvenanceChip(Provenance.SIMULATED)
+                val s = snap
+                if (s != null) {
+                    Gauge(tss = s.tss, level = s.level)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { ProvenanceChip(s.provenance) }
+                    if (s.collapseSecondsLeft > 0 || s.collapseAlarm) {
+                        Text(
+                            if (s.collapseAlarm) "Alarm: help is being called" else "Are you OK? Say haan or tap. ${s.collapseSecondsLeft}s",
+                            fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9B0000),
+                        )
+                    }
+                    s.forecastHeadline?.let { Text(it, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+                    s.drivers.take(3).forEach { Text("- $it", fontSize = 18.sp) }
+                    Text(
+                        "Sun %.0f min   Rest %.0f min ago   Water deficit %s%s".format(s.sunDoseMin, s.minutesSinceRest, s.hydrationText, s.wbgtC?.let { "   Heat index %.0f".format(it) } ?: "   Weather unknown (counted as hot)"),
+                        fontSize = 14.sp, color = Color.DarkGray,
+                    )
+                } else {
+                    Gauge(tss = mockTss.toInt())
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                        // Until sensing starts the gauge is a demo dial, so it is labelled SIMULATED.
+                        ProvenanceChip(Provenance.SIMULATED)
+                    }
+                    Text("Start sensing to see your real level. This dial is a demo.", fontSize = 14.sp)
+                    Slider(value = mockTss, onValueChange = { mockTss = it }, valueRange = 0f..100f)
                 }
-                Text("Mock Strain Score (placeholder until the risk engine, #39)", fontSize = 14.sp)
-                Slider(value = mockTss, onValueChange = { mockTss = it }, valueRange = 0f..100f)
-
                 Button(onClick = onToggleHub, Modifier.fillMaxWidth()) {
                     Text(if (running) "Stop sensing" else "Start sensing", fontSize = 20.sp)
                 }
@@ -147,8 +167,7 @@ fun ProvenanceChip(p: Provenance) {
 }
 
 @Composable
-fun Gauge(tss: Int) {
-    val level = mockLevelFor(tss)
+fun Gauge(tss: Int, level: Level = mockLevelFor(tss)) {
     Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(240.dp)) {
             val stroke = 28.dp.toPx()
@@ -163,3 +182,5 @@ fun Gauge(tss: Int) {
         }
     }
 }
+
+
