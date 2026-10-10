@@ -49,3 +49,7 @@ app/src/main/assets/models/*.task
 # trained/exported model files; regenerate with tools/models/train_models.py
 app/src/main/assets/models/*.tflite
 app/src/main/assets/models/*.json
+
+# shade source windows (large, third-party data; see docs/ASSETS.md)
+assets/shade_src/
+!app/src/main/assets/chhaya/shade_h3.bin
