@@ -15,4 +15,11 @@ Found and fixed on the phone:
 Not yet passing:
 - No fingertip capture has passed the quality gates yet. Best values: perfusion 0.4 to 1.7% (gate 0.3), beat correlation 0.63 to 0.79 (gate 0.85), signal-to-noise -4 to 0 dB (gate 5), spectral and beat heart rates within 5 bpm in the last two runs (72/68 and 80/75). The gates were never calibrated on real data, and there is no reference heart rate yet, so they were NOT loosened.
 - Next: capture 5+ clean attempts next to a pulse oximeter or watch, try the 60 s FULL check (more data, better SNR), then decide gate values from that data.
-- Not tested yet: tremor, tapping and symptom steps, Chhaya map, console clipboard flow, alert speech and voices, Keystore signing, airplane-mode run.
+- Not tested yet: console clipboard flow, alert speech and voices (Google TTS is installed; which of hi/kn/ta/te voices exist is unchecked), Keystore signing, gait, GNSS outdoors, light in sun/shade/pocket.
+
+Second run (same day, tested without a human where possible):
+- Quick check end to end: the hand-hold (tremor) step ran and completed; the symptoms step recorded; the summary lists each step as done, unusable or skipped with its reason.
+- Tapping step: adb-injected taps are rejected ("too few taps", then "timestamps unusable"). That is inconclusive, not a pass: injected taps are not finger input. It needs five real runs by hand (#33).
+- Chhaya (#46-#49): map renders, route computes, new destination re-routes instantly with AIRPLANE MODE ON; shade note and OSM credit shown; 38% and 49% shade on two routes, 9 to 35% of each route on guessed heights.
+- Safety tab (#42): 5/5 on device. Flipping each guard turned its check red (guards 1, 2, 3, 4 and 5 checked by hand). The "Missing weather counts as hot" guard turned NOTHING red: a check that cannot fail. Fixed by adding check 6; unit-tested (282 tests green), not yet re-seen on the phone.
+- Found: a phone left still after being moved started the collapse countdown, then ALARM "help is being called" with no way to cancel (the text said "tap" but no button existed, and the alarm never cleared). Fixed: "I'm OK" button; it ends the countdown or clears the alarm. Not yet seen on the phone. The detector's "phone on a desk" suppression is still never switched on, so putting the phone down after carrying it can start a countdown; the countdown plus the button is the safeguard.
