@@ -59,6 +59,8 @@ class ShiftConfig(
     val utcOffsetSec: Int = 19800,
     val heatPrior: Boolean = true,
     val guards: Guards = Guards(),
+    /** Same phone every time: brain scores are only ever compared with the same worker on the same phone. */
+    val deviceId: String = "this-phone",
 )
 
 class ShiftSnapshot(
@@ -157,6 +159,25 @@ class ShiftEngine(
             restHr = hrBpm
             if (hrBpm > 90.0) { if (restHighSince == null) restHighSince = tNanos } else restHighSince = null
         }
+    }
+
+    /** Current state stamp, for tagging a heart check with the state it was taken in. */
+    val stamp: StateStamp get() = lastStamp
+    /** Heat makes pulse-rate variability read high; unknown weather counts as hot. */
+    val hotNow: Boolean get() = (lastWbgt ?: 99.0) >= 28.0
+    val deviceId: String get() = cfg.deviceId
+    val lastActivityNow: Activity get() = lastActivity
+
+    private var sleepPoor: Boolean? = null
+    private var caffeine: Boolean? = null
+    /** The daily 3-tap check-in answers; null = not answered, which never down-weights anything. */
+    fun onCheckIn(sleptPoorly: Boolean?, caffeineRecently: Boolean?) { sleepPoor = sleptPoorly; caffeine = caffeineRecently }
+
+    /** Feed brain-test results (tremor, tapping, gait, speech, PVT) into the CUSUM engine. */
+    fun onBrainResults(results: List<com.thakaan.brain.BrainResult>) {
+        val load = lastWbgt?.let { ((it - 24.0) / 10.0).coerceIn(0.0, 1.0) } ?: 1.0
+        val ctx = com.thakaan.brain.BrainContext(sleepPoor, caffeine, load)
+        results.forEach { battery.ingest(it, ctx) }
     }
 
     fun onDrink(ml: Double) = hydration.logDrink(ml)
@@ -272,4 +293,5 @@ class ShiftEngine(
         return when { slope > 0.3 -> "rising"; slope < -0.3 -> "falling"; else -> "steady" }
     }
 }
+
 
