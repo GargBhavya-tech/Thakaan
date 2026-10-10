@@ -244,7 +244,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                     Column(Modifier.fillMaxWidth().background(Color(0xFFE8F0FE), RoundedCornerShape(10.dp)).padding(10.dp)) {
                         Text(route.chip, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = ROUTE_BLUE)
                         Text(route.note, fontSize = 16.sp)
-                        Text("%.1f km, %.0f min walking".format(route.distanceM / 1000.0, route.timeSec / 60.0), fontSize = 14.sp)
+                        Text("%.1f km, %.1f min walking".format(route.distanceM / 1000.0, route.timeSec / 60.0), fontSize = 14.sp)
                     }
                     Text(
                         (if (source == ShadeSource.MAP) "Shade is computed from map data (OSM), not measured. %.0f%% of this route rests on guessed building heights." else "Shade is modelled from 2023 satellite building and tree heights, not measured. %.0f%% of this route is on segments where it is unsure.").format(route.lowConfidenceShare * 100),

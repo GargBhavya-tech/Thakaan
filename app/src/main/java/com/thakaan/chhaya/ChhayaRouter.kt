@@ -24,7 +24,14 @@ class Route(
 ) {
     val extraSec: Double get() = max(0.0, timeSec - fastestTimeSec)
     /** The chip on the map: extra time first, shade share second. */
-    val chip: String get() = "+${(extraSec / 60.0).roundToInt()} min, ${(shadeShare * 100).roundToInt()}% shade"
+    val chip: String get() = "$extraText, ${(shadeShare * 100).roundToInt()}% shade"
+
+    /** Extra time in the unit that does not round it away: seconds under 90 s, minutes above ("+0 min" beside a longer total looked wrong). */
+    val extraText: String get() = when {
+        extraSec < 5.0 -> "No extra time"
+        extraSec < 90.0 -> "+${extraSec.roundToInt()} s"
+        else -> "+${(extraSec / 60.0).roundToInt()} min"
+    }
 }
 
 /**

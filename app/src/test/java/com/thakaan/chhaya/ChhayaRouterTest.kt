@@ -122,7 +122,7 @@ class ChhayaRouterTest {
 
     @Test fun chipReadsExtraTimeAndShade() {
         val r = route(Level.WARMING, 45)!!
-        assertTrue(r.chip.matches(Regex("\\+\\d+ min, \\d+% shade")))
+        assertTrue(r.chip, r.chip.matches(Regex("(No extra time|\\+\\d+ (s|min)), \\d+% shade")))
     }
 
     @Test fun lowConfidenceShadeIsNeverRosierThanTheComputedValue() {
