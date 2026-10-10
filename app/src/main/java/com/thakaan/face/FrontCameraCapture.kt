@@ -71,6 +71,8 @@ class FrontCameraCapture(private val ctx: Context) {
                     bmp.setPixels(pixels, 0, ow, 0, 0, ow, oh)
                     onFrame(img.timestamp, bmp, pixels)
                 }
+            } catch (_: IllegalStateException) {
+                // the camera was closed (screen left) while this frame was being read: the buffer is gone, so drop the frame
             } finally { img.close() }
         }, handler)
 

@@ -61,3 +61,8 @@ Fingertip pulse analysis, fourth run (PPG lab, 4 real captures; analysis done on
 - Chest lab (#30): placing the phone tilts it, and the posture gate then dropped whole recordings; a 10 s placement countdown was added. Two real recordings against a counted pulse of 70 read 70.6 and 73.2, so the lab tolerance is now 6 beats while the continuous stream feeding the risk engine stays at 4. That is two recordings from one person, not an accuracy claim.
 - Gemma on GPU, all small models, EfficientPhys, SegFormer, Vosk: load (see the Models section above).
 - Not verified: flood report with the lens uncovered, pinch-zoom clipping, two-phone mesh and buddy pairing, real voices in Speech lab, face pulse and oxygen against a reference, shade against real light outdoors.
+
+## Map layers on the phone (2026-10-10, 20:45)
+- Phone signal, Traffic and Air draw on the Chhaya screen with legends and notes. Air reads 25 micrograms (Good), the same number as Home's air dose card; Traffic correctly says it is outside rush hour on a Saturday evening.
+- Signal could NOT be tested: this phone has no SIM (gsm.sim.state ABSENT), so the signal logger now reports unknown without a SIM and nothing is logged. A phone with a SIM and a walk outdoors is still needed, and the measured-speed (thick) traffic lines need a ride with a GNSS fix.
+- Found in the crash log: the face camera crashed once when the screen was left while a frame was being read (buffer is inaccessible). Fixed by dropping that frame.

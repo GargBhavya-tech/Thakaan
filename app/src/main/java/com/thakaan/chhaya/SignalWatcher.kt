@@ -20,7 +20,10 @@ object SignalWatcher {
         try {
             val tm = ctx.applicationContext.getSystemService(TelephonyManager::class.java) ?: return
             val cb = object : TelephonyCallback(), TelephonyCallback.SignalStrengthsListener {
-                override fun onSignalStrengthsChanged(signalStrength: SignalStrength) { level = signalStrength.level.coerceIn(0, 4) }
+                // no SIM means no signal to measure: unknown (stays grey on the map), not "no service"
+                override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+                    level = if (tm.simState == TelephonyManager.SIM_STATE_READY) signalStrength.level.coerceIn(0, 4) else null
+                }
             }
             tm.registerTelephonyCallback(ctx.applicationContext.mainExecutor, cb)
             callback = cb; started = true
