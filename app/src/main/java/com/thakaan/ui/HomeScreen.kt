@@ -68,6 +68,7 @@ fun HomeScreen(
     onReplay: (Float) -> Unit,
     onOpenDiagnostics: () -> Unit,
     onOpenChhaya: () -> Unit = {},
+    onOpenShiftReport: () -> Unit = {},
     onOpenSafety: () -> Unit = {},
     onOpenQuickCheck: () -> Unit = {},
     onOpenFaceCheck: () -> Unit = {},
@@ -145,6 +146,7 @@ fun HomeScreen(
                 Button(onClick = onOpenFaceCheck, Modifier.fillMaxWidth()) { Text("Face check (optional, 40 s)", fontSize = 18.sp) }
                 Button(onClick = onOpenFaceLive, Modifier.fillMaxWidth()) { Text("Face live view (pulse, breathing, oxygen...)", fontSize = 18.sp) }
                 Button(onClick = onOpenChhaya, Modifier.fillMaxWidth()) { Text("Chhaya route (shade and water)", fontSize = 20.sp) }
+                Button(onClick = onOpenShiftReport, Modifier.fillMaxWidth()) { Text("Shift report", fontSize = 20.sp) }
                 Button(onClick = onOpenSafety, Modifier.fillMaxWidth()) { Text("Safety checks", fontSize = 18.sp) }
                 Button(onClick = onOpenDiagnostics, Modifier.fillMaxWidth()) { Text("Diagnostics", fontSize = 18.sp) }
 

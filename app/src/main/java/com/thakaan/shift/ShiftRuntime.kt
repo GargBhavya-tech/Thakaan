@@ -26,6 +26,9 @@ object ShiftRuntime {
     val snapshot: StateFlow<ShiftSnapshot?> = _snapshot
 
     @Volatile var engine: ShiftEngine? = null; private set
+
+    /** The running shift's report data; replaced when a new shift starts and kept after it stops so the report can still be read. */
+    @Volatile var log = ShiftLog(); private set
     private var job: Job? = null
     private var chain: ExposureChain? = null
     private var signer: ChainSigner? = null
@@ -50,6 +53,7 @@ object ShiftRuntime {
         val lang = profile?.language ?: com.thakaan.risk.Lang.HI
         var lastAlerted = com.thakaan.risk.Level.COOL
         engine = e
+        log = ShiftLog()
         val sg: ChainSigner = try { KeystoreSigner(context = context) } catch (_: Throwable) { SoftwareSigner() }
         signer = sg
         chain = ExposureChain(sg)
@@ -58,8 +62,12 @@ object ShiftRuntime {
             SensorHub.readings.collect { r ->
                 e.onReading(r)?.let { s ->
                     _snapshot.value = s
+                    log.add(s.tNanos, s.level, s.tss, s.provenance)
                     if (s.level > peakSeen) peakSeen = s.level
-                    if (s.level > lastAlerted && s.level > com.thakaan.risk.Level.COOL) onAlert?.invoke(com.thakaan.risk.AlertLadder.plan(s.level, lang))
+                    if (s.level > lastAlerted && s.level > com.thakaan.risk.Level.COOL) {
+                        onAlert?.invoke(com.thakaan.risk.AlertLadder.plan(s.level, lang))
+                        com.thakaan.mesh.CrewMesh.onLevelRise(s.level) // buddies hear Strained and Danger only, level only
+                    }
                     lastAlerted = s.level // falling resets so the same level can alert again on the next rise
                     val minute = s.tNanos / 60_000_000_000L
                     if (minute % 15 == 0L && minute != lastChainMinute) { // one log entry per 15 minutes

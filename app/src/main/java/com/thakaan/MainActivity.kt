@@ -20,6 +20,7 @@ import com.thakaan.sensorhub.SensorHub
 import com.thakaan.sensorhub.SensorHubService
 import com.thakaan.sensorhub.StreamRecorder
 import com.thakaan.ui.ChhayaScreen
+import com.thakaan.ui.ShiftReportScreen
 import com.thakaan.ui.DiagnosticsScreen
 import com.thakaan.settings.DailyCheckIn
 import com.thakaan.settings.PrefsCheckInStore
@@ -80,6 +81,8 @@ class MainActivity : ComponentActivity() {
             var diagnostics by remember { mutableStateOf(false) }
             var chhaya by remember { mutableStateOf(false) }
             var safety by remember { mutableStateOf(false) }
+            var shiftReport by remember { mutableStateOf(false) }
+            if (shiftReport) { ShiftReportScreen(onBack = { shiftReport = false }); return@setContent }
             var quick by remember { mutableStateOf(false) }
             var face by remember { mutableStateOf(false) }
             if (quick) { QuickCheckScreen(onBack = { quick = false }); return@setContent }
@@ -95,6 +98,7 @@ class MainActivity : ComponentActivity() {
             HomeScreen(
                 onOpenDiagnostics = { diagnostics = true },
                 onOpenChhaya = { chhaya = true },
+                onOpenShiftReport = { shiftReport = true },
                 onOpenSafety = { safety = true },
                 onOpenQuickCheck = { quick = true },
                 onOpenFaceCheck = { face = true },
