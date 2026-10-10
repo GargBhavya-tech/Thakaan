@@ -1,0 +1,24 @@
+# Thakaan: what it does not do (read before you trust it)
+
+Thakaan is a heat-strain wellbeing tool, not a medical device. It does not diagnose heat illness. ECTemp is patent-covered (US 10,702,165), so commercial use needs a licence.
+
+## What is estimated, not measured
+- **Shade is computed, not measured.** It is ray-cast from OpenStreetMap buildings. About 95% of building heights are guessed (3 storeys), so roughly half the street segments are marked low-confidence and treated as more sunny. Trees and awnings are not modelled. Measured corrections from riders only move the estimate slowly.
+- **Core temperature is an estimate.** It is a filtered inference from heart rate (and a heat-balance prior), never shown as a number. The worker sees Cool, Warming, Strained or Danger.
+- **Fingertip pulse** needs a still finger and a cool phone. Bad captures are rejected, not guessed.
+- **WBGT** comes from a cached forecast plus the phone's light sensor, not a globe thermometer. The weather cache covers only 8 to 13 October 2026.
+
+## What is not built or not proven yet
+- Everything that needs the phone (camera, Keystore, speech voices, native library, UI) is written and unit-tested on a laptop but **untested on the device**.
+- The language model (Gemma) is not wired in. The template phrasing is used and the model can only re-word it, never change a level.
+- The speech-code test has no recogniser yet. The real recorded ride is not captured yet; the demo uses replay and says so (the REPLAY chip).
+- H3 cells were skipped; street segments act as cells.
+
+## What the audit log proves
+The hash chain and signature prove an entry was not edited after it was recorded. They do not prove the observation was true.
+
+## Privacy limits
+Pulse, brain scores and symptoms stay on the phone. The supervisor console sees the level, a trend, minutes since rest and coarse reasons. Position is shared only if the worker turns it on. A person who holds the unlocked phone can see everything on it.
+
+## Safety behaviour you can rely on
+Losing or degrading information never lowers the level: missing heart rate, lost location, a blocked light sensor or an unavailable model hold or raise it. This is checked by a property test and by the Safety checks tab.
