@@ -137,8 +137,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                         Button(onClick = { ks = com.thakaan.audit.KeystoreSelfTest.run(ctx) }) { Text("Keystore signing", fontSize = 14.sp) }
                         Button(onClick = { voices = delivery.voiceStatus() }) { Text("Voices", fontSize = 14.sp) }
                         Button(onClick = { lab = true }) { Text("PPG lab", fontSize = 14.sp) }
-                        Button(onClick = { chestLab = true }) { Text("Chest lab", fontSize = 14.sp) }
                     }
+                    Button(onClick = { chestLab = true }) { Text("Chest lab", fontSize = 14.sp) }
                     var face by remember { mutableStateOf<String?>(null) }
                     Button(onClick = {
                         val t = com.thakaan.face.FaceTracker(ctx)
