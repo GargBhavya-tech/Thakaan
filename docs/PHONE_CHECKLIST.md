@@ -37,3 +37,14 @@ Build and install: `gradlew :app:installDebug` (JAVA_HOME = Android Studio's `jb
 - [ ] #42 Safety checks tab: 5/5 PASS on device; flipping each hidden guard turns its check red.
 - [ ] #54: StrongBox key creation; `hardwareBackedKey` is true in the export, or false (honest) if not; export, verify OK, change one byte, verify BROKEN.
 - [ ] #6 NPU: Diagnostics shows "N/N ops on NPU" for the test model; Gemma loads on GPU (`assets/models/gemma-4-E2B-it-gpu.litertlm`, 1.9 GB, push by adb or Office Kit).
+
+## Added 2026-10-10 (second batch)
+- [ ] #8 camera key set: confirm `applied` (exposure, ISO, frame duration, torch level) in Diagnostics; frame intervals within 25-42 ms for over 98% of frames; no flattening of the pulse in 40 C sun.
+- [ ] #12 thermal guard: with the phone hot, a capture is refused with the shade prompt; covering then dimming the torch voids the window.
+- [ ] #45 quick check: a teammate who has never seen it finishes all steps unaided in under 90 s; a deliberately shaky finger is rejected with a prompt; skipping a step shows "skipped" in the summary.
+- [ ] #28 onboarding: first launch shows setup; relaunch skips it; a bad weight/height/age is refused; leaving days-in-heat at 0 keeps the earlier alerts.
+- [ ] #40 voices: install or confirm Kannada, Telugu and Tamil TTS voices; a missing one must show the English fallback note in Diagnostics.
+- [ ] Alerts: rising to Warming, Strained and Danger speaks and vibrates once each; falling does not speak.
+- [ ] #53 console: run `python -I tools/console/serve.py`, tap Copy status on the phone, paste into the host page; the level and coarse reasons show, no raw numbers; the QR opens the read-only view on a second device.
+- [ ] #42 Safety tab: 5/5 PASS and each guard switch turns its row red.
+- [ ] #56 airplane mode: enable airplane mode, then run a full replay, a route and a quick check; nothing fails, and no network permission is listed in app info.

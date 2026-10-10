@@ -27,7 +27,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 9 | PPG signal pipeline to heart rate | A | 🟥 CORE | 🔴 RED-OK | CP-A | #8 |
 | [~] | 10 | Signal-quality gates and retry UX | A | 🟥 CORE | 🔴 RED-OK | CP-A | #9 |
 | [~] | 11 | Quick and full checks | A | 🟥 CORE | 🔴 RED-OK | CP-A | #10 |
-| [ ] | 12 | Thermal guard for captures | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11 |
+| [~] | 12 | Thermal guard for captures | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11 |
 
 ## Phase 2: Motion and context
 
@@ -58,7 +58,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 25 | Hydration deficit (P15) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #20, #24 |
 | [~] | 26 | Excess HR and idle-state drift (P9, P10) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #14, #23, #24 |
 | [~] | 27 | Sit-to-stand and perfusion collapse (P13, P17) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #14 |
-| [ ] | 28 | Onboarding and cool baseline | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #27 |
+| [~] | 28 | Onboarding and cool baseline | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #27 |
 | [~] | 29 | Adaptive R and drift handling | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #26 |
 | [ ] | 30 | Chest SCG (P3) | A | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #6, #13 |
 | [ ] | 31 | Face rPPG and forehead thermistor (P1, P14) | A | ⬜ SEED / PITCH-ONLY | 🟢 GREEN | Stretch | #6, #8 |
@@ -83,9 +83,9 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 40 | Alert ladder | C | 🟥 CORE | 🔴 RED-OK | CP-A | #15, #39 |
 | [x] | 41 | Safety-invariant property test | C | 🟥 CORE | 🟢 GREEN | CP-B | #39 |
 | [~] | 42 | Safety checks tab with guard switches | C | 🟥 CORE | 🔴 RED-OK | FINAL | #6, #41 |
-| [ ] | 43 | Cooling coach | C | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11, #40 |
-| [ ] | 44 | Strain forecast | C | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #39 |
-| [ ] | 45 | Quick-check flow | C | 🟥 CORE | 🔴 RED-OK | CP-A | #11, #32, #33, #35, #39 |
+| [~] | 43 | Cooling coach | C | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #11, #40 |
+| [~] | 44 | Strain forecast | C | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #39 |
+| [~] | 45 | Quick-check flow | C | 🟥 CORE | 🔴 RED-OK | CP-A | #11, #32, #33, #35, #39 |
 
 ## Phase 7: Chhaya Route
 
@@ -94,7 +94,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 46 | OSM bundle and offline graph | B | 🟥 CORE | 🟢 GREEN | CP-B | #4 |
 | [~] | 47 | Computed shadow layer | B | 🟥 CORE | 🟢 GREEN | CP-B | #46 |
 | [~] | 48 | Strain-aware routing | B | 🟥 CORE | 🔴 RED-OK | CP-B | #39, #47 |
-| [ ] | 49 | Chhaya map screen | B | 🟥 CORE | 🔴 RED-OK | CP-B | #48 |
+| [~] | 49 | Chhaya map screen | B | 🟥 CORE | 🔴 RED-OK | CP-B | #48 |
 | [~] | 50 | Light-map logging and aggregation | B | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #16, #21, #46 |
 | [ ] | 51 | Recorded ride and 20x replay | B | 🟥 CORE | 🔴 RED-OK | CP-B | #7, #49 |
 
@@ -103,16 +103,16 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ ] | 52 | Office Kit live during Red Light | C | 🟥 CORE | 🔴 RED-OK | CP-A | #3, #5 |
-| [ ] | 53 | Supervisor console | C | 🟥 CORE | 🟢 GREEN | CP-B | #39, #52 |
+| [~] | 53 | Supervisor console | C | 🟥 CORE | 🟢 GREEN | CP-B | #39, #52 |
 | [~] | 54 | Hash-chained exposure log and verifier | C | 🟥 CORE | 🔴 RED-OK | FINAL | #39, #53 |
 | [ ] | 55 | Provenance chips everywhere | C | 🟥 CORE | 🔴 RED-OK | FINAL | #5, #49, #53 |
-| [ ] | 56 | Airplane-mode proof | C | 🟥 CORE | 🔴 RED-OK | CP-B | #40, #48 |
+| [~] | 56 | Airplane-mode proof | C | 🟥 CORE | 🔴 RED-OK | CP-B | #40, #48 |
 
 ## Phase 9: Optional and cut-first
 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | 57 | Gemma coach and explainer | all | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #4, #6, #39 |
+| [~] | 57 | Gemma coach and explainer | all | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #4, #6, #39 |
 | [ ] | 58 | Breathing-dose card | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #11, #13, #18 |
 | [ ] | 59 | Flood reports and crew mesh | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #48, #53 |
 
