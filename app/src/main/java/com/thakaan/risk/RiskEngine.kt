@@ -59,6 +59,9 @@ class BodyInputs(
     val excessHrLimitBpm: Double = 20.0,
     val hydrationDeficitPct: Double? = null,
     val perfusionCollapse: Boolean = false,
+    /** Chest-pocket pulse (#30), a separate raise-only channel: highest sustained resting rate it saw, null = none. Never counts as fresh evidence. */
+    val chestRestHrBpm: Double? = null,
+    val chestRestHighMin: Double = 0.0,
 )
 
 class BrainInputs(val flaggedFamilies: Set<BrainFamily> = emptySet(), val modelAvailable: Boolean = true)
@@ -249,6 +252,11 @@ class RiskEngine(val guards: Guards = Guards(), private val w: Weights = Weights
         } else if (guards.holdWhenEvidenceStale && heldBodyAnchor > Level.COOL) {
             bodyAnchorNow = heldBodyAnchor
             drivers += Driver("held_body", "last body reading held (no fresh one)", 0.3)
+        }
+        // Chest-pocket pulse: it never makes the heart channel "fresh", so it cannot replace or relax a held body anchor; it can only add a floor.
+        if (guards.independentHrRule && b.chestRestHrBpm != null && b.chestRestHighMin >= 5.0) {
+            if (b.chestRestHrBpm >= 100.0) anchor("chest_rest_hr_high", Level.STRAINED, "resting chest pulse above 100", 0.55)
+            else if (b.chestRestHrBpm >= 90.0) anchor("chest_rest_hr", Level.WARMING, "resting chest pulse above 90", 0.35)
         }
         if (families.size >= 2 && guards.brainFamiliesFloorStrained) {
             val danger = families.size >= 3 || e >= 0.5 || i.symptoms.isNotEmpty()
