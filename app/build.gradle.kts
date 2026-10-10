@@ -32,6 +32,8 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+        // The on-device language model library is built with a newer Kotlin; its classes are read, not recompiled.
+        freeCompilerArgs += "-Xskip-metadata-version-check"
     }
     buildFeatures {
         compose = true
@@ -62,6 +64,10 @@ dependencies {
     implementation("com.qualcomm.qti:qnn-litert-delegate:2.51.0")
     // Face landmarks and blendshapes for the optional face checks (#31); the model file is a local asset, no network at run time.
     implementation("com.google.mediapipe:tasks-vision:0.10.21")
+    // Gemma 4 E2B phrasing (#57) on the GPU; the .litertlm file is pushed to the phone, never bundled or downloaded at run time.
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.0")
+    // Offline digit recogniser for the speech code (#34); small models are pushed to the phone, nothing is downloaded at run time.
+    implementation("com.alphacephei:vosk-android:0.3.75")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250107")

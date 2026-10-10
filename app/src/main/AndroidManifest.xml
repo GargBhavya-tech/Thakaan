@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- A dependency's manifest adds these; Thakaan needs none of them (no phone identity, no shared storage). -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
@@ -27,6 +28,9 @@
 
         <!-- Lets the app load the vendor DSP RPC library that the NPU (Hexagon) path needs. -->
         <uses-native-library android:name="libcdsprpc.so" android:required="false" />
+        <!-- GPU back end of the on-device language model. -->
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
 
         <activity
             android:name=".MainActivity"
