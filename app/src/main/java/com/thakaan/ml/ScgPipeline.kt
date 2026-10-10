@@ -36,8 +36,16 @@ class ScgResult(
      * heart rate, because the lockout exists for a reason and has not been checked against a reference pulse.
      */
     val unconfirmedBpm: Double? = null,
+    /** Why [unconfirmedBpm] is not accepted, in words for the lab screen. */
+    val unconfirmedWhy: String? = null,
     /** Windows lost to each gate (one window can lose to several), so a rejected recording says what went wrong. */
     val lostToMotion: Int = 0, val lostToRotation: Int = 0, val lostToGaps: Int = 0, val lostToLockout: Int = 0,
+    /**
+     * Coupling to the chest, for coaching only: the strongest beat-band (4 to 25 Hz) vibration on any axis in m/s^2 (a clean chest
+     * recording on this phone read about 0.2, a loosely held one about 0.07), and the median strength (0..1) of the steady repeat
+     * the autocorrelation found in the still windows (each window needs 0.2 to count). Not gates: they say why a reading failed.
+     */
+    val beatBandRms: Double = 0.0, val repeatStrength: Double = 0.0,
 ) {
     val accepted: Boolean get() = classicalBpm != null && reason == null
 }
@@ -100,6 +108,7 @@ object ScgPipeline {
         var windows = 0; var still = 0
         var lostMotion = 0; var lostRot = 0; var lostGaps = 0; var lostLock = 0
         val underLockout = ArrayList<Double>()
+        val repeatR = ArrayList<Double>()
         var qualitySum = 0.0
         var prevGravity: DoubleArray? = null
         var settleUntil = -1.0
@@ -135,6 +144,7 @@ object ScgPipeline {
                 val w = ScgHeart.normalise(wave)
                 val peakBpm = ScgHeart.beats(w).bpm
                 val acBpm = autocorrBpm(w)
+                autocorrPeak(w)?.let { repeatR += it.second }
                 // two independent readings must agree, or the window says nothing
                 if (peakBpm != null && acBpm != null && abs(peakBpm - acBpm) <= METHOD_AGREEMENT * acBpm) {
                     classical += peakBpm
@@ -149,12 +159,22 @@ object ScgPipeline {
         // breathing is too slow for one 5 s window: read it once over the whole recording, only if it was still enough
         val resp = if (still >= MIN_STILL_WINDOWS) dominantFrequencyBpm(sway.maxByOrNull { Dsp.std(it) }!!, 0.1, 0.7) else null
         val unconfirmed = underLockout.takeIf { it.size >= MIN_STILL_WINDOWS }?.let { u -> val md = median(u); if (u.count { abs(it - md) <= TOLERANCE_BPM }.toDouble() / u.size >= MIN_CONSISTENCY) md else null }
-        fun res(c: Double?, m: Double?, cons: Double, why: String?) = ScgResult(c, m, windows, still, cons, axisName, why, quality, resp, if (c == null) unconfirmed else null, lostMotion, lostRot, lostGaps, lostLock)
+        val strength = beatBand.maxOf { Dsp.std(it) }
+        val repeat = if (repeatR.isEmpty()) 0.0 else median(repeatR)
+        fun res(c: Double?, m: Double?, cons: Double, why: String?) = ScgResult(c, m, windows, still, cons, axisName, why, quality, resp, if (c == null) unconfirmed else null, if (c == null && unconfirmed != null) "read only from windows the posture lockout had dropped, because the phone was moved at the start" else null, lostMotion, lostRot, lostGaps, lostLock, strength, repeat)
         if (still < MIN_STILL_WINDOWS) return res(null, null, 0.0, "Not still enough: sit still with the phone against your chest")
         if (classical.size < MIN_STILL_WINDOWS) return res(null, model, 0.0, "No clear heartbeat vibration found")
         val med = median(classical)
         val consistency = classical.count { abs(it - med) <= TOLERANCE_BPM }.toDouble() / classical.size
-        if (consistency < MIN_CONSISTENCY) return res(null, model, consistency, "The rate kept changing: not trusted")
+        if (consistency < MIN_CONSISTENCY) {
+            // Shown as an unconfirmed estimate, never accepted: the 4 beat tolerance was tuned on simulated data, and a resting pulse
+            // drifts by a few beats over 45 s, so the spread is reported next to the number.
+            val sorted = classical.sorted(); val lo = sorted[(sorted.size * 0.1).toInt()]; val hi = sorted[((sorted.size - 1) * 0.9).toInt()]
+            val base = res(null, model, consistency, "The rate kept changing: not trusted")
+            return ScgResult(null, model, base.windows, base.stillWindows, consistency, base.axis, base.reason, base.motionQuality, base.breathsPerMin, med,
+                "the window readings ranged from %.0f to %.0f, and only %.0f%% were within %.0f beats of the middle one (70%% are needed)".format(lo, hi, consistency * 100, TOLERANCE_BPM),
+                base.lostToMotion, base.lostToRotation, base.lostToGaps, base.lostToLockout, base.beatBandRms, base.repeatStrength)
+        }
         return res(med, model, consistency, null)
     }
 
@@ -183,7 +203,10 @@ object ScgPipeline {
     }
 
     /** Heart rate from the autocorrelation of the smoothed envelope: the lag with the strongest repeat between 0.33 and 1.5 s. */
-    internal fun autocorrBpm(x: DoubleArray): Double? {
+    internal fun autocorrBpm(x: DoubleArray): Double? = autocorrPeak(x)?.takeIf { it.second >= 0.2 }?.first
+
+    /** The strongest repeat of the smoothed envelope between 0.33 and 1.5 s: (rate a minute, strength 0..1), or null if flat. */
+    internal fun autocorrPeak(x: DoubleArray): Pair<Double, Double>? {
         val env = envelope(x)
         val m = env.average()
         val e = DoubleArray(env.size) { env[it] - m }
@@ -197,8 +220,7 @@ object ScgPipeline {
             val r = s / e0
             if (r > bestR + 1e-9) { bestR = r; best = lag }
         }
-        if (best < 0 || bestR < 0.2) return null
-        return 60.0 * FS / best
+        return if (best < 0) null else 60.0 * FS / best to bestR
     }
 
     private fun envelope(x: DoubleArray): DoubleArray {

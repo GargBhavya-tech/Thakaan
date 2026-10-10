@@ -125,8 +125,10 @@ fun ScgLabScreen(onBack: () -> Unit) {
                         r.classicalBpm?.let { "Chest pulse: about %.0f beats a minute".format(it) } ?: "Chest pulse: not found (${r.reason})",
                         fontSize = 24.sp, fontWeight = FontWeight.Bold, color = if (r.accepted) Color(0xFF1B5E20) else Color(0xFFB00020),
                     )
-                    r.unconfirmedBpm?.let { Text("Not confirmed: about %.0f beats a minute, read only from windows the posture lockout had dropped (the phone was moved at the start). Not trusted until compared with a fingertip or watch.".format(it), fontSize = 16.sp, color = Color(0xFF8A5A00)) }
+                    r.unconfirmedBpm?.let { Text("Not confirmed: about %.0f beats a minute (%s). Not trusted until compared with a fingertip or watch.".format(it, r.unconfirmedWhy ?: ""), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF8A5A00)) }
                     if (!r.accepted) Text("Windows lost: movement %d, rotation %d, posture lockout %d, sensor gaps %d (of %d)".format(r.lostToMotion, r.lostToRotation, r.lostToLockout, r.lostToGaps, r.windows), fontSize = 14.sp, color = Color.DarkGray)
+                    Text("Contact with the chest: beat-band vibration %.2f m/s2 (a clean reading on this phone was about 0.2; a loosely held one 0.07). Steady repeat %.2f (each window needs 0.2).".format(r.beatBandRms, r.repeatStrength), fontSize = 14.sp, color = if (r.beatBandRms < 0.12 || r.repeatStrength < 0.2) Color(0xFF8A5A00) else Color.DarkGray)
+                    if (!r.accepted && (r.beatBandRms < 0.12 || r.repeatStrength < 0.2)) Text("Press the phone flat and firmly on your breastbone with the screen facing out (or lie back and rest it there), through thin cloth, and breathe gently.", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     r.modelBpm?.let { Text("Learned denoiser: about %.0f (second opinion, trained on simulated data)".format(it), fontSize = 16.sp) }
                     Text("Still windows %d of %d, rate agreement %.0f%%, axis ${r.axis}".format(r.stillWindows, r.windows, r.consistency * 100), fontSize = 14.sp, color = Color.DarkGray)
                     Text("Compare with your fingertip or watch at the same time. A match within a few beats is a pass.", fontSize = 14.sp)

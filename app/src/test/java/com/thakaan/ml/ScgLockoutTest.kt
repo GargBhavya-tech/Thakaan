@@ -66,4 +66,18 @@ class ScgLockoutTest {
         val r = ScgPipeline.analyse(recording(78.0, liftAtSec = 4.0))
         assertTrue("lift motion and rotation are counted: ${r.lostToMotion} / ${r.lostToRotation}", r.lostToMotion >= 1 && r.lostToRotation >= 1)
     }
+
+    @Test fun aDriftingButRealPulseIsShownAsUnconfirmedWithItsSpreadAndNeverAccepted() {
+        // 45 s of a pulse that drifts from 58 to 86 over the recording: real, but far from within 4 beats of one middle value
+        val rnd = java.util.Random(9); val fs = 200.0; val n = (45 * fs).toInt()
+        val beats = ArrayList<Double>(); var tb = 0.5
+        while (tb < 45) { val hr = 58 + 28 * (tb / 45); beats += tb; tb += 60.0 / hr }
+        val t = DoubleArray(n) { it / fs }
+        val z = DoubleArray(n) { i -> var v = 9.81 + 0.02 * kotlin.math.sin(2 * PI * 0.25 * t[i]) + 0.01 * rnd.nextGaussian(); for (b in beats) { val k = t[i] - b; if (k > 0 && k < 0.2) v += 0.25 * exp(-k / 0.035) * sin(2 * PI * 16 * k) }; v }
+        val r = ScgPipeline.analyse(ScgRecording(t, DoubleArray(n) { 0.01 * rnd.nextGaussian() }, DoubleArray(n) { 0.5 + 0.01 * rnd.nextGaussian() }, z, DoubleArray(n) { 0.02 }))
+        assertFalse("drift beyond the tolerance is not accepted", r.accepted)
+        assertNotNull("but the estimate is shown with its spread", r.unconfirmedBpm)
+        assertTrue(r.unconfirmedWhy!!.contains("ranged from"))
+        assertEquals(72.0, r.unconfirmedBpm!!, 10.0)
+    }
 }
