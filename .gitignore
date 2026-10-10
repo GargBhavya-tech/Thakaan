@@ -45,3 +45,7 @@ console/viewer_qr.svg
 
 # Face landmarker model (staged locally, listed in docs/ASSETS.md)
 app/src/main/assets/models/*.task
+
+# trained/exported model files; regenerate with tools/models/train_models.py
+app/src/main/assets/models/*.tflite
+app/src/main/assets/models/*.json

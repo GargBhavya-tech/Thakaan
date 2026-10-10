@@ -148,6 +148,42 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     voices?.forEach { (l, s) -> Line("Voice ${l.tag}", s, ok = s == "voice installed") }
                 }
 
+                Section("Models on this phone") {
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    val shadow = remember { com.thakaan.ml.ShadowModels(ctx) }
+                    var small by remember { mutableStateOf<List<com.thakaan.ml.ModelLine>?>(null) }
+                    var gemma by remember { mutableStateOf<String?>(null) }
+                    var speech by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+                    Text("Trained on simulated data; they run beside the rules and never decide a level.", fontSize = 13.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { small = shadow.selfTest() }) { Text("Small models", fontSize = 14.sp) }
+                        Button(onClick = {
+                            gemma = "loading (up to a minute)..."
+                            scope.launch(kotlinx.coroutines.Dispatchers.Default) {
+                                val g = com.thakaan.risk.GemmaPhraser(ctx)
+                                val st = g.load()
+                                val line = if (!g.loaded) st else {
+                                    val plan = com.thakaan.risk.AlertLadder.plan(com.thakaan.risk.Level.STRAINED, com.thakaan.risk.Lang.EN, 3)
+                                    val ex = com.thakaan.risk.Explainer.explain(plan, listOf("wbgt_high"), g)
+                                    "$st; line: \"${ex.text}\" (" + (if (ex.fromModel) "from the model" else "template used: ${ex.rejectedBecause}") + ")"
+                                }
+                                g.close()
+                                gemma = line
+                            }
+                        }) { Text("Gemma", fontSize = 14.sp) }
+                        Button(onClick = {
+                            speech = com.thakaan.speech.DigitRecognizer.Voice.entries.map { v ->
+                                val here = com.thakaan.inference.ModelFiles.present(ctx, v.modelDir)
+                                val loaded = if (!here) "not on this phone" else try { org.vosk.Model(com.thakaan.inference.ModelFiles.file(ctx, v.modelDir).absolutePath).close(); "loads" } catch (t: Throwable) { "failed: ${t.message}" }
+                                v.name to loaded
+                            }
+                        }) { Text("Speech", fontSize = 14.sp) }
+                    }
+                    small?.forEach { Line(it.name, "${it.status}: ${it.detail}", ok = it.status == "runs") }
+                    gemma?.let { Line("Gemma 4 E2B", it, ok = it.startsWith("loaded")) }
+                    speech?.forEach { (n, s) -> Line("Vosk $n", s, ok = s == "loads") }
+                }
+
                 Section("Checks") {
                     val ec = remember { runCatching { EcTempVectors.checkAssets(ctx) }.getOrNull() }
                     Line("ECTemp vectors", ec?.let { "${it.summary} pass" } ?: "could not run", ok = ec != null && ec.passed == ec.total)
