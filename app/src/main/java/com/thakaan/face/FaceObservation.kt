@@ -21,7 +21,7 @@ class FaceObservation(
     val roiMeans: List<DoubleArray> = emptyList(),
     val background: DoubleArray? = null,
 ) {
-    fun toFaceFrame() = FaceFrame(tNanos, r, g, b, box != null, motion)
+    fun toFaceFrame() = FaceFrame(tNanos, r, g, b, box != null, motion, roiMeans)
     fun toFatigueFrame() = FatigueFrame(tNanos, eyeClosure, jawOpen, gazeX, gazeY, box != null && hasBlend)
 }
 

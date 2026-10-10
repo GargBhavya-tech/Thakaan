@@ -34,7 +34,7 @@ class VitalsSnapshot(
 
 object FaceVitals {
     const val HRV_SECONDS = 60.0
-    const val PULSE_WINDOW_SEC = 30.0
+    const val PULSE_WINDOW_SEC = 40.0
     const val MIN_RR_DIFFS = 25
 
     /** Beat times (s) from a band-passed pulse wave: local maxima at least 0.33 s apart, refined to a fraction of a sample. */
@@ -111,7 +111,14 @@ object FaceVitals {
         val seconds = (tEnd - frames.first().tNanos) / 1e9
         val facePct = (100.0 * frames.count { it.faceFound } / frames.size).roundToInt()
         val recent = frames.filter { (tEnd - it.tNanos) / 1e9 <= PULSE_WINDOW_SEC }
-        val pulse = FaceRppg.analyse(recent)
+        // the per-region method when the frames carry region means, the pooled one otherwise
+        val base = FaceRppgRegions.analyse(recent) ?: FaceRppg.analyse(recent)
+        val recentUsed = recent.filter { it.faceFound }
+        val resp = if (recentUsed.size > 300) {
+            val t = DoubleArray(recentUsed.size) { (recentUsed[it].tNanos - recentUsed[0].tNanos) / 1e9 }
+            try { FaceRppg.respiration(Dsp.resampleUniform(t, DoubleArray(recentUsed.size) { recentUsed[it].g }, FaceRppg.FS).second) } catch (_: IllegalArgumentException) { null }
+        } else null
+        val pulse = FaceRppgResult(base.accepted, base.hrBpm, resp ?: base.respPerMin, base.snrDb, base.confidence, base.seconds, base.reasons, base.estimateBpm)
         val used = frames.filter { it.faceFound }
         val bright = recent.filter { it.faceFound }.let { l -> if (l.isEmpty()) 0.0 else l.sumOf { (it.r + it.g + it.b) / 3 } / l.size }
         val motion = if (recent.isEmpty()) 0.0 else Dsp.median(DoubleArray(recent.size) { recent[it].motion })

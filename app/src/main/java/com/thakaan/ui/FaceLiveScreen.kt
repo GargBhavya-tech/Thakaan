@@ -161,8 +161,8 @@ private fun Preview(v: LiveView?) {
 private fun Cards(v: LiveView?) {
     val s = v?.vitals
     val p = s?.pulse
-    Card("Pulse", if (p?.accepted == true && p.hrBpm != null) "%.0f beats a minute".format(p.hrBpm) else "measuring...",
-        if (p?.accepted == true) "signal %.0f dB, from skin colour (POS)".format(p.snrDb) else (p?.prompt ?: "needs about 10 seconds of a steady face"), p?.accepted == true)
+    Card("Pulse", if (p?.accepted == true && p.hrBpm != null) "%.0f beats a minute".format(p.hrBpm) else p?.estimateBpm?.let { "about %.0f (not confirmed)".format(it) } ?: "measuring...",
+        if (p?.accepted == true) "steady across the last seconds, two colour methods agree" else (p?.prompt ?: "needs about 25 seconds of a steady face"), p?.accepted == true)
     Card("Breathing", p?.respPerMin?.let { "%.0f a minute".format(it) } ?: "measuring...", "needs about 30 seconds of stillness", p?.respPerMin != null)
     val h = s?.hrv
     Card("Heart variability (rough)", h?.let { "RMSSD %.0f ms".format(it.rmssdMs) } ?: if (s != null && s.hrvWaitSec > 0) "wait ${s.hrvWaitSec} s" else "not clean enough",

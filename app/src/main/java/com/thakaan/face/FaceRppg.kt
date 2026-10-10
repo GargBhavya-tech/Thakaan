@@ -10,7 +10,11 @@ import kotlin.math.roundToInt
  * (forehead and cheeks) in 0..255; [faceFound] is false when no face was tracked in that frame. [motion] is how far the
  * region moved since the previous frame as a fraction of the face width (0 when unknown). No image is ever kept (invariant 7).
  */
-class FaceFrame(val tNanos: Long, val r: Double, val g: Double, val b: Double, val faceFound: Boolean, val motion: Double = 0.0)
+class FaceFrame(
+    val tNanos: Long, val r: Double, val g: Double, val b: Double, val faceFound: Boolean, val motion: Double = 0.0,
+    /** Mean (r, g, b) of each skin region on its own (forehead, left cheek, right cheek); empty when not available. */
+    val regions: List<DoubleArray> = emptyList(),
+)
 
 enum class FaceReason(val prompt: String) {
     TOO_SHORT("Hold still a little longer"),
@@ -50,6 +54,8 @@ class FaceRppgResult(
     val confidence: Double,
     val seconds: Double,
     val reasons: List<FaceReason>,
+    /** Median of the window rates even when the pulse was not accepted, for display as a best guess only. */
+    val estimateBpm: Double? = null,
 ) {
     val prompt: String? get() = reasons.minByOrNull { it.ordinal }?.prompt
 }
@@ -164,6 +170,16 @@ object FaceRppg {
 
         val conf = ((peak.snrDb - th.minSnrDb) / 10.0).coerceIn(0.0, 1.0) * 0.6
         return FaceRppgResult(true, hr, resp, peak.snrDb, conf, seconds, emptyList())
+    }
+
+    /** Breathing from the slow wobble of a green trace (30 Hz, uniform); null when shorter than [FaceThresholds.minRespSeconds] or no clear line. */
+    fun respiration(g: DoubleArray, th: FaceThresholds = FaceThresholds()): Double? {
+        if (g.size < th.minRespSeconds * FS) return null
+        val trim = (POS_WINDOW_SEC * FS).roundToInt()
+        val slow = Dsp.bandpass(g, FS, 0.1, 0.5)
+        val rcore = if (slow.size > 4 * trim) slow.copyOfRange(trim, slow.size - trim) else slow
+        val rp = spectralPeak(rcore, FS, 0.1, 0.5, 0.05, 0.7, 0.03, step = 0.005)
+        return if (rp != null && rp.snrDb >= th.minRespSnrDb) rp.freqHz * 60.0 else null
     }
 
     /**

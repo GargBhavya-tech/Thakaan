@@ -102,7 +102,7 @@ class FaceCheckSession(private val ctx: Context) {
         }
         if (err != null) return FaceCheckOutcome(err, null, null, 0.0, ff.size, null)
         val newCal = if (baseline) FatigueCalibration.fromSamples(raw) else null
-        val rppg = FaceRppg.analyse(ff)
+        val rppg = FaceRppgRegions.analyse(ff) ?: FaceRppg.analyse(ff)
         val fatigue = FatigueSignals.analyse(tf, newCal ?: calibration ?: FatigueCalibration())
         val seconds = if (ff.size > 1) (ff.last().tNanos - ff.first().tNanos) / 1e9 else 0.0
         val fps = if (seconds > 1.0) ff.size / seconds else 30.0
