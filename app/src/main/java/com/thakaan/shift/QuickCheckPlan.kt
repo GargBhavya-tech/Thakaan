@@ -1,6 +1,7 @@
 package com.thakaan.shift
 
 import com.thakaan.brain.FittsResult
+import com.thakaan.brain.SpeechCodeResult
 import com.thakaan.brain.TremorResult
 import com.thakaan.ppg.CheckResult
 import com.thakaan.risk.Symptom
@@ -30,6 +31,7 @@ class QuickCheckOutcome {
     var heart: CheckResult? = null
     var tremor: TremorResult? = null
     var fitts: FittsResult? = null
+    var speech: SpeechCodeResult? = null
     var symptoms: Set<Symptom>? = null
     var effort: Int? = null
     val skipped = LinkedHashMap<CheckStepId, String>()
@@ -40,7 +42,7 @@ class QuickCheckOutcome {
         CheckStepId.FINGERTIP -> heart?.accepted == true
         CheckStepId.TREMOR -> tremor?.valid == true
         CheckStepId.TAPPING -> fitts?.valid == true
-        CheckStepId.SPEECH -> false
+        CheckStepId.SPEECH -> speech?.valid == true
         CheckStepId.SYMPTOMS -> symptoms != null
     }
 
@@ -49,7 +51,7 @@ class QuickCheckOutcome {
         CheckStepId.FINGERTIP -> heart?.prompt ?: "Cover the camera and the light with your fingertip and keep still."
         CheckStepId.TREMOR -> tremor?.reason?.ifBlank { null } ?: "Hold the phone out at arm's length and keep still."
         CheckStepId.TAPPING -> fitts?.reason?.ifBlank { null } ?: "Tap the two circles as fast and as exactly as you can."
-        CheckStepId.SPEECH -> "Say the four numbers clearly."
+        CheckStepId.SPEECH -> speech?.reason?.ifBlank { null } ?: "Say the four numbers clearly, one after the other."
         CheckStepId.SYMPTOMS -> "Tap anything you feel, or tap None."
     }
 
@@ -63,6 +65,7 @@ class QuickCheckOutcome {
         }
         tremor?.let { add(if (!it.valid) "Hand hold not usable" else if (it.liftingConfound) "Hand hold taken just after lifting: noted, not scored" else "Hand hold done") }
         fitts?.let { add(if (it.valid) "Tapping done" else "Tapping not usable") }
+        speech?.let { add(if (!it.valid) "Number test not usable: ${it.reason}" else if (it.correct) "Number test done" else "Number test done, some digits did not match") }
         symptoms?.let { add(if (it.isEmpty()) "No symptoms reported" else "Symptoms reported") }
         skipped.forEach { (s, why) -> add("${s.label}: skipped ($why)") }
     }

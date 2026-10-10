@@ -138,7 +138,7 @@ fun HomeScreen(
                     Button(onClick = { copyToClipboard(ctx, "Thakaan status", ShiftRuntime.crewStatusSealed("Me", null, true)) }, enabled = snap != null) { Text("Copy status for console", fontSize = 14.sp) }
                     Button(onClick = { copyToClipboard(ctx, "Thakaan exposure log", ShiftRuntime.exportChain()) }, enabled = snap != null) { Text("Copy exposure log", fontSize = 14.sp) }
                 }
-                Button(onClick = onOpenQuickCheck, Modifier.fillMaxWidth()) { Text("Quick check (90 s)", fontSize = 20.sp) }
+                Button(onClick = onOpenQuickCheck, Modifier.fillMaxWidth()) { Text("Quick check (about 95 s)", fontSize = 20.sp) }
                 Button(onClick = onOpenFaceCheck, Modifier.fillMaxWidth()) { Text("Face check (optional, 40 s)", fontSize = 18.sp) }
                 Button(onClick = onOpenChhaya, Modifier.fillMaxWidth()) { Text("Chhaya route (shade and water)", fontSize = 20.sp) }
                 Button(onClick = onOpenSafety, Modifier.fillMaxWidth()) { Text("Safety checks", fontSize = 18.sp) }

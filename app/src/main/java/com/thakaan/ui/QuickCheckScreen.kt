@@ -80,7 +80,10 @@ import java.util.Calendar
 @Composable
 fun QuickCheckScreen(onBack: () -> Unit) {
     val engine = ShiftRuntime.engine
-    val plan = remember { QuickCheckPlan() }
+    val ctx = LocalContext.current
+    val recogniser = remember { com.thakaan.speech.DigitRecognizer(ctx) }
+    DisposableEffect(Unit) { onDispose { recogniser.close() } }
+    val plan = remember { QuickCheckPlan(speechAvailable = recogniser.anyAvailable()) }
     val outcome = remember { QuickCheckOutcome() }
     var step by remember { mutableStateOf<CheckStepId?>(null) }
     var round by remember { mutableIntStateOf(0) }
@@ -97,7 +100,7 @@ fun QuickCheckScreen(onBack: () -> Unit) {
                     }
                     finished -> Summary(outcome, onBack)
                     step == null -> {
-                        Text("About ${plan.totalSeconds} seconds. Four short steps.", fontSize = 20.sp)
+                        Text("About ${plan.totalSeconds} seconds. ${plan.steps.size} short steps.", fontSize = 20.sp)
                         Text("Do it while standing or sitting still, in shade if you can.", fontSize = 18.sp)
                         Button(onClick = { step = plan.next(null) }, Modifier.fillMaxWidth().height(64.dp)) { Text("Start", fontSize = 22.sp) }
                         OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text("Not now", fontSize = 18.sp) }
@@ -116,7 +119,7 @@ fun QuickCheckScreen(onBack: () -> Unit) {
                             CheckStepId.TREMOR -> TremorStep(outcome, round, advance, retry, skip)
                             CheckStepId.TAPPING -> TappingStep(outcome, round, advance, retry, skip)
                             CheckStepId.SYMPTOMS -> SymptomStep(outcome, advance)
-                            CheckStepId.SPEECH -> skip("no speech recogniser yet")
+                            CheckStepId.SPEECH -> SpeechStep(recogniser, outcome, round, advance, retry, skip)
                         }
                     }
                 }
@@ -136,6 +139,7 @@ private fun finish(engine: ShiftEngine, o: QuickCheckOutcome) {
         results += BrainResult(BrainTest.FITTS_ERRORS, it.errorRate, now, hour, engine.deviceId, "hand")
     }
     if (results.isNotEmpty()) engine.onBrainResults(results)
+    o.speech?.let { engine.onBrainResults(com.thakaan.brain.SpeechCode.toResults(it, now, hour, engine.deviceId)) }
     o.symptoms?.let { engine.onSymptoms(now, it, o.effort, "quick check") }
 }
 
@@ -343,6 +347,40 @@ private fun TappingStep(o: QuickCheckOutcome, round: Int, advance: () -> Unit, r
             }
         }
     }
+}
+
+/** The speech code (N3): a random 4-digit number is shown, the worker says it, the offline recogniser hears digits only. Audio stays in RAM. */
+@Composable
+private fun SpeechStep(rec: com.thakaan.speech.DigitRecognizer, o: QuickCheckOutcome, round: Int, advance: () -> Unit, retry: () -> Unit, skip: (String) -> Unit) {
+    val ctx = LocalContext.current
+    var granted by remember { mutableStateOf(rec.hasMic()) }
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted = it }
+    val code = remember(round) { com.thakaan.brain.SpeechCode.newCode() }
+    var phase by remember(round) { mutableStateOf("ready") }
+    var failed by remember(round) { mutableStateOf<String?>(null) }
+    val voice = remember {
+        val hi = com.thakaan.settings.PrefsProfileStore(ctx).load()?.language == com.thakaan.risk.Lang.HI
+        val v = if (hi && rec.available(com.thakaan.speech.DigitRecognizer.Voice.HI)) com.thakaan.speech.DigitRecognizer.Voice.HI else com.thakaan.speech.DigitRecognizer.Voice.EN
+        if (rec.available(v)) v else com.thakaan.speech.DigitRecognizer.Voice.entries.first { rec.available(it) }
+    }
+    if (!granted) {
+        Text("This step listens for four numbers. The sound is not saved.", fontSize = 18.sp)
+        Button(onClick = { ask.launch(android.Manifest.permission.RECORD_AUDIO) }, Modifier.fillMaxWidth().height(56.dp)) { Text("Allow microphone", fontSize = 20.sp) }
+        OutlinedButton(onClick = { skip("microphone not allowed") }, Modifier.fillMaxWidth()) { Text("Skip this step", fontSize = 18.sp) }
+        return
+    }
+    LaunchedEffect(round) {
+        delay(2500) // time to read the number
+        phase = "listening"
+        val heard = try { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { rec.listen(voice, 6.0) } } catch (t: Throwable) { failed = "Could not listen: ${t.message}"; return@LaunchedEffect }
+        val r = com.thakaan.brain.SpeechCode.check(code, heard.words, heard.snrDb)
+        o.speech = r
+        if (r.valid) advance() else failed = o.advice(CheckStepId.SPEECH)
+    }
+    if (failed != null) { StepFailed(failed!!, retry, skip); return }
+    Text("Say this number:", fontSize = 20.sp)
+    Text(code.toList().joinToString("  "), fontSize = 56.sp, fontWeight = FontWeight.Bold)
+    Text(if (phase == "ready") "Get ready..." else "Listening... say the four digits now", fontSize = 20.sp)
 }
 
 @Composable

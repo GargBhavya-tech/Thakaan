@@ -66,4 +66,17 @@ class QuickCheckPlanTest {
         o.tremor = tremor(true, lift = true)
         assertTrue(o.summary().any { it.contains("not scored") })
     }
+
+    @Test fun aSpeechResultCountsAsDoneOnlyWhenItWasUsable() {
+        val plan = QuickCheckPlan(speechAvailable = true)
+        val o = QuickCheckOutcome()
+        assertFalse(o.done(CheckStepId.SPEECH))
+        o.speech = com.thakaan.brain.SpeechCode.check("1234", emptyList(), null)   // nothing heard: valid but all wrong
+        assertTrue(o.done(CheckStepId.SPEECH))
+        assertTrue(o.summary().any { it.contains("did not match") })
+        o.speech = com.thakaan.brain.SpeechCode.check("1234", emptyList(), 2.0)     // far too noisy: not usable
+        assertFalse(o.done(CheckStepId.SPEECH))
+        assertTrue(o.summary().any { it.contains("not usable") })
+        assertTrue(plan.steps.contains(CheckStepId.SPEECH))
+    }
 }
