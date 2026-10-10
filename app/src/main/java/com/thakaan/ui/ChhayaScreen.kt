@@ -138,6 +138,8 @@ fun ChhayaScreen(onBack: () -> Unit) {
             val nowSec = remember { System.currentTimeMillis() / 1000 }
             val dow = remember { Calendar.getInstance().get(Calendar.DAY_OF_WEEK) }
             val pmNow = remember(air) { air?.pm25At(nowSec) }
+            // at night there is no sun to avoid, and the shade table only covers 05:30 to 19:00, so say so instead of showing meaningless colours
+            val sunDown = remember(origin) { com.thakaan.exposure.SolarPosition.at(nowSec, origin.first, origin.second).elevationDeg < 3.0 }
 
             val latMin = g.nodeLat.min(); val latMax = g.nodeLat.max()
             val lonMin = g.nodeLon.min(); val lonMax = g.nodeLon.max()
@@ -282,6 +284,10 @@ fun ChhayaScreen(onBack: () -> Unit) {
                 }
                 Legend(layer)
                 LayerNote(layer, rider, pmNow, air, nowSec, dow, minute)
+                if (layer == MapLayer.SHADE && sunDown) Text(
+                    "The sun is down, so there is no sun to avoid. The shade colours and the shade percentage below are not meaningful at this hour, and the route is the fastest one.",
+                    fontSize = 13.sp, color = Color(0xFF8A5A00), modifier = Modifier.fillMaxWidth().background(Color(0xFFFFF4E0), RoundedCornerShape(8.dp)).padding(8.dp),
+                )
                 if (route == null) {
                     Text("No route found between these points.", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 } else {

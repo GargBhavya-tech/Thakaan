@@ -1,7 +1,7 @@
 # Thakaan pitch (ticket 64): two formats, one claim ledger
 
 Rule: every number spoken must be in the ledger below with its source. If it is not in the ledger, do not say it.
-Status of this file: **drafted, not rehearsed.** Ticket 64 is done only after a dry run for someone who has not seen the project, and after ticket 60 (metrics) supplies the accuracy numbers marked TBD.
+Status of this file: **drafted, not rehearsed.** Ticket 64 is done only after a dry run for someone who has not seen the project, and after ticket 60 (`docs/METRICS.md`) has every row measured. Updated 2026-10-11 with the metrics table; the fingertip pulse and shade accuracy figures are the team's own reported checks, not logged data.
 
 ## Claim ledger (what we can say, and what backs it)
 
@@ -9,13 +9,16 @@ Status of this file: **drafted, not rehearsed.** Ticket 64 is done only after a 
 | --- | --- | --- | --- |
 | Works with no network | The app declares no INTERNET permission; Chhaya re-routes with airplane mode on | `dumpsys package` on the iQOO 15; Chhaya run in airplane mode | verified on phone |
 | Body model matches the published one | ECTemp 7 of 7 reference vectors pass, on the phone and on the laptop | Diagnostics screen; `ectemp_vectors.json` | verified on phone |
-| Cannot be talked into a lower level | Safety checks 6 of 6 pass; turning off a guard turns its row red (guards 1 to 5 seen red on the phone, check 6 unit-tested) | Safety tab; 286 unit tests, 0 failures | mostly verified |
+| Cannot be talked into a lower level | Safety checks 6 of 6 pass; turning off a guard turns its row red (guards 1 to 5 seen red on the phone, check 6 unit-tested) | Safety tab; 450+ unit tests, 0 failures | mostly verified |
 | Signed log catches editing | Phone Keystore key is hardware backed (StrongBox present); a changed byte and a cut-off end are both caught | Diagnostics, Keystore signing | verified on phone |
 | Every alert can be spoken in the worker's language | Voices installed on the phone for en, hi, kn, ta, te | Diagnostics, Voices | availability verified; **how they sound is not** |
 | Replay is never passed off as live | Replay shows a REPLAY chip and every stream is flagged non-real | Replay run on the phone | verified on phone |
-| Map routes on the phone | Fastest route 2.7 to 3.0 km; shade 38% and 49% on two test routes | Chhaya screen | verified on phone; shade is estimated |
-| Pulse from the fingertip | Camera holds a steady 30 fps; **no capture has passed the quality gates yet** | `docs/DEVICE_RESULTS.md` | **do not claim a working pulse** |
-| Pulse / strain accuracy, early-warning lead time | TBD | ticket 60 | **not measured: say nothing** |
+| Map routes on the phone | At Cool the route is the fastest. At Strained it costs about 30 to 50 s (6 to 11%) extra for +2 to +5 points of shade (150 random trips, two seeds, OSM and satellite layers) | `docs/METRICS.md` row 9, `RouteMetricsTest` | development-time; shade is modelled; say "a minute or less for a little more shade", not "much shadier" |
+| Shade accuracy | More than 90% accurate, in the team's own outdoor check | `docs/METRICS.md` row 8 | **reported, no log kept**: say "in our own check", never "validated" |
+| Pulse from the fingertip | About 95% accurate against a reference device, in the team's own check; camera holds a steady 30 fps | `docs/METRICS.md` row 1 | **reported, no paired readings logged, development-time**: say "about 95% in our own check against a reference", not "validated", and not for exercise unless row 2 is filled |
+| Chest pulse | 70.6 and 73.2 against a counted 70 (two recordings, one person) | `docs/METRICS.md` row 11 | development-time, tuned on the same two; say "early result" |
+| Strain accuracy, early-warning lead time | not measured | ticket 60 | **say nothing** |
+| Extra map layers | Traffic is an assumed typical pattern, Air is one modelled area value, Phone signal is this phone's own radio | `docs/LIMITATIONS.md` | Traffic and Air seen on the phone; Signal untested (no SIM); say "estimated" every time |
 | A rider wants this | TBD | ticket 65 | **no rider quote yet: state the caveat** |
 
 Always say out loud: shade is computed from map data, not measured; the level is an estimate, never a body temperature; this is a heat-strain wellbeing tool, not a medical device; ECTemp needs a licence for commercial use.
@@ -47,11 +50,13 @@ Lead with Chhaya Route, then the body model. Let them touch the phone.
 ## Do not say
 - Any pulse or accuracy figure not in the ledger as verified.
 - "Detects heat stroke" (it flags strain and recommends an action).
-- That Gemma writes the alerts (it is not wired in; templates are used, and a model could only re-word them).
+- That Gemma decides anything: it is wired in and runs on the phone's GPU, but it only re-words a line the risk engine already chose, a wording check can reject it, and the template is the fallback.
+- That the 95% pulse or the 90% shade figure is validated, or a held-out result: no held-out session exists.
+- That Strained routes are much shadier: the measured gain is a few points of shade for under a minute.
 - That the recorded ride is real (replay is labelled replay).
 
 ## Before rehearsal
-- [ ] Ticket 60 numbers filled into the TBD rows.
+- [~] Ticket 60 numbers filled into the TBD rows (done except rows 2, 4, 5, 10, and no held-out session).
 - [ ] Ticket 65: one real rider quote, or say "we have not yet tested this with riders".
 - [ ] Listen to one alert in each language and note which sound wrong.
 - [ ] Dry run of each format for someone new; time them.
