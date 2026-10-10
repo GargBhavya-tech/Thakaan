@@ -58,10 +58,18 @@ object ShiftRuntime {
         signer = sg
         chain = ExposureChain(sg)
         peakSeen = com.thakaan.risk.Level.COOL
+        com.thakaan.chhaya.SignalWatcher.start(context)
         job = scope.launch {
             SensorHub.readings.collect { r ->
                 e.onReading(r)?.let { s ->
                     _snapshot.value = s
+                    // rider log for the Signal and Traffic map layers: only a fresh REAL fix, never a replay
+                    if (e.gnssTNanos != 0L && s.tNanos - e.gnssTNanos < 10_000_000_000L) {
+                        com.thakaan.chhaya.RiderMapFeed.offer(
+                            context.applicationContext, e.position.first, e.position.second, e.gnssSpeedMs, s.activity == com.thakaan.motion.Activity.RIDING,
+                            com.thakaan.chhaya.SignalWatcher.level, s.provenance == com.thakaan.core.Provenance.REAL && e.gnssProvenance == com.thakaan.core.Provenance.REAL,
+                        )
+                    }
                     log.add(s.tNanos, s.level, s.tss, s.provenance)
                     if (s.level > peakSeen) peakSeen = s.level
                     if (s.level > lastAlerted && s.level > com.thakaan.risk.Level.COOL) {

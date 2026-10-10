@@ -150,6 +150,10 @@ class ShiftEngine(
 
     /** Last known position (the default start point until the first GNSS fix). */
     val position: Pair<Double, Double> get() = lat to lon
+    /** GNSS speed in m/s from the last fix, its time and its provenance (for the map's rider log: only a fresh REAL fix is logged). */
+    val gnssSpeedMs: Double? get() = speed
+    val gnssTNanos: Long get() = gnssT
+    val gnssProvenance: Provenance get() = gnssProv
 
     init { ec.prior = { ct -> prior.incrementC(ct, env, metW) } }
 

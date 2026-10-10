@@ -68,7 +68,7 @@ private val cached = HashMap<ShadeSource, ChhayaData>()
 private val SEASON_DAYS = intArrayOf(79, 172, 265, 355)
 
 private fun load(ctx: Context, source: ShadeSource): ChhayaData? = cached[source] ?: try {
-    val g = cached.values.firstOrNull()?.graph ?: ctx.assets.open("chhaya/graph.json").bufferedReader().use { RoadGraph(it.readText()) }
+    val g = cached.values.firstOrNull()?.graph ?: com.thakaan.chhaya.RoadGraphStore.get(ctx) ?: throw IllegalStateException("no road graph")
     val file = if (source == ShadeSource.MAP) "chhaya/shade.json" else {
         val today = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
         "chhaya/shade_obc_${SEASON_DAYS.minByOrNull { val d = kotlin.math.abs(it - today); minOf(d, 365 - d) }}.json"
@@ -78,7 +78,7 @@ private fun load(ctx: Context, source: ShadeSource): ChhayaData? = cached[source
 } catch (_: Exception) { null }
 
 /** What the map is currently explaining. Each layer says in words what its colours mean. */
-private enum class MapLayer(val label: String) { SHADE("Shade"), WATER("Water"), FLOODS("Floods") }
+private enum class MapLayer(val label: String) { SHADE("Shade"), WATER("Water"), FLOODS("Floods"), SIGNAL("Phone signal"), TRAFFIC("Traffic"), AIR("Air") }
 
 private val SUN = Color(0xFFFF8F00)
 private val PART_SHADE = Color(0xFFB8A21E)
@@ -88,6 +88,7 @@ private val ROUTE_BLUE = Color(0xFF0D47A1)
 private val WATER_BLUE = Color(0xFF0091EA)
 private val SHELTER_PURPLE = Color(0xFF6A1B9A)
 private val FLOOD_RED = Color(0xFFD50000)
+private val SIGNAL_WEAK = Color(0xFFE6A100)
 
 /**
  * Chhaya map (#49): one layer at a time, each with a legend in plain words. Roads are grey unless the chosen layer colours
@@ -132,6 +133,11 @@ fun ChhayaScreen(onBack: () -> Unit) {
             var zoom by remember { mutableFloatStateOf(1f) }
             var pan by remember { mutableStateOf(Offset.Zero) }
             val measurer = rememberTextMeasurer()
+            val rider = remember { com.thakaan.chhaya.RiderLogStore.get(ctx) }
+            val air = remember { runCatching { ctx.assets.open("airquality/bengaluru_open-meteo_pm25.json").bufferedReader().use { com.thakaan.exposure.AirQualityCache.fromOpenMeteoJson(it.readText()) } }.getOrNull() }
+            val nowSec = remember { System.currentTimeMillis() / 1000 }
+            val dow = remember { Calendar.getInstance().get(Calendar.DAY_OF_WEEK) }
+            val pmNow = remember(air) { air?.pm25At(nowSec) }
 
             val latMin = g.nodeLat.min(); val latMax = g.nodeLat.max()
             val lonMin = g.nodeLon.min(); val lonMax = g.nodeLon.max()
@@ -187,6 +193,7 @@ fun ChhayaScreen(onBack: () -> Unit) {
                         fun seg(c: Color, a: IntArray, i: Int, w: Float) =
                             drawLine(c, Offset(px(a[i + 1] / 1e6), py(a[i] / 1e6)), Offset(px(a[i + 3] / 1e6), py(a[i + 2] / 1e6)), strokeWidth = w, cap = StrokeCap.Round)
 
+                        if (layer == MapLayer.AIR && pmNow != null) drawRect(airTint(com.thakaan.chhaya.PmBand.of(pmNow)))
                         // roads: grey base, so the chosen layer is the only colour on the map
                         for (e in 0 until g.edgeCount) { val geom = g.edgeGeom[e]; for (i in 0 until geom.size - 2 step 2) seg(ROAD_GREY, geom, i, 2.5f) }
                         if (layer == MapLayer.SHADE) {
@@ -195,6 +202,24 @@ fun ChhayaScreen(onBack: () -> Unit) {
                                 val c = if (sun < 0.35) SHADE_GREEN else if (sun > 0.65) SUN else PART_SHADE
                                 val geom = g.edgeGeom[e]
                                 for (i in 0 until geom.size - 2 step 2) seg(c, geom, i, 5f)
+                            }
+                        }
+                        if (layer == MapLayer.SIGNAL) {
+                            for (e in rider.signalEdges()) {
+                                val c = when (com.thakaan.chhaya.SignalBand.of(rider.signalMean(e) ?: 0.0)) { com.thakaan.chhaya.SignalBand.GOOD -> SHADE_GREEN; com.thakaan.chhaya.SignalBand.WEAK -> SIGNAL_WEAK; com.thakaan.chhaya.SignalBand.POOR -> FLOOD_RED }
+                                val geom = g.edgeGeom[e]
+                                for (i in 0 until geom.size - 2 step 2) seg(Color.White, geom, i, 11f)
+                                for (i in 0 until geom.size - 2 step 2) seg(c, geom, i, 7f)
+                            }
+                        }
+                        if (layer == MapLayer.TRAFFIC) {
+                            val observed = rider.speedEdges()
+                            for (e in 0 until g.edgeCount) {
+                                val band = if (e in observed) com.thakaan.chhaya.TrafficEstimate.bandOfRatio(rider.speedRatio(e) ?: 1.0) else com.thakaan.chhaya.TrafficEstimate.band(com.thakaan.chhaya.TrafficEstimate.slowdown(g.edgeSpeedKmh[e], dow, minute))
+                                val c = when (band) { com.thakaan.chhaya.TrafficEstimate.Band.FREE -> SHADE_GREEN; com.thakaan.chhaya.TrafficEstimate.Band.SLOW -> SIGNAL_WEAK; com.thakaan.chhaya.TrafficEstimate.Band.JAMMED -> FLOOD_RED }
+                                val geom = g.edgeGeom[e]
+                                if (e in observed) for (i in 0 until geom.size - 2 step 2) seg(Color.White, geom, i, 13f)
+                                for (i in 0 until geom.size - 2 step 2) seg(c, geom, i, if (e in observed) 9f else 4f)
                             }
                         }
                         // the plain fastest route, faint and dashed, so the shadier route can be compared with it
@@ -247,12 +272,16 @@ fun ChhayaScreen(onBack: () -> Unit) {
                             MapLayer.SHADE -> "Roads coloured by sun or shade right now"
                             MapLayer.WATER -> "Where to drink or cool down"
                             MapLayer.FLOODS -> "Roads riders reported flooded"
+                            MapLayer.SIGNAL -> "Mobile signal where this phone has been"
+                            MapLayer.TRAFFIC -> "Typical traffic (estimated) and your own speed"
+                            MapLayer.AIR -> "Area-average air, same on every street"
                         },
                         Modifier.align(Alignment.TopStart).padding(8.dp).background(Color(0xE6FFFFFF), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
                         fontSize = 13.sp, fontWeight = FontWeight.Medium,
                     )
                 }
                 Legend(layer)
+                LayerNote(layer, rider, pmNow, air, nowSec, dow, minute)
                 if (route == null) {
                     Text("No route found between these points.", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 } else {
@@ -280,6 +309,40 @@ fun ChhayaScreen(onBack: () -> Unit) {
 
 private fun baseScale(w: Float, h: Float, spanX: Double, spanY: Double): Float = min(w / spanX.toFloat(), h / spanY.toFloat())
 
+/** Soft background tint for a CPCB PM2.5 band; deeper colour for worse air. The band word is on the legend and in the note, so colour is never the only cue. */
+private fun airTint(b: com.thakaan.chhaya.PmBand): Color = when (b) {
+    com.thakaan.chhaya.PmBand.GOOD -> Color(0x4D43A047)
+    com.thakaan.chhaya.PmBand.SATISFACTORY -> Color(0x4D9CCC65)
+    com.thakaan.chhaya.PmBand.MODERATE -> Color(0x4DFDD835)
+    com.thakaan.chhaya.PmBand.POOR -> Color(0x4DFB8C00)
+    com.thakaan.chhaya.PmBand.VERY_POOR -> Color(0x4DE53935)
+    com.thakaan.chhaya.PmBand.SEVERE -> Color(0x4D8E24AA)
+}
+
+/** One plain paragraph under the legend: where the layer's numbers come from and what they cannot tell you. */
+@Composable
+private fun LayerNote(layer: MapLayer, rider: com.thakaan.chhaya.RiderLog, pmNow: Double?, air: com.thakaan.exposure.AirQualityCache?, nowSec: Long, dow: Int, minute: Int) {
+    val text = when (layer) {
+        MapLayer.SIGNAL -> {
+            val n = rider.signalEdges().size
+            if (n == 0) "No signal data yet. While Thakaan is sensing, this phone notes its own mobile signal on each street you pass; a street is coloured after 3 samples. Nothing leaves the phone."
+            else "$n streets measured by this phone's own radio. Grey streets have not been measured. Signal differs by network and phone, so this is a guide to dead zones, not a coverage map."
+        }
+        MapLayer.TRAFFIC -> {
+            val n = rider.speedEdges().size
+            val peak = com.thakaan.chhaya.TrafficEstimate.slowdown(28.0, dow, minute) >= 0.4
+            "Estimated, not live. Thin lines assume a typical pattern for each road type at this hour (${if (peak) "rush hour now" else "outside rush hour"}); no real traffic feed is used. " +
+                (if (n == 0) "Ride with Thakaan sensing to add your own measured speeds (thick lines)." else "$n streets show your measured riding speed against the road's free-flow speed.")
+        }
+        MapLayer.AIR -> if (pmNow == null) "No air data for this time (the offline cache covers 8 to 13 October 2026)." else {
+            val next = (1..4).mapNotNull { h -> air?.pm25At(nowSec + h * 3600L)?.let { "+${h}h %.0f".format(it) } }.joinToString("  ")
+            "PM2.5 about %.0f micrograms per cubic metre now (%s). This is a modelled value for the whole area (Copernicus CAMS through Open-Meteo, about 11 km grid), so every street has the same colour: it cannot show which street is worse. Bands follow India's CPCB scale for 24-hour averages. Next hours: %s".format(pmNow, com.thakaan.chhaya.PmBand.of(pmNow).word, next)
+        }
+        else -> return
+    }
+    Text(text, fontSize = 13.sp, color = Color(0xFF37474F), modifier = Modifier.fillMaxWidth().background(Color(0xFFF1F3F5), RoundedCornerShape(8.dp)).padding(8.dp))
+}
+
 private fun DrawScope.label(m: TextMeasurer, text: String, at: Offset, color: Color) {
     val r = m.measure(text, TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color))
     val pos = Offset(at.x.coerceIn(6f, (size.width - r.size.width - 8f).coerceAtLeast(6f)), at.y.coerceIn(6f, (size.height - r.size.height - 8f).coerceAtLeast(6f)))
@@ -294,6 +357,9 @@ private fun Legend(layer: MapLayer) {
             MapLayer.SHADE -> { Swatch(SHADE_GREEN, "Shade"); Swatch(PART_SHADE, "Part shade"); Swatch(SUN, "Full sun"); Swatch(ROUTE_BLUE, "Your route"); Swatch(Color(0xFF455A64), "Fastest (dashed)") }
             MapLayer.WATER -> { Dot(WATER_BLUE, "Water (listed, not verified)"); Dot(SHELTER_PURPLE, "Shelter"); Swatch(ROUTE_BLUE, "Route") }
             MapLayer.FLOODS -> { Swatch(FLOOD_RED, "Reported flooded (3 h)"); Swatch(ROUTE_BLUE, "Route avoids it") }
+            MapLayer.SIGNAL -> { Swatch(SHADE_GREEN, "Good"); Swatch(SIGNAL_WEAK, "Weak"); Swatch(FLOOD_RED, "Poor or none"); Swatch(ROAD_GREY, "Not measured yet") }
+            MapLayer.TRAFFIC -> { Swatch(SHADE_GREEN, "Free"); Swatch(SIGNAL_WEAK, "Slow"); Swatch(FLOOD_RED, "Jammed"); Swatch(Color.DarkGray, "Thick = measured by you, thin = typical estimate") }
+            MapLayer.AIR -> com.thakaan.chhaya.PmBand.entries.forEach { Swatch(airTint(it).copy(alpha = 1f), it.word) }
         }
     }
 }

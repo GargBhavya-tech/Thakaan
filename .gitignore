@@ -55,3 +55,7 @@ assets/shade_src/
 !app/src/main/assets/chhaya/shade_h3.bin
 .kotlin/
 assets/osm/*.log
+
+# Third-party scraped image sets (not ours to redistribute)
+roboflow.zip
+roboflow/
