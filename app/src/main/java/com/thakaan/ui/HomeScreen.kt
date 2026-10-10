@@ -67,6 +67,8 @@ fun HomeScreen(
     onToggleRecord: () -> Unit,
     onReplay: (Float) -> Unit,
     onOpenDiagnostics: () -> Unit,
+    onOpenChhaya: () -> Unit = {},
+    onOpenSafety: () -> Unit = {},
 ) {
     MaterialTheme(colorScheme = SunScheme) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -126,6 +128,8 @@ fun HomeScreen(
                     Button(onClick = { onReplay(20f) }, enabled = !running && !recording && !replaying) { Text("Replay 20x", fontSize = 16.sp) }
                 }
 
+                Button(onClick = onOpenChhaya, Modifier.fillMaxWidth()) { Text("Chhaya route (shade and water)", fontSize = 20.sp) }
+                Button(onClick = onOpenSafety, Modifier.fillMaxWidth()) { Text("Safety checks", fontSize = 18.sp) }
                 Button(onClick = onOpenDiagnostics, Modifier.fillMaxWidth()) { Text("Diagnostics", fontSize = 18.sp) }
 
                 Text("Sensor streams (${mode.label} mode)", fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -182,5 +186,6 @@ fun Gauge(tss: Int, level: Level = mockLevelFor(tss)) {
         }
     }
 }
+
 
 

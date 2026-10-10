@@ -135,6 +135,9 @@ class ShiftEngine(
     private var lastActivity = Activity.IDLE
     private var lastSun = SunState.UNKNOWN
 
+    /** Last known position (the default start point until the first GNSS fix). */
+    val position: Pair<Double, Double> get() = lat to lon
+
     init { ec.prior = { ct -> prior.incrementC(ct, env, metW) } }
 
     private fun epochOf(tNanos: Long): Long = cfg.startEpochSec + (tNanos - (t0 ?: tNanos)) / 1_000_000_000L
@@ -259,4 +262,5 @@ class ShiftEngine(
         )
     }
 }
+
 
