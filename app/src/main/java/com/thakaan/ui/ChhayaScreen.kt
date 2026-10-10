@@ -50,7 +50,7 @@ private var cached: ChhayaData? = null
 private fun load(ctx: Context): ChhayaData? = cached ?: try {
     val g = ctx.assets.open("chhaya/graph.json").bufferedReader().use { RoadGraph(it.readText()) }
     val s = ctx.assets.open("chhaya/shade.json").bufferedReader().use { ShadeLayer(it.readText()) }
-    ChhayaData(g, s, ChhayaRouter(g, s)).also { cached = it }
+    ChhayaData(g, s, ChhayaRouter(g, s, com.thakaan.chhaya.FloodStore.get(ctx))).also { cached = it }
 } catch (_: Exception) { null }
 
 /**
@@ -77,7 +77,9 @@ fun ChhayaScreen(onBack: () -> Unit) {
             var origin by remember { mutableStateOf(pos ?: (12.9655 to 77.5900)) }
             var dest by remember { mutableStateOf(12.9850 to 77.6100) }
             val minute = remember { Calendar.getInstance().let { it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE) } }
-            val route = remember(level, tss, origin, dest) { data.router.route(origin.first, origin.second, dest.first, dest.second, level, tss, minute) }
+            var floodVersion by remember { mutableStateOf(0) }
+            val floods = remember { com.thakaan.chhaya.FloodStore.get(ctx) }
+            val route = remember(level, tss, origin, dest, floodVersion) { data.router.route(origin.first, origin.second, dest.first, dest.second, level, tss, minute) }
             val bb = g.nodeLat.min() to g.nodeLat.max()
             val lonMin = g.nodeLon.min(); val lonMax = g.nodeLon.max()
 
@@ -107,6 +109,12 @@ fun ChhayaScreen(onBack: () -> Unit) {
                             drawLine(c, Offset(x(geom[i + 1] / 1e6), y(geom[i] / 1e6)), Offset(x(geom[i + 3] / 1e6), y(geom[i + 2] / 1e6)), strokeWidth = 2f)
                         }
                     }
+                    floods.active(System.currentTimeMillis()).forEach { fr ->
+                        val geom = g.edgeGeom[fr.edge]
+                        for (i in 0 until geom.size - 2 step 2) {
+                            drawLine(Color(0xFFD50000), Offset(x(geom[i + 1] / 1e6), y(geom[i] / 1e6)), Offset(x(geom[i + 3] / 1e6), y(geom[i + 2] / 1e6)), strokeWidth = 8f)
+                        }
+                    }
                     route?.arcs?.forEach { a ->
                         val pts = g.arcPolyline(a)
                         for (i in 0 until pts.size - 1) {
@@ -128,7 +136,8 @@ fun ChhayaScreen(onBack: () -> Unit) {
                     Text("%.1f km, %.0f min".format(route.distanceM / 1000.0, route.timeSec / 60.0), fontSize = 16.sp)
                     Text("Shade is computed from OSM buildings and trees, not measured. %.0f%% of this route rests on guessed building heights.".format(route.lowConfidenceShare * 100), fontSize = 12.sp, color = Color.DarkGray)
                 }
-                Text("Orange = sun, green = shade. Blue dots: water (listed, quality unverified). Purple: shelter. Tap to set the destination.", fontSize = 12.sp)
+                FloodReportRow(g, floods, pos ?: origin, ctx) { floodVersion += 1 }
+                Text("Orange = sun, green = shade. Blue dots: water (listed, quality unverified). Purple: shelter. Red lines: roads reported flooded. Tap to set the destination.", fontSize = 12.sp)
                 Text("© OpenStreetMap contributors", fontSize = 12.sp)
             }
         }

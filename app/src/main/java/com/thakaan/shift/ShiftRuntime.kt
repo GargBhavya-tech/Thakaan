@@ -43,7 +43,10 @@ object ShiftRuntime {
         val weather = try {
             context.assets.open("weather/bengaluru_open-meteo.json").bufferedReader().use { WeatherCache.fromOpenMeteoJson(it.readText()) }
         } catch (_: Exception) { null } // missing cache: WBGT unknown, which the risk engine treats as hot
-        val e = ShiftEngine(profile?.toShiftConfig(startEpochSec) ?: ShiftConfig(startEpochSec), weather, Wbgt())
+        val air = try {
+            context.assets.open("airquality/bengaluru_open-meteo_pm25.json").bufferedReader().use { com.thakaan.exposure.AirQualityCache.fromOpenMeteoJson(it.readText()) }
+        } catch (_: Exception) { null } // missing cache: the card says there is no air data
+        val e = ShiftEngine(profile?.toShiftConfig(startEpochSec) ?: ShiftConfig(startEpochSec), weather, Wbgt(), airQuality = air)
         val lang = profile?.language ?: com.thakaan.risk.Lang.HI
         var lastAlerted = com.thakaan.risk.Level.COOL
         engine = e

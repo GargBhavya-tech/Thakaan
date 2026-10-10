@@ -19,6 +19,8 @@ class Route(
     val stop: Poi?,
     val note: String,
     val lambdaUsed: Double,
+    /** How many edges of this route carry an active flood report. Non-zero only when no way round was found. */
+    val floodedEdges: Int = 0,
 ) {
     val extraSec: Double get() = max(0.0, timeSec - fastestTimeSec)
     /** The chip on the map: extra time first, shade share second. */
@@ -31,7 +33,7 @@ class Route(
  * they did not need to spend. Detour budgets: Warming +1 min, Strained +3 min; Danger drops the destination and goes to
  * the nearest cool seated stop.
  */
-class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer) {
+class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer, private val floods: FloodReports? = null) {
     companion object {
         const val WARMING_BUDGET_SEC = 60.0
         const val STRAINED_BUDGET_SEC = 180.0
@@ -39,6 +41,9 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer) {
         const val ISLAND_PENALTY = 0.15
         const val ARTERIAL_KMH = 28.0
         const val EXPOSED_SEAT_PENALTY_SEC = 90.0
+
+        /** The F term: an edge with an active flood report costs this many extra seconds, so it is used only if there is no other way. */
+        const val FLOOD_PENALTY_SEC = 100_000.0
 
         /** 0 below the Cool boundary (TSS 30), then rising to MAX_LAMBDA by TSS 75. */
         fun lambdaFor(tss: Int): Double = if (tss < 30) 0.0 else min(1.0, (tss - 30) / 45.0) * MAX_LAMBDA
@@ -91,8 +96,10 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer) {
 
     fun route(
         originLat: Double, originLon: Double, destLat: Double, destLon: Double,
-        level: Level, tss: Int, minuteOfDay: Int,
+        level: Level, tss: Int, minuteOfDay: Int, nowMs: Long = System.currentTimeMillis(),
     ): Route? {
+        val closed = floods?.closedEdges(nowMs) ?: emptySet()
+        fun flood(a: Int) = if (closed.isNotEmpty() && g.arcEdge[a] in closed) FLOOD_PENALTY_SEC else 0.0
         val o = g.nearestNode(originLat, originLon)
         val d = g.nearestNode(destLat, destLon)
         val sun = DoubleArray(g.edgeCount) { shade.sunFraction(it, minuteOfDay) }
@@ -100,10 +107,10 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer) {
             val e = g.arcEdge[a]
             val t = arcTime(a)
             val island = if (g.edgeSpeedKmh[e] >= ARTERIAL_KMH && lam > 0.0) ISLAND_PENALTY * t * sun[e] else 0.0
-            t * (1.0 + lam * sun[e]) + island
+            t * (1.0 + lam * sun[e]) + island + flood(a)
         }
 
-        val fastestSearch = search(o, false, ::arcTime)
+        val fastestSearch = search(o, false) { a -> arcTime(a) + flood(a) }
         val fastestArcs = pathTo(fastestSearch, o, d, false) ?: return null
         val fastestTime = timeOf(fastestArcs)
 
@@ -115,7 +122,9 @@ class ChhayaRouter(private val g: RoadGraph, private val shade: ShadeLayer) {
                 shadeLen += g.edgeLenM[e] * (1.0 - sun[e])
                 if (shade.isLowConfidence(e)) lowLen += g.edgeLenM[e]
             }
-            return Route(level, arcs, len, timeOf(arcs), fastestTime, if (len > 0) shadeLen / len else 1.0, if (len > 0) lowLen / len else 0.0, stop, note, lam)
+            val wet = if (closed.isEmpty()) 0 else arcs.count { g.arcEdge[it] in closed }
+            return Route(level, arcs, len, timeOf(arcs), fastestTime, if (len > 0) shadeLen / len else 1.0, if (len > 0) lowLen / len else 0.0, stop,
+                if (wet > 0) "$note. Crosses a road reported flooded: go slowly or turn back" else note, lam, wet)
         }
 
         if (level == Level.COOL) {

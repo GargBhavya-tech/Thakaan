@@ -112,6 +112,8 @@ fun HomeScreen(
                         "Sun %.0f min   Rest %.0f min ago   Water deficit %s%s".format(s.sunDoseMin, s.minutesSinceRest, s.hydrationText, s.wbgtC?.let { "   Heat index %.0f".format(it) } ?: "   Weather unknown (counted as hot)"),
                         fontSize = 14.sp, color = Color.DarkGray,
                     )
+                    if (s.airDoseText.isNotEmpty()) Text("Air dose today: ${s.airDoseText}", fontSize = 14.sp, color = Color.DarkGray)
+                    s.rainCue?.let { Text(it, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF0D47A1)) }
                 } else {
                     Gauge(tss = mockTss.toInt())
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {

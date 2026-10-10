@@ -85,6 +85,10 @@ class ShiftSnapshot(
     val forecastHeadline: String?,
     val collapseSecondsLeft: Int,
     val collapseAlarm: Boolean,
+    /** Air dose today (#58), words for the Home card; the PM2.5 behind it is a modelled area value, not the worker's own air. */
+    val airDoseText: String = "",
+    /** Rain-onset cue words for a Home banner (#59), or null. A cue from light and the forecast, not a measured rain. */
+    val rainCue: String? = null,
 )
 
 /**
@@ -97,7 +101,11 @@ class ShiftEngine(
     private val weather: WeatherCache?,
     private val wbgt: Wbgt = Wbgt(),
     val battery: BrainBattery = BrainBattery(),
+    private val airQuality: com.thakaan.exposure.AirQualityCache? = null,
 ) {
+    private val airDose = com.thakaan.exposure.AirDoseLedger()
+    private val luxMinutes = ArrayDeque<Pair<Long, Double>>()
+    private var rainCue = com.thakaan.chhaya.RainCue.Level.NONE
     private val activityEngine = ActivityEngine()
     private val stop = StopDetector()
     private val light = LightTracker()
@@ -252,6 +260,15 @@ class ShiftEngine(
             ec.update(idx * 60, hr)
             adaptive.update(idx * 60, hr)
             hydration.addMinute(prior.lastSweatGPerM2h, body.bsa, metW ?: 100.0)
+            // air dose: heart rate drives ventilation while a reading is fresh, the workload estimate otherwise
+            val hrFresh = lastHr != null && (lastHrNanos?.let { (tNanos - it) / 1e9 } ?: 1e9) < 600.0
+            val ve = if (hrFresh) com.thakaan.exposure.Ventilation.fromHeartRate(lastHr!!, cfg.ageYears) else com.thakaan.exposure.Ventilation.fromMets(mets)
+            airDose.addMinute(airQuality?.pm25At(epoch), ve, hrFresh)
+            // rain-onset cue: light now against light ten minutes ago, with the cached forecast's humidity and cloud
+            lux?.let { luxMinutes.addLast(idx to it) }
+            while (luxMinutes.isNotEmpty() && luxMinutes.first().first < idx - 15) luxMinutes.removeFirst()
+            val before = luxMinutes.filter { it.first in (idx - 12)..(idx - 8) }.maxOfOrNull { it.second }
+            rainCue = com.thakaan.chhaya.RainCue.detect(sun.elevationDeg, w?.relativeHumidityPct, w?.cloudPct, lux, before)
             minuteIndex = idx
         }
 
@@ -284,7 +301,8 @@ class ShiftEngine(
         return ShiftSnapshot(
             tNanos, out.level, out.tss, out.tssLow, out.tssHigh, out.drivers.map { it.text }, out.drivers.map { it.code }, trendOf(forecastHistory), out.anchors, out.changedFrom, out.provenance,
             activity, stamp.state, le.state, dose.minutesInSun, lastWbgt, rest.minutesSinceRest(tNanos), rest.restDebtMinutes(tNanos),
-            band.text, headline, countdown.secondsLeft(nowMs), alarmNow || countdown.state == CountdownState.ALARM,
+            band.text, headline, countdown.secondsLeft(nowMs), alarmNow || countdown.state == CountdownState.ALARM, airDose.summary(),
+            when (rainCue) { com.thakaan.chhaya.RainCue.Level.LIKELY -> "Rain is likely starting: check for flooded roads"; com.thakaan.chhaya.RainCue.Level.POSSIBLE -> "Rain may be starting"; else -> null },
         )
     }
 
