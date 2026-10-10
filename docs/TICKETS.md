@@ -124,7 +124,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [ ] | 61 | Demo built and rehearsed | C | 🟥 CORE | 🔴 RED-OK | FINAL | #42, #45, #51, #56 |
 | [ ] | 62 | Limitations slide and challenge answers | C | 🟥 CORE | ⚪ PRE-BUILD | CP-A | — |
 | [ ] | 63 | Backup recording | C | 🟥 CORE | 🔴 RED-OK | FINAL | #61 |
-| [ ] | 64 | Pitch narrative, both formats | C | 🟥 CORE | 🔴 RED-OK | FINAL | #60, #61, #62 |
+| [~] | 64 | Pitch narrative, both formats | C | 🟥 CORE | 🔴 RED-OK | FINAL | #60, #61, #62 |
 | [ ] | 65 | Real-worker feedback | C | 🟨 SUPPORTING | ⚪ PRE-BUILD | FINAL | — |
 
 

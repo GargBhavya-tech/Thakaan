@@ -9,7 +9,7 @@ Thakaan is a heat-strain wellbeing tool, not a medical device. It does not diagn
 - **WBGT** comes from a cached forecast plus the phone's light sensor, not a globe thermometer. The weather cache covers only 8 to 13 October 2026.
 
 ## What is not built or not proven yet
-- Everything that needs the phone (camera, Keystore, speech voices, native library, UI) is written and unit-tested on a laptop but **untested on the device**.
+- Verified on the iQOO 15: Keystore signing and tamper detection, ECTemp 7/7, the native WBGT library, offline routing, replay labelling, the Safety checks, five installed voices. **Not yet verified on the phone:** a fingertip pulse that passes the quality gates (none has yet), how the spoken alerts sound, GNSS outdoors and the light sensor in sun and shade. See `docs/DEVICE_RESULTS.md`.
 - The language model (Gemma) is not wired in. The template phrasing is used and the model can only re-word it, never change a level.
 - The speech-code test has no recogniser yet. The real recorded ride is not captured yet; the demo uses replay and says so (the REPLAY chip).
 - H3 cells were skipped; street segments act as cells.

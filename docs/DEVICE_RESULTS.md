@@ -27,3 +27,10 @@ Second run (same day, tested without a human where possible):
 Hand-tested by the user on the iQOO 15 (same day):
 - Fitts tapping step (#33): runs and is accepted with real finger taps (the adb-injected taps were the problem, not the code). Five baseline runs and the non-dominant-hand comparison are still to do.
 - Collapse (#15): tilting the phone upright to flat and leaving it still starts the "Are you OK?" countdown. The first attempt did not, because the phone was held in the hand; the detector needs it nearly motionless, by design. The "I'm OK" button's effect, the alarm clearing, and a drop-onto-cushion test have not been reported yet.
+
+Third run (checked by Claude on the phone, no human needed):
+- Keystore (#54): key created, hardware backed true, StrongBox feature present; export verifies OK; one changed byte caught (BROKEN, entry content was changed); last entry cut off caught (BROKEN, expected 3 entries, found 2); changed data fails the signature. Shown in Diagnostics, "Device self-tests".
+- Voices (#40): en-IN, hi-IN, kn-IN, ta-IN, te-IN all report "voice installed". Claude cannot hear them: wording and pronunciation still need a human ear.
+- No network (invariant 1): `dumpsys package` shows no INTERNET permission. Found a dependency adding READ_PHONE_STATE and storage permissions; removed in the manifest.
+- Replay (invariant 6): Replay 20x shows the REPLAY chip and every stream reports REPLAY / non-real.
+- Daily check-in (#28): shown once, three taps, saved, not shown again after relaunch.
