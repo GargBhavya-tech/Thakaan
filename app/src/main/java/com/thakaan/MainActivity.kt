@@ -1,4 +1,4 @@
-﻿package com.thakaan
+package com.thakaan
 
 import android.Manifest
 import android.content.Intent
@@ -21,7 +21,11 @@ import com.thakaan.sensorhub.SensorHubService
 import com.thakaan.sensorhub.StreamRecorder
 import com.thakaan.ui.ChhayaScreen
 import com.thakaan.ui.DiagnosticsScreen
+import com.thakaan.settings.DailyCheckIn
+import com.thakaan.settings.PrefsCheckInStore
 import com.thakaan.settings.PrefsProfileStore
+import com.thakaan.settings.checkInDue
+import com.thakaan.ui.CheckInScreen
 import com.thakaan.ui.AlertDelivery
 import com.thakaan.ui.OnboardingScreen
 import com.thakaan.ui.QuickCheckScreen
@@ -44,10 +48,19 @@ class MainActivity : ComponentActivity() {
         }
         val store = PrefsProfileStore(applicationContext)
         val delivery = AlertDelivery(applicationContext)
+        val checkIns = PrefsCheckInStore(applicationContext)
+        val today = { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(java.util.Date()) }
+        // Hands today's answer (only "slept poorly" is used; unknown stays unknown) to the engine once it exists.
+        val applyCheckIn = { ShiftRuntime.engine?.onCheckIn(checkIns.load()?.takeIf { it.date == today() }?.sleptPoorly, null); Unit }
         setContent {
             var profile by remember { mutableStateOf(store.load()) }
             if (profile == null) {
                 OnboardingScreen(onDone = { store.save(it); profile = it })
+                return@setContent
+            }
+            var checkInShown by remember { mutableStateOf(checkInDue(checkIns, today())) }
+            if (checkInShown) {
+                CheckInScreen(onAnswer = { slept, ate, unwell -> checkIns.save(DailyCheckIn(today(), slept, ate, unwell)); checkInShown = false })
                 return@setContent
             }
             var running by remember { mutableStateOf(false) }
@@ -55,6 +68,7 @@ class MainActivity : ComponentActivity() {
                 // Start whatever the grants allow; the service skips location if it was refused.
                 start()
                 ShiftRuntime.start(applicationContext, lifecycleScope, profile = profile, onAlert = { delivery.deliver(it) })
+                applyCheckIn()
                 running = true
             }
             var recording by remember { mutableStateOf(false) }
@@ -105,6 +119,7 @@ class MainActivity : ComponentActivity() {
                         replaying = true
                         SensorHub.reset()
                         ShiftRuntime.start(applicationContext, lifecycleScope, sessionFile.lastModified() / 1000 - 600, profile, { delivery.deliver(it) })
+                        applyCheckIn()
                         lifecycleScope.launch {
                             val ticker = launch { while (true) { SensorHub.snapshot(); logStats(); delay(1000) } }
                             Replayer().play(sessionFile, speed)
