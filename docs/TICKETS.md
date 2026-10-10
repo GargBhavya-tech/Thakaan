@@ -14,7 +14,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 1 | Scope and submission lock (name + track locked; roles, demo teammate open: see DECISIONS.md) | all | 🟥 CORE | ⚪ PRE-BUILD | before coding | — |
 | [~] | 2 | Loaner smoke test (10 of 11 items measured, GNSS L5 needs outdoor re-run: see SMOKE_TEST.md) | all | 🟥 CORE | 🔴 RED-OK | first hour | — |
 | [ ] | 3 | Office Kit loop rehearsed | all | 🟥 CORE | ⚪ PRE-BUILD | CP-A | — |
-| [ ] | 4 | Assets pre-fetched | all | 🟥 CORE | 🟢 GREEN | first Green window | — |
+| [~] | 4 | Assets pre-fetched | all | 🟥 CORE | 🟢 GREEN | first Green window | — |
 | [~] | 5 | App skeleton, sensor hub and provenance (10-min run OK for IMU + light, all REAL; GNSS stream needs outdoor check; OriginOS lock/battery settings by hand) | C | 🟥 CORE | 🔴 RED-OK | CP-A | #2 |
 | [x] | 6 | Inference seam and Diagnostics screen | C | 🟥 CORE | 🟢 GREEN | CP-A | #5 |
 | [~] | 7 | Stream recorder and replay harness (unit tests + phone replay verified; 5-min walking recording still to do) | C | 🟥 CORE | 🔴 RED-OK | CP-A | #5 |
@@ -60,7 +60,7 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 27 | Sit-to-stand and perfusion collapse (P13, P17) | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #14 |
 | [~] | 28 | Onboarding and cool baseline | A | 🟥 CORE | 🔴 RED-OK | CP-B | #11, #27 |
 | [~] | 29 | Adaptive R and drift handling | A | 🟨 SUPPORTING | 🔴 RED-OK | CP-B | #26 |
-| [ ] | 30 | Chest SCG (P3) | A | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #6, #13 |
+| [~] | 30 | Chest SCG (P3) | A | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #6, #13 |
 | [~] | 31 | Face rPPG and forehead thermistor (P1, P14) | A | ⬜ SEED / PITCH-ONLY | 🟢 GREEN | Stretch | #6, #8 |
 
 ## Phase 5: Brain battery
@@ -113,8 +113,8 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | Done | # | Ticket | Owner | Priority | Light | Checkpoint | Blocked by |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [~] | 57 | Gemma coach and explainer | all | 🟨 SUPPORTING | 🟢 GREEN | Stretch | #4, #6, #39 |
-| [ ] | 58 | Breathing-dose card | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #11, #13, #18 |
-| [ ] | 59 | Flood reports and crew mesh | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #48, #53 |
+| [~] | 58 | Breathing-dose card | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #11, #13, #18 |
+| [~] | 59 | Flood reports and crew mesh | all | ⬜ SEED / PITCH-ONLY | 🔴 RED-OK | Stretch | #48, #53 |
 
 ## Phase 10: Proof and demo (do not skip)
 

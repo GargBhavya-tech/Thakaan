@@ -58,3 +58,14 @@ Build and install: `gradlew :app:installDebug` (JAVA_HOME = Android Studio's `jb
 - [ ] Squint: face a bright window; a squint reading must say "bright light is making you squint", not tiredness.
 - [ ] Face pulse next to a watch or pulse oximeter: five attempts. Record face HR vs reference. Until this is done, NO accuracy claim about the face pulse. Try darker and lighter skin among testers, and indoors vs shade; direct sun is expected to fail.
 - [ ] Forehead thermal check: not wired to a screen yet (logic only). Needs a screen and a temperature sensor source on this phone first.
+
+## Models, air dose, flood reports, chest vibration (added 2026-10-10, 390+ laptop tests green)
+- [ ] #4 assets: run `python tools/verify_assets.py --adb <path to adb>` with the phone attached: no PROBLEM lines (Gemma and both Vosk folders must show "on the phone"; the APK must contain the PM2.5 cache). Then tick #4.
+- [ ] Models: Diagnostics > Models on this phone: Small models (6 rows), Gemma, Speech all green (done once on 2026-10-10 except the two newest rows).
+- [ ] #34 speech step: Quick check step 4 shows a 4-digit number; say it in Hindi and in English; then say one digit wrong, then slowly with a slur: the last two must be recorded as different.
+- [ ] #58 air dose: start sensing, ride or walk 10 minutes: Home shows "Air dose today: N micrograms (area average X, modelled; mostly estimated from workload)". After a fingertip check the text should say "from heart rate" for the next minutes. The value must be labelled modelled, never "your air".
+- [ ] #59 flood report: Chhaya screen > "Report flood here (takes a photo)" with the camera uncovered: "Reported flooded", a red line on the map and a changed route. With the lens covered it must refuse ("too dark"). Restart the app: the red line is still there; after 3 hours it is gone.
+- [ ] #59 rain cue: covering the light sensor outdoors in daylight with a damp forecast hour should show "Rain may be starting" on Home (a cue, not a forecast).
+- [ ] #30 chest lab: Diagnostics > Chest lab: sit, phone flat on the chest, 45 s. Compare "Chest pulse" with a fingertip or watch at the same time: within a few beats is a pass. Walk during a second recording: it must say "not still enough". Save the numbers file for tuning (adb pull files/scg_lab_*.csv).
+- [ ] Face live view: record a minute (Record button) and count pulse and breaths by hand; compare with the pulse, breathing and variability cards.
+- [ ] Shade look-up (Diagnostics): outdoors under open sky and under a tree: the overhead summary should differ.

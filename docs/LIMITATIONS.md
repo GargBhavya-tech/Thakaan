@@ -22,3 +22,10 @@ Pulse, brain scores and symptoms stay on the phone. The supervisor console sees 
 
 ## Safety behaviour you can rely on
 Losing or degrading information never lowers the level: missing heart rate, lost location, a blocked light sensor or an unavailable model hold or raise it. This is checked by a property test and by the Safety checks tab.
+
+## Added 2026-10-10 (models, air dose, floods, chest)
+- Air dose uses a modelled PM2.5 value for the area (Open-Meteo / Copernicus CAMS), not a station reading and not the worker's own air; no OpenAQ key was obtained. Ventilation from heart rate uses the Greenwald 2019 pooled model, whose single estimates can be off by about 45% (middle half), averaging out over a shift; between heart-rate checks it is a workload estimate. Typical lung capacity and an unknown sex (middle value) are used until entered. There is no shift-report screen yet, so the dose appears on Home only.
+- Flood reports: a photo freshness check stops stale or blank reports but cannot prove a road is flooded, so reports show as "reported flooded", never a depth. The BLE / Wi-Fi Aware crew mesh and buddy pairing are NOT built (roadmap line): reports stay on the phone that made them. Rain onset is a cue from light and the cached forecast, not a forecast.
+- Chest vibration heart rate works only seated and still and has not been compared with a fingertip yet. Its learned denoiser was trained on simulated data.
+- The strain GRU, activity CNN, chest denoiser and line-of-sight trees were trained on simulated data (tools/models/train_models.py), run as shadow models and never decide a level; the GRU is no better than the linear forecast and is not used.
+- Face pulse, breathing, heart variability and the oxygen estimate come from skin colour and are unconfirmed against a reference; the oxygen figure is uncalibrated unless the worker enters an oximeter reading.
