@@ -1,7 +1,10 @@
-package com.thakaan.shift
+﻿package com.thakaan.shift
 
 import android.content.Context
 import com.thakaan.audit.ChainSigner
+import com.thakaan.audit.ConsoleSafe
+import com.thakaan.audit.CrewStatus
+import com.thakaan.audit.CrewStatusCodec
 import com.thakaan.audit.ExposureChain
 import com.thakaan.audit.KeystoreSigner
 import com.thakaan.audit.SoftwareSigner
@@ -25,6 +28,7 @@ object ShiftRuntime {
     @Volatile var engine: ShiftEngine? = null; private set
     private var job: Job? = null
     private var chain: ExposureChain? = null
+    private var signer: ChainSigner? = null
     private var peakSeen = com.thakaan.risk.Level.COOL
     private var lastChainMinute = -1L
 
@@ -36,8 +40,9 @@ object ShiftRuntime {
         } catch (_: Exception) { null } // missing cache: WBGT unknown, which the risk engine treats as hot
         val e = ShiftEngine(ShiftConfig(startEpochSec), weather, Wbgt())
         engine = e
-        val signer: ChainSigner = try { KeystoreSigner(context = context) } catch (_: Throwable) { SoftwareSigner() }
-        chain = ExposureChain(signer)
+        val sg: ChainSigner = try { KeystoreSigner(context = context) } catch (_: Throwable) { SoftwareSigner() }
+        signer = sg
+        chain = ExposureChain(sg)
         peakSeen = com.thakaan.risk.Level.COOL
         job = scope.launch {
             SensorHub.readings.collect { r ->
@@ -57,4 +62,17 @@ object ShiftRuntime {
     fun stop() { job?.cancel(); job = null }
 
     fun exportChain(): String? = chain?.export()
+
+    /** The sealed crew status for the console: level and coarse reasons only (see ConsoleSafe). */
+    fun crewStatusSealed(member: String, nonce: String?, shareLocation: Boolean): String? {
+        val s = _snapshot.value ?: return null
+        val sg = signer ?: return null
+        val pos = engine?.position
+        val status = CrewStatus(
+            member, s.level.name, s.trend, s.minutesSinceRest.toInt(), s.sunDoseMin.toInt(), s.provenance.name,
+            ConsoleSafe.labels(s.driverCodes), System.currentTimeMillis(), if (shareLocation) pos?.first else null, if (shareLocation) pos?.second else null, nonce,
+        )
+        return CrewStatusCodec.seal(status, sg)
+    }
 }
+
