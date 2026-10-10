@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thakaan System Design</title>
+<style>
+/* Layout: a field manual. Left rail index on wide screens, single column of numbered chapters; the three hues (body / brain / sun) are the only colour, used as tags.
+   Self-contained on purpose: no web fonts, no scripts, no network, like the app itself. */
+:root{
+  --bg:#f6f5f2; --surface:#ffffff; --sunk:#edebe6; --fg:#1d2220; --muted:#5e6762; --line:#d8d6cf;
+  --accent:#a8420a;
+  --body:#c2570c;  --body-bg:#fbeadb;
+  --brain:#6b5a9e; --brain-bg:#ece8f6;
+  --sun:#1f6fa8;   --sun-bg:#e0edf7;
+  --ok:#2f7d4a; --sim:#8a5a00; --sim-bg:#fbf1dc; --todo:#8f2d2d; --todo-bg:#f6e1e1; --unit:#44566a; --unit-bg:#e3e9f0;
+  --f-display:"Bricolage Grotesque","Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --f-hindi:"Tiro Devanagari Hindi","Nirmala UI","Mangal","Noto Sans Devanagari",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141716; --surface:#1b201e; --sunk:#232a27; --fg:#e6ebe8; --muted:#9ba7a1; --line:#2f3935;
+  --accent:#f0914f; --body:#f08a45; --body-bg:#3a2516; --brain:#ad9be6; --brain-bg:#2a2540;
+  --sun:#62aee6; --sun-bg:#16293a; --ok:#6cc58b; --sim:#e2b55e; --sim-bg:#352a14; --todo:#e98a8a; --todo-bg:#3b2020; --unit:#9db4cc; --unit-bg:#222d39; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141716; --surface:#1b201e; --sunk:#232a27; --fg:#e6ebe8; --muted:#9ba7a1; --line:#2f3935;
+  --accent:#f0914f; --body:#f08a45; --body-bg:#3a2516; --brain:#ad9be6; --brain-bg:#2a2540;
+  --sun:#62aee6; --sun-bg:#16293a; --ok:#6cc58b; --sim:#e2b55e; --sim-bg:#352a14; --todo:#e98a8a; --todo-bg:#3b2020; --unit:#9db4cc; --unit-bg:#222d39; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.62 var(--f-body);padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}.rail{display:none}}
+.rail nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);padding-top:40px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.rail a{color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:4px;display:flex;gap:8px}
+.rail a span{font-family:var(--f-mono);font-size:11px;opacity:.7;min-width:18px;padding-top:2px}
+.rail a:hover,.rail a:focus-visible{color:var(--fg);background:var(--sunk);outline:none}
+main{min-width:0}
+header.hero{padding-block:48px 28px;border-bottom:1px solid var(--line)}
+.eyebrow{font:500 12px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:700 clamp(40px,7vw,72px)/1 var(--f-display);letter-spacing:-.02em;margin:14px 0 6px;text-wrap:balance}
+h1 .dev{font:400 .5em/1 var(--f-hindi);color:var(--muted);letter-spacing:0;margin-left:.3em;vertical-align:.25em}
+.thesis{font-size:clamp(17px,2.2vw,21px);line-height:1.45;max-width:62ch;margin:10px 0 18px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.tag{display:inline-flex;align-items:center;gap:6px;font:500 12px/1.2 var(--f-mono);padding:6px 9px;border-radius:999px;background:var(--sunk);color:var(--fg)}
+.tag.body{background:var(--body-bg);color:var(--body)} .tag.brain{background:var(--brain-bg);color:var(--brain)} .tag.sun{background:var(--sun-bg);color:var(--sun)}
+.tag.real{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)} .tag.sim{background:var(--sim-bg);color:var(--sim)}
+.tag.todo{background:var(--todo-bg);color:var(--todo)} .tag.unit{background:var(--unit-bg);color:var(--unit)}
+section{padding-block:40px 8px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font:700 clamp(24px,3.4vw,32px)/1.15 var(--f-display);letter-spacing:-.01em;margin:0 0 6px;display:flex;gap:14px;align-items:baseline;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--f-mono);color:var(--accent);flex:none}
+h3{font:600 17px/1.3 var(--f-body);margin:26px 0 6px}
+.lede{color:var(--muted);max-width:68ch;margin:0 0 18px}
+p{max-width:70ch} ul,ol{padding-left:20px;max-width:72ch} li{margin:3px 0}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--sunk);padding:1px 5px;border-radius:3px}
+.hi{font-family:var(--f-hindi);font-size:1.08em}
+a{color:var(--accent)}
+
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.person b{font-family:var(--f-display);font-size:17px}
+.person .role{font:500 11px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.person p{margin:0;font-size:14px}
+
+.mapwrap{overflow-x:auto}
+.map{display:flex;flex-direction:column;gap:6px;min-width:660px}
+.plane{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:stretch}
+.plane .pl{font:600 12px/1.3 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 6px 6px 0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.plane .pl small{font:400 11px/1.3 var(--f-body);text-transform:none;letter-spacing:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--sunk);border-radius:6px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:6px 9px;font-size:13px;line-height:1.3}
+.chip small{display:block;font:400 11px/1.3 var(--f-mono);color:var(--muted)}
+.chip.body{border-color:var(--body);box-shadow:inset 3px 0 0 var(--body)} .chip.brain{border-color:var(--brain);box-shadow:inset 3px 0 0 var(--brain)} .chip.sun{border-color:var(--sun);box-shadow:inset 3px 0 0 var(--sun)}
+.chip.key{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.arrow{text-align:center;font:500 11px/1 var(--f-mono);color:var(--muted);padding:2px 0 2px 160px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+.engine{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 20px;margin-top:14px}
+.engine header{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between}
+.engine h3{margin:0;font:700 19px/1.2 var(--f-display)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:10px}
+.cols > div{min-width:0}
+.cols h4{font:600 12px/1.2 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:4px 0 8px}
+.cols ul{margin:0;font-size:14px}
+.eq{font-family:var(--f-mono);font-size:13px;background:var(--sunk);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre;line-height:1.55;margin:8px 0}
+.note{font-size:13px;color:var(--muted)}
+.voice{border-left:3px solid var(--body);padding:8px 12px;margin:16px 0 0;background:var(--body-bg);border-radius:0 6px 6px 0;font-size:14px;max-width:72ch}
+
+.tbl{overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:620px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px/1.2 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--sunk)}
+tr:last-child td{border-bottom:0}
+td.k{font-weight:600}
+
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;margin:12px 0}
+.diagram svg{display:block;min-width:760px;width:100%;height:auto}
+.flow .box{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.flow .box.body{stroke:var(--body)} .flow .box.brain{stroke:var(--brain)} .flow .box.sun{stroke:var(--sun)} .flow .box.key{stroke:var(--accent);stroke-width:1.8}
+.flow text{font:13px var(--f-body);fill:var(--fg)}
+.flow .sub{font:11px var(--f-mono);fill:var(--muted)}
+.flow .lab{font:11px var(--f-mono);fill:var(--muted)}
+.flow path.ar{fill:none;stroke:var(--muted);stroke-width:1.4}
+
+.script{display:flex;flex-direction:column;border-left:2px solid var(--line);margin-left:6px}
+.beat{display:grid;grid-template-columns:86px minmax(0,1fr);gap:14px;padding:10px 0 10px 16px;position:relative}
+.beat::before{content:"";position:absolute;left:-6px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.beat .t{font:500 13px/1.4 var(--f-mono);color:var(--accent)}
+.beat p{margin:0}
+.beat.body::before{background:var(--body)} .beat.brain::before{background:var(--brain)} .beat.sun::before{background:var(--sun)}
+@media (max-width:480px){.beat{grid-template-columns:minmax(0,1fr);gap:2px}}
+
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.team .person ul{margin:0;font-size:13.5px;padding-left:18px}
+footer{font-size:12.5px;color:var(--muted);padding-top:24px}
+.src{columns:2 280px;column-gap:28px;font-size:12.5px;padding-left:18px;max-width:none}
+.src li{break-inside:avoid}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside class="rail" aria-label="Contents"><nav>
+  <a href="#people"><span>01</span>Who it serves</a>
+  <a href="#map"><span>02</span>System map</a>
+  <a href="#edge"><span>03</span>The phone</a>
+  <a href="#sources"><span>04</span>Data sources</a>
+  <a href="#engines"><span>05</span>Engines</a>
+  <a href="#actions"><span>06</span>Actions and guards</a>
+  <a href="#flows"><span>07</span>Data flows</a>
+  <a href="#storage"><span>08</span>Storage</a>
+  <a href="#trust"><span>09</span>Trust &amp; privacy</a>
+  <a href="#stack"><span>10</span>Device stack</a>
+  <a href="#ledger"><span>11</span>Built vs verified</a>
+  <a href="#repo"><span>12</span>Repo layout</a>
+  <a href="#judging"><span>13</span>Judging fit</a>
+  <a href="#demo"><span>14</span>Demo script</a>
+  <a href="#team"><span>15</span>Team split</a>
+  <a href="#refs"><span>16</span>Sources</a>
+</nav></aside>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">iQOO Hackathon 2026 · Grand Finale, Bengaluru · Full architecture</div>
+  <h1>Thakaan<span class="dev">थकान</span></h1>
+  <p class="thesis">Thakaan means exhaustion. The people most exposed to heat are the riders, builders and street workers who carry a phone all day but no wearable. Thakaan turns that phone into a personal heat-strain guardian that senses the body, the brain and the sun, and steers the worker to shade and water before heat takes them down. Everything runs on the phone, offline.</p>
+  <div class="meta">
+    <span class="tag body">Body · strain from the heartbeat</span>
+    <span class="tag brain">Brain · tremor, taps, gait, face</span>
+    <span class="tag sun">Sun · light, WBGT, shade routing</span>
+  </div>
+</header>
+
+<section id="people">
+  <h2><span class="n">01</span>Who it serves</h2>
+  <p class="lede">One person is protected on the phone. A supervisor sees only levels. Nothing about a worker's body leaves the phone unless the worker shares it.</p>
+  <div class="people">
+    <div class="person"><span class="role">Primary user</span><b>Delivery rider</b><p>Scooter or motorcycle, paid per task, phone on the handlebar. Needs a warning at a stop, a shaded route, a water stop on the way, and every instruction in their own language with its time cost.</p></div>
+    <div class="person"><span class="role">Primary user</span><b>Construction worker</b><p>Phone in the pocket, put down at breaks. Needs break-time check-ins, rest pacing and a collapse alarm that a bystander can act on.</p></div>
+    <div class="person"><span class="role">Primary user</span><b>Street worker</b><p>Traffic police, vendors, farm workers. Needs exposure and rest prompts and the same collapse alarm.</p></div>
+    <div class="person"><span class="role">Operator</span><b>Site supervisor or fleet lead</b><p>Laptop console. Sees each worker's level, trend, minutes since rest and coarse reasons. Never raw heart rate, scores or voice, so the data cannot be used to rate or deactivate anyone.</p></div>
+  </div>
+</section>
+
+<section id="map">
+  <h2><span class="n">02</span>System map</h2>
+  <p class="lede">Six layers, read bottom to top. Data rises from the phone's sensors to the engines; one risk engine turns it into a level; the actions layer speaks, vibrates and routes; the worker sees it on the Home screen, and the supervisor on the console.</p>
+  <div class="mapwrap"><div class="map" role="img" aria-label="Layered architecture from sensors at the bottom to experiences at the top">
+    <div class="plane"><div class="pl">Experiences<small>who sees what</small></div><div class="chips">
+      <div class="chip">Home gauge<small>Cool · Warming · Strained · Danger</small></div>
+      <div class="chip">Quick check<small>pulse · hand hold · taps · symptoms</small></div>
+      <div class="chip sun">Chhaya map<small>offline shade and water routing</small></div>
+      <div class="chip">Safety checks tab<small>guard switches turn rows red</small></div>
+      <div class="chip">Supervisor console<small>laptop · sealed clipboard status</small></div>
+      <div class="chip">Diagnostics + PPG lab<small>engineering view</small></div>
+    </div></div>
+    <div class="arrow">▲ words, vibration, routes, signed status</div>
+    <div class="plane"><div class="pl">Actions<small>say it, show it</small></div><div class="chips">
+      <div class="chip">Alert ladder<small>one action · spoken · time cost</small></div>
+      <div class="chip sun">Chhaya Route<small>detour budget set by strain</small></div>
+      <div class="chip body">Cooling coach<small>10-minute recovery</small></div>
+      <div class="chip">Explainer<small>template first · model may only re-word</small></div>
+      <div class="chip">Collapse countdown<small>haan / "I'm OK" before any siren</small></div>
+    </div></div>
+    <div class="arrow">▲ level, drivers, forecast</div>
+    <div class="plane"><div class="pl">Risk<small>one score, anchored levels</small></div><div class="chips">
+      <div class="chip key">Thakaan Strain Score<small>exposure prior + body update + brain override</small></div>
+      <div class="chip">Anchored levels<small>hysteresis · Danger needs a passed recovery check</small></div>
+      <div class="chip">Fail-safe guards ×6<small>missing data never lowers a level</small></div>
+      <div class="chip">Strain forecast<small>minutes to the next level</small></div>
+    </div></div>
+    <div class="arrow">▲ body, brain and exposure evidence</div>
+    <div class="plane"><div class="pl">Engines<small>deterministic, testable</small></div><div class="chips">
+      <div class="chip body">Body: ECTemp + heat-balance prior<small>core trend, hydration, HR rule</small></div>
+      <div class="chip body">Pulse: fingertip + optional face<small>PPG, POS, quality gates</small></div>
+      <div class="chip brain">Brain battery<small>tremor · Fitts taps · gait · face fatigue · CUSUM</small></div>
+      <div class="chip sun">Exposure<small>light state · sun dose · WBGT · rest ledger</small></div>
+      <div class="chip">Motion<small>activity · stop detector · collapse</small></div>
+    </div></div>
+    <div class="arrow">▲ timestamped, provenance-stamped readings</div>
+    <div class="plane"><div class="pl">Sensor hub<small>foreground service</small></div><div class="chips">
+      <div class="chip">Stream bus<small>REAL · REPLAY · SIMULATED on every reading</small></div>
+      <div class="chip">Recorder + replayer<small>20x replay is labelled</small></div>
+      <div class="chip">Thermal guard<small>blocks camera checks on a hot phone</small></div>
+      <div class="chip">Inference seam<small>QNN · GPU · CPU back ends</small></div>
+    </div></div>
+    <div class="arrow">▲ raw signals</div>
+    <div class="plane"><div class="pl">Sensors<small>the phone only</small></div><div class="chips">
+      <div class="chip">Accelerometer + gyro<small>200 Hz</small></div>
+      <div class="chip sun">Ambient light<small>10 Hz · colour temp where present</small></div>
+      <div class="chip sun">GNSS<small>location, speed, sky view</small></div>
+      <div class="chip body">Rear camera + torch<small>fingertip pulse, 30 fps</small></div>
+      <div class="chip brain">Front camera<small>face pulse, eyelids, yawns (optional)</small></div>
+      <div class="chip brain">Touchscreen<small>tap timing from MotionEvent time</small></div>
+      <div class="chip">Microphone<small>speech check (not built yet)</small></div>
+      <div class="chip">Thermal sensors<small>phone heat headroom</small></div>
+    </div></div>
+  </div></div>
+  <div class="legend"><span><i style="background:var(--body)"></i>Body</span><span><i style="background:var(--brain)"></i>Brain</span><span><i style="background:var(--sun)"></i>Sun and world</span><span><i style="background:var(--line)"></i>Shared</span></div>
+</section>
+
+<section id="edge">
+  <h2><span class="n">03</span>The phone (everything runs here)</h2>
+  <p class="lede">There is no server in the core loop. The safety-critical path runs on the phone, so a warning still fires in a dead zone, in a basement or on a crowded road. The laptop console is an optional viewer.</p>
+  <div class="cols">
+    <div><h4>Inputs</h4><ul>
+      <li><b>Heart rate</b> by fingertip on the rear camera and torch (primary), optionally from the face through the front camera. No wearable.</li>
+      <li>Accelerometer and gyro continuously; ambient light for sun or shade; GNSS for position, speed and sky view.</li>
+      <li>Touch timing for the tapping task; tremor from the accelerometer while the phone is held out.</li>
+      <li>A daily 3-tap check-in: slept well, ate, feel unwell. Profile entered once at onboarding.</li>
+    </ul></div>
+    <div><h4>On the phone</h4><ul>
+      <li>ECTemp Kalman filter with a heat-balance prior, one step per minute, with variance that grows across gaps.</li>
+      <li>Liljegren WBGT through a native library (<code>lwbgt</code> over JNI).</li>
+      <li>Brain battery: robust z-scores against the same worker, same phone, same placement and time of day, with CUSUM change detection.</li>
+      <li>Offline routing on a bundled OpenStreetMap graph with a precomputed shade layer.</li>
+      <li>Spoken alerts through the phone's own text-to-speech voices.</li>
+    </ul></div>
+    <div><h4>Keeps working when</h4><ul>
+      <li>Airplane mode is on: routing, sensing, scoring and alerts need no network.</li>
+      <li>A sensor is missing or stale: the level holds or rises, it never drops.</li>
+      <li>The model is unavailable: fixed template lines replace the language model.</li>
+      <li>OriginOS tries to kill background work: a foreground service owns the sensors.</li>
+    </ul></div>
+  </div>
+  <div class="voice"><span class="hi">"शरीर गरम हो रहा है। 3 मिनट आगे छाया और पानी है।"</span><br><span class="note">"Your body is heating up. There is shade and water 3 minutes ahead." Every alert names one action, speaks it in the worker's language (Hindi, Kannada, Tamil, Telugu or English) and shows its time cost.</span></div>
+</section>
+
+<section id="sources">
+  <h2><span class="n">04</span>Data sources</h2>
+  <p class="lede">The phone's own sensors do almost all the work. The only outside data is bundled before the demo, because venue Wi-Fi is not to be trusted. Nothing is fetched at run time (the app has no network permission).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Source</th><th>Gives</th><th>Cadence</th><th>Feeds</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Accelerometer + gyro</td><td>Motion, activity, tremor, gait, collapse, tap timing context</td><td>200 Hz</td><td>Motion, brain battery</td></tr>
+      <tr><td class="k">Ambient light (+ colour temp)</td><td>Sun, shade, overcast, dark; solar load estimate</td><td>10 Hz</td><td>Exposure, shade map</td></tr>
+      <tr><td class="k">GNSS</td><td>Position, speed, sky view</td><td>1 Hz</td><td>Exposure, routing, stop detector</td></tr>
+      <tr><td class="k">Rear camera + torch</td><td>Fingertip colour means (red, green, blue) at a locked 30 fps</td><td>On demand, 35 s</td><td>Pulse engine</td></tr>
+      <tr><td class="k">Front camera</td><td>Face colour means, eyelid, jaw and gaze scores (no image kept)</td><td>On demand, 38 s</td><td>Face pulse, face fatigue</td></tr>
+      <tr><td class="k">Phone thermal API</td><td>Thermal status and headroom</td><td>Per check</td><td>Thermal guard</td></tr>
+      <tr><td class="k">OpenStreetMap extract</td><td>Roads, buildings, trees, water points for the venue area</td><td>Staged once (about 57 MB, not in git)</td><td>Chhaya Route, shade layer</td></tr>
+      <tr><td class="k">Open-Meteo cache</td><td>Temperature, humidity, wind, solar radiation, pressure, cloud</td><td>Hourly, 8 to 13 Oct 2026</td><td>WBGT, exposure prior</td></tr>
+      <tr><td class="k">ECTemp reference vectors</td><td>Seven published test cases the filter must reproduce</td><td>Static</td><td>Filter test, Diagnostics</td></tr>
+      <tr><td class="k">MediaPipe face model</td><td>Face detector, 478 landmarks, blendshapes (3.76 MB, inside the APK)</td><td>Static</td><td>Face checks</td></tr>
+      <tr><td class="k">Gemma 4 E2B (not wired)</td><td>Re-wording of alert lines only</td><td>Static, 1.9 GB</td><td>Explainer</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="engines">
+  <h2><span class="n">05</span>Engines</h2>
+  <p class="lede">The science lives here as plain, testable Kotlin. A language model never computes a level, a pulse or a route. Every engine is unit-tested on a laptop, and the ones that need the phone are checked on the iQOO 15 (see chapter 11 for which).</p>
+
+  <article class="engine">
+    <header><h3>Body · heat strain from the heartbeat</h3><span class="tag body">Body</span></header>
+    <div class="cols">
+      <div><h4>Core-temperature trend (ECTemp)</h4>
+        <div class="eq">State:   CTₜ = CTₜ₋₁ + w,   w ~ N(0, Q),  Q = 0.000484
+Observe: HRₜ = a·CTₜ² + b·CTₜ + c + v,  v ~ N(0, R)
+         a = −4.5714   b = 384.4286   c = −7887.1
+         R = 356.4544  (18.88 bpm)    NIS gate = 3.84
+Start:   CT₀ = 37.1 °C,  v₀ = 0.02  (0.2 if already hot)
+Step:    once a minute; between readings predict only</div>
+        <p class="note">Reproduces all seven published test cases with personalisation off. Thakaan gets heart rate at stops, not every minute, so the variance grows (never shrinks) across a gap. The estimate is never shown as a number.</p></div>
+      <div><h4>Heat-balance prior and HR rule</h4><ul>
+        <li>A heat-balance prior (metabolic load, solar load, clothing, wind) keeps the estimate running when heart rate is missing, and the uncertainty band widens.</li>
+        <li>Plain ECTemp stays runnable behind a switch.</li>
+        <li>An independent heart-rate rule backs it up: sustained resting HR above 90 to 100 bpm raises the level.</li>
+        <li>Hydration deficit comes from modelled sweat minus logged drinks.</li></ul></div>
+      <div><h4>Output</h4><ul>
+        <li>Core trend with its band, used only as evidence for the level.</li>
+        <li>Anchors fire at 38.5 °C or less (38.0 °C before acclimatisation); no action waits for an estimate above 39 °C, where ECTemp is blind.</li>
+        <li>Excess HR, idle-state drift, hydration deficit, acclimatisation (starts at 0 days, the cautious default).</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Pulse measurement</h3><span class="tag body">Body</span></header>
+    <div class="cols">
+      <div><h4>Fingertip (primary)</h4><ul>
+        <li>Rear camera with torch, manual exposure aimed during a 10 s settle then frozen, 30 fps, red, green and blue means of a centre patch.</li>
+        <li><b>Two ways to accept a capture:</b> the strict red-only beat test (perfusion, template correlation, signal-to-noise, dropped frames), or the colour-combining test below.</li>
+        <li>Thermal guard blocks the check on a hot phone; torch dimming is detected.</li></ul></div>
+      <div><h4>Colour-combining (POS) test</h4>
+        <div class="eq">1. POS over R, G, B     cancels changes common to all colours
+2. read the rate in 8 s windows, step 2 s
+3. accept only if ≥ 75% of windows are within
+   3 bpm of the median AND one independent colour
+   view (G−B or G−R) agrees within 5 bpm</div>
+        <p class="note">Built from four real captures: a still phone on a table gave 61 to 63 bpm in every window, while hand-held captures wandered between 52 and 121 bpm and are rejected. The true rate is not yet confirmed against a counted pulse.</p></div>
+      <div><h4>Face (optional, never replaces the finger)</h4><ul>
+        <li>Front camera and MediaPipe landmarks; POS on forehead and cheek colour; breathing from a 30 s or longer window.</li>
+        <li>Rejects a dark or bright scene, a moving head, a lost face, dropped frames, and any pulse that is not steady.</li>
+        <li>Shown for information only; it never reaches the risk engine.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Brain battery</h3><span class="tag brain">Brain</span></header>
+    <div class="cols">
+      <div><h4>Tests</h4><ul>
+        <li><b>Hand hold:</b> 4 to 12 Hz tremor power from the accelerometer, flagged if taken just after lifting.</li>
+        <li><b>Tapping:</b> Fitts-style alternation between two targets; timestamps come from the touch event, never a UI callback.</li>
+        <li><b>Gait:</b> stride variability and sway while walking, per placement.</li>
+        <li><b>Face fatigue:</b> blink rate, eyelid-closure share (PERCLOS at 80%), long closures, sustained yawns, gaze drift.</li>
+        <li>Speech code and a short reaction test are specified; the recogniser is not built yet.</li></ul></div>
+      <div><h4>Change detection</h4>
+        <div class="eq">z  = (x − median) / (1.4826 · MAD)    own baseline
+CUSUM on z, capped steps, alarm after a run of
+mildly worse results (one bad test never alarms)
+Families: MOTION · TOUCH · VOICE · FACE · NAVIGATION
+Two families flagged → at least Strained</div>
+        <p class="note">Scores are only compared with the same worker, on the same phone, same placement and time-of-day bucket. No baseline means no judgement, never a calming signal.</p></div>
+      <div><h4>Context</h4><ul>
+        <li>The check-in can only lower the weight of a brain flag when exposure is low and a benign cause is known.</li>
+        <li>Unknown answers are neutral, never benign.</li>
+        <li>Squinting in bright light is rejected for the face test instead of being read as tiredness.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Exposure and sun</h3><span class="tag sun">Sun</span></header>
+    <div class="cols">
+      <div><h4>Sun, shade, overcast</h4><ul>
+        <li>Ambient-light classifier with tilt correction and a body-shadow guard (a low sun behind the rider is hidden from a phone facing the rider).</li>
+        <li>Moving into sun is accepted after 2 s, out of sun only after 5 s.</li>
+        <li><b>Unknown counts as sun.</b> A blocked sensor or lost GNSS moves the answer toward sun, never away.</li></ul></div>
+      <div><h4>Heat index</h4>
+        <div class="eq">WBGT  Liljegren model (lwbgt, native, via JNI)
+UTCI  secondary, not used for anchors
+Never: the phone body as a globe thermometer,
+       the ACSM87 formula by day</div>
+        <p class="note">Missing weather or a failed native call returns "unknown", which the risk engine treats as hot.</p></div>
+      <div><h4>Ledgers</h4><ul>
+        <li>Sun dose in minutes, rest ledger (time since a real rest: shade plus still), hydration log.</li>
+        <li>Stop detector and activity state gate when a heart-rate reading may be compared with another.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Risk engine · Thakaan Strain Score</h3><span class="tag">Shared</span></header>
+    <div class="cols">
+      <div><h4>Three layers</h4><ul>
+        <li><b>Exposure prior</b> from sun, WBGT, rest and time of day. Always computed, so the score never goes blank.</li>
+        <li><b>Body update</b> from the core trend and excess HR, weighted by how fresh and clean the last reading was.</li>
+        <li><b>Brain override</b> from the brain battery and symptoms.</li></ul></div>
+      <div><h4>Levels</h4>
+        <div class="eq">TSS 0..100  =  100 · σ( wE·E + wB·B·q + wN·N + b )
+Level  =  the highest any anchor or the score supports
+          Cool · Warming · Strained · Danger
+Event  =  Collapse (fall, then no movement)</div>
+        <p class="note">Hysteresis and minimum dwell stop flapping; Danger does not clear without a passed recovery check.</p></div>
+      <div><h4>Fail-safe guards</h4><ul>
+        <li>Six switchable guards, each with a scenario that must turn red when the guard is off: hold stale body evidence, exposure floor on stale HR, unknown shade is sun, missing weather is hot, two brain families force Strained, the language model cannot change a level.</li>
+        <li>A property test compares a degraded run with a reference run and fails if any degradation lowers the level.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Chhaya Route · strain-aware shade routing</h3><span class="tag sun">Sun</span></header>
+    <div class="cols">
+      <div><h4>Cost function</h4>
+        <div class="eq">cost(edge) = time × (1 + λ(TSS) · sun_fraction)
+           + heat-island penalty on sunny arterials
+λ = 0 below TSS 30   →   the route is the fastest route
+Detour budget:  Warming +1 min · Strained +3 min
+Danger: drop the destination, go to the nearest cool seat</div>
+        <p class="note">At Strained the router inserts the best listed water stop whose detour fits the budget.</p></div>
+      <div><h4>Shade layer</h4><ul>
+        <li>Sun position ray-cast against OpenStreetMap buildings and trees, precomputed per road segment and time slot.</li>
+        <li><b>Computed, not measured.</b> About 95% of building heights are guessed, so low-confidence segments are treated as sunnier. Every route shows the share that rests on guesses.</li>
+        <li>Rider light readings are specified to correct the layer; that feedback loop is not built.</li></ul></div>
+      <div><h4>Output</h4><ul>
+        <li>Route with "+N min, X% shade" and the water stop, drawn on a bundled map with the OpenStreetMap credit.</li>
+        <li>Water points are shown as "listed, quality unverified".</li>
+        <li>Works with no network.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="engine">
+    <header><h3>Motion and collapse</h3><span class="tag brain">Brain</span></header>
+    <div class="cols">
+      <div><h4>Detect</h4><ul>
+        <li>Activity (riding, walking, still), stop detector, posture clock.</li>
+        <li>Collapse: free fall plus impact, a bike tip-over, or a slump (a large orientation change) followed by about eight seconds of stillness.</li></ul></div>
+      <div><h4>Never a siren first</h4><ul>
+        <li>The event only starts a 15 s countdown ("Are you OK?"). A spoken "haan" or an "I'm OK" tap cancels it, and clears the alarm if it already started.</li>
+        <li>Only after the countdown does the alarm and a bystander message with an SMS preview appear. Nothing is sent without a tap.</li></ul></div>
+    </div>
+  </article>
+</section>
+
+<section id="actions">
+  <h2><span class="n">06</span>Actions and guards</h2>
+  <p class="lede">The risk engine decides the level; everything after that only says it and shows it. Every alert names one action, speaks it in the worker's language and shows what it costs in time.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Level</th><th>Haptic</th><th>Action</th><th>Screen and extras</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Warming</td><td>Two soft pulses</td><td>Drink water at the next stop (1 min)</td><td>Amber ring; small detours allowed</td></tr>
+      <tr><td class="k">Strained</td><td>Three strong pulses, repeated</td><td>Shade and water ahead (3 min)</td><td>Orange banner with the route; Chhaya Route switches on; tap check at the next stop</td></tr>
+      <tr><td class="k">Danger</td><td>Continuous until acknowledged</td><td>Stop now, sit in shade (2 min)</td><td>Red takeover with the nearest shade; contact and supervisor alerted; cannot be snoozed</td></tr>
+      <tr><td class="k">Collapse</td><td>Siren and flash after the countdown</td><td>Bystander message: call 108</td><td>First-aid steps, SMS preview with location</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Guards in front of every message</h3>
+  <ul>
+    <li><b>Alerts fire on a rise only,</b> through one plan builder, so a level held for an hour does not repeat itself.</li>
+    <li><b>Explainer validator.</b> The template line is always built first. A model line is accepted only if it states the engine's minute figure, adds no other number, mentions no temperature or pulse, offers no reassurance, and names no stronger or gentler action than the engine chose. Otherwise the template is used. The level and the action never come from model text.</li>
+    <li><b>Safety checks tab.</b> The same six guards, each with a hidden switch that turns its check red, because a check that cannot fail proves nothing.</li>
+    <li><b>Provenance.</b> Every reading is stamped REAL, REPLAY or SIMULATED at the sensor hub and everything computed from it inherits the stamp. A replay can never show as REAL.</li>
+    <li><b>Exposure log.</b> A hash chain signed with a hardware-backed key. It proves entries were not edited after recording, not that the observation was true.</li>
+  </ul>
+</section>
+
+<section id="flows">
+  <h2><span class="n">07</span>Data flows</h2>
+
+  <h3>From a sensor reading to a spoken warning</h3>
+  <div class="diagram flow"><svg viewBox="0 0 900 190" role="img" aria-label="Flow from sensors through the hub, engines and risk engine to the alert">
+    <defs><marker id="head" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--muted)"/></marker></defs>
+    <rect class="box" x="10" y="40" width="152" height="64" rx="8"/><text x="86" y="68" text-anchor="middle">Sensors</text><text class="sub" x="86" y="86" text-anchor="middle">motion · light · GNSS</text>
+    <rect class="box" x="184" y="40" width="130" height="64" rx="8"/><text x="249" y="68" text-anchor="middle">Sensor hub</text><text class="sub" x="249" y="86" text-anchor="middle">stamp REAL / REPLAY</text>
+    <rect class="box body" x="330" y="14" width="140" height="44" rx="8"/><text x="400" y="42" text-anchor="middle">Body + pulse</text>
+    <rect class="box brain" x="330" y="73" width="140" height="44" rx="8"/><text x="400" y="101" text-anchor="middle">Brain battery</text>
+    <rect class="box sun" x="330" y="132" width="140" height="44" rx="8"/><text x="400" y="160" text-anchor="middle">Exposure + WBGT</text>
+    <rect class="box key" x="500" y="40" width="152" height="64" rx="8"/><text x="576" y="68" text-anchor="middle">Risk engine</text><text class="sub" x="576" y="86" text-anchor="middle">TSS · anchors · guards</text>
+    <rect class="box" x="678" y="40" width="100" height="64" rx="8"/><text x="728" y="68" text-anchor="middle">Alert ladder</text><text class="sub" x="728" y="86" text-anchor="middle">on a rise only</text>
+    <rect class="box" x="790" y="14" width="100" height="44" rx="8"/><text x="840" y="42" text-anchor="middle">Voice</text>
+    <rect class="box" x="790" y="73" width="100" height="44" rx="8"/><text x="840" y="101" text-anchor="middle">Haptic</text>
+    <rect class="box sun" x="790" y="132" width="100" height="44" rx="8"/><text x="840" y="160" text-anchor="middle">Chhaya</text>
+    <path class="ar" marker-end="url(#head)" d="M162 72 H182"/><path class="ar" marker-end="url(#head)" d="M314 72 C321 72 321 36 328 36"/><path class="ar" marker-end="url(#head)" d="M314 72 C321 72 321 95 328 95"/><path class="ar" marker-end="url(#head)" d="M314 72 C321 72 321 154 328 154"/>
+    <path class="ar" marker-end="url(#head)" d="M470 36 C485 36 485 62 498 62"/><path class="ar" marker-end="url(#head)" d="M470 95 C485 95 485 72 498 72"/><path class="ar" marker-end="url(#head)" d="M470 154 C485 154 485 82 498 82"/>
+    <path class="ar" marker-end="url(#head)" d="M652 72 H676"/><path class="ar" marker-end="url(#head)" d="M778 62 C784 62 784 36 788 36"/><path class="ar" marker-end="url(#head)" d="M778 72 C784 72 784 95 788 95"/><path class="ar" marker-end="url(#head)" d="M778 82 C784 82 784 154 788 154"/>
+    <text class="lab" x="450" y="186" text-anchor="middle">Missing or stale input holds or raises the level; it never lowers it.</text>
+  </svg></div>
+
+  <h3>The 82-second Quick check</h3>
+  <div class="diagram flow"><svg viewBox="0 0 900 140" role="img" aria-label="Quick check steps and where their results go">
+    <rect class="box body" x="10" y="30" width="150" height="62" rx="8"/><text x="85" y="56" text-anchor="middle">Fingertip</text><text class="sub" x="85" y="74" text-anchor="middle">35 s · pulse</text>
+    <rect class="box brain" x="190" y="30" width="150" height="62" rx="8"/><text x="265" y="56" text-anchor="middle">Hand hold</text><text class="sub" x="265" y="74" text-anchor="middle">12 s · tremor</text>
+    <rect class="box brain" x="370" y="30" width="150" height="62" rx="8"/><text x="445" y="56" text-anchor="middle">Tapping</text><text class="sub" x="445" y="74" text-anchor="middle">20 s · Fitts</text>
+    <rect class="box" x="550" y="30" width="150" height="62" rx="8"/><text x="625" y="56" text-anchor="middle">Symptoms</text><text class="sub" x="625" y="74" text-anchor="middle">6 s · 7 taps + effort</text>
+    <rect class="box key" x="730" y="30" width="160" height="62" rx="8"/><text x="810" y="56" text-anchor="middle">Risk engine</text><text class="sub" x="810" y="74" text-anchor="middle">accepted results only</text>
+    <path class="ar" marker-end="url(#head)" d="M160 61 H188"/><path class="ar" marker-end="url(#head)" d="M340 61 H368"/><path class="ar" marker-end="url(#head)" d="M520 61 H548"/><path class="ar" marker-end="url(#head)" d="M700 61 H728"/>
+    <text class="lab" x="450" y="124" text-anchor="middle">3 s between steps. A failed step says what to do; a skipped step is recorded with its reason, never counted as fine.</text>
+  </svg></div>
+
+  <h3>Strain to rerouted rider</h3>
+  <div class="diagram flow"><svg viewBox="0 0 900 150" role="img" aria-label="How the strain level changes the route">
+    <rect class="box key" x="10" y="40" width="140" height="62" rx="8"/><text x="80" y="66" text-anchor="middle">Level + TSS</text><text class="sub" x="80" y="84" text-anchor="middle">from the risk engine</text>
+    <rect class="box sun" x="180" y="40" width="150" height="62" rx="8"/><text x="255" y="66" text-anchor="middle">λ and budget</text><text class="sub" x="255" y="84" text-anchor="middle">+1 min · +3 min</text>
+    <rect class="box sun" x="360" y="40" width="170" height="62" rx="8"/><text x="445" y="66" text-anchor="middle">Offline router</text><text class="sub" x="445" y="84" text-anchor="middle">OSM graph + shade layer</text>
+    <rect class="box sun" x="560" y="40" width="150" height="62" rx="8"/><text x="635" y="66" text-anchor="middle">Route + water stop</text><text class="sub" x="635" y="84" text-anchor="middle">inside the budget</text>
+    <rect class="box" x="740" y="40" width="150" height="62" rx="8"/><text x="815" y="66" text-anchor="middle">Chhaya screen</text><text class="sub" x="815" y="84" text-anchor="middle">"+N min, X% shade"</text>
+    <path class="ar" marker-end="url(#head)" d="M150 71 H178"/><path class="ar" marker-end="url(#head)" d="M330 71 H358"/><path class="ar" marker-end="url(#head)" d="M530 71 H558"/><path class="ar" marker-end="url(#head)" d="M710 71 H738"/>
+    <text class="lab" x="450" y="132" text-anchor="middle">At Cool, λ = 0: the route is the fastest route. At Danger the destination becomes the nearest cool seat.</text>
+  </svg></div>
+</section>
+
+<section id="storage">
+  <h2><span class="n">08</span>Storage</h2>
+  <p class="lede">Small, local and private to the app. Nothing here is synced anywhere.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Store</th><th>Holds</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="k">App preferences</td><td>Profile, daily check-in, the worker's eyelid calibration</td><td>Private storage; the profile is range-checked on load and a bad value falls back to a cautious default</td></tr>
+      <tr><td class="k">Android Keystore</td><td>Signing key for the exposure log</td><td>EC P-256, hardware-backed (StrongBox present on the test phone)</td></tr>
+      <tr><td class="k">In memory</td><td>Shift state, brain baselines, the hash chain, all camera data during a check</td><td>Camera frames and audio are never written to disk</td></tr>
+      <tr><td class="k">App files</td><td>Recorded session for replay; PPG lab captures (colour means over time) and motion</td><td>Private folder; the PPG lab is an engineering tool</td></tr>
+      <tr><td class="k">Bundled assets</td><td>Road graph and shade layer, weather cache, ECTemp vectors, face model, a tiny test model</td><td>Large files such as the map extract and language model stay out of git (staged by Office Kit)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="trust">
+  <h2><span class="n">09</span>Trust, safety and privacy</h2>
+  <p class="lede">A heat tool can easily become a tool to rate workers. The design prevents that in code, and states its limits plainly.</p>
+  <div class="cols">
+    <div><h4>The worker owns the data</h4><ul>
+      <li>Raw physiology (heart rate, HRV, core trend, brain scores, symptoms) never leaves the phone.</li>
+      <li>Camera frames and audio live in memory only and are dropped after each check.</li>
+      <li>The app declares no network permission, which is checked on the installed build. Nothing can be sent.</li>
+      <li>The console sees levels, a trend, minutes since rest and coarse reasons. Position is shared only if the worker turns it on.</li>
+    </ul></div>
+    <div><h4>Never lower, never hide</h4><ul>
+      <li>Losing or degrading information can never lower a level; the safety property test and the on-screen switches prove it.</li>
+      <li>The strain levels are Cool, Warming, Strained and Danger, never a body-temperature number.</li>
+      <li>Provenance chips on every reading; replay is never passed off as live.</li>
+    </ul></div>
+    <div><h4>Honest limits</h4><ul>
+      <li>A heat-strain wellbeing tool, not a medical device. It advises rest; it does not diagnose.</li>
+      <li>ECTemp is covered by US patent 10,702,165, so commercial use needs a licence.</li>
+      <li>Shade is computed from map data, not measured. The hash chain proves editing, not truth.</li>
+      <li>Face and forehead checks are optional, experimental and unvalidated against a reference.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="stack">
+  <h2><span class="n">10</span>Device stack</h2>
+  <p class="lede">Built for one phone: the iQOO 15 (model I2501, Snapdragon 8 Elite Gen 5, Android 16 on OriginOS 6).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Area</th><th>Technology</th><th>Role in Thakaan</th></tr></thead>
+    <tbody>
+      <tr><td class="k">App</td><td>Kotlin, Jetpack Compose, coroutines and Flow, Gradle with NDK 26</td><td>Screens, engines, the sensor hub foreground service</td></tr>
+      <tr><td class="k">Camera</td><td>Camera2 (rear with torch, front)</td><td>Locked exposure and white balance, 30 fps colour means</td></tr>
+      <tr><td class="k">Native</td><td><code>lwbgt</code> C library through JNI (arm64)</td><td>Liljegren WBGT</td></tr>
+      <tr><td class="k">Inference</td><td>LiteRT with GPU and QNN delegates behind one <code>InferenceEngine</code> seam; MediaPipe tasks-vision</td><td>Face landmarks; a Diagnostics screen reads the delegated-ops count so "it loaded" is not mistaken for "it runs on the NPU"</td></tr>
+      <tr><td class="k">Speech out</td><td>Android TextToSpeech (five voices installed on the test phone)</td><td>Spoken alerts</td></tr>
+      <tr><td class="k">Security</td><td>Android Keystore with StrongBox</td><td>Signed exposure log</td></tr>
+      <tr><td class="k">Map</td><td>OpenStreetMap extract, own graph builder and shade precompute in Python</td><td>Offline routing and shade</td></tr>
+      <tr><td class="k">Console</td><td>Local web page and a small Python server, sealed clipboard messages</td><td>Supervisor view and chain verifier</td></tr>
+      <tr><td class="k">Tests</td><td>JUnit on the laptop: 344 unit tests, plus on-phone self-tests</td><td>Safety property, ECTemp vectors, pulse, routing, explainer</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="ledger">
+  <h2><span class="n">11</span>Built vs verified</h2>
+  <p class="lede">Judges trust a project that labels its own limits. This is the honest state on 10 October 2026: of 65 tickets, 3 are fully done, 50 are built but not fully verified on the phone, and 12 are still open. The app shows the same labels on screen.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Piece</th><th>Status</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Core-temperature filter (ECTemp)</td><td><span class="tag real">Verified on phone</span></td><td>All 7 published vectors pass on the iQOO 15 with personalisation off</td></tr>
+      <tr><td class="k">Heat-balance prior, WBGT</td><td><span class="tag real">Verified on phone</span> <span class="tag unit">Laptop-tested</span></td><td>The native WBGT library loads and gives a plausible value on the phone; the prior is laptop-tested</td></tr>
+      <tr><td class="k">Safety checks and guards</td><td><span class="tag real">Verified on phone</span></td><td>Five checks pass and each guard turns its row red. The sixth (missing weather) is laptop-tested, not yet seen on the phone</td></tr>
+      <tr><td class="k">Live sensors</td><td><span class="tag real">Verified on phone</span></td><td>Accelerometer and gyro 200 Hz, light 10 Hz, all REAL; an 11-minute run stayed REAL</td></tr>
+      <tr><td class="k">Fingertip pulse</td><td><span class="tag sim">Rate unconfirmed</span></td><td>The camera streams a steady 30 fps and real pulses are in the data. The new colour-combining test accepts the clean capture at about 62 bpm. It has not been compared with a counted pulse, so no accuracy is claimed</td></tr>
+      <tr><td class="k">Tremor and tapping</td><td><span class="tag real">Verified on phone</span></td><td>The hand-hold ran; tapping is accepted with real finger taps (injected taps are rejected)</td></tr>
+      <tr><td class="k">Chhaya routing</td><td><span class="tag real">Verified on phone</span></td><td>Re-routes instantly with airplane mode on. Shade is computed, not measured</td></tr>
+      <tr><td class="k">Collapse countdown</td><td><span class="tag real">Verified on phone</span></td><td>The "Are you OK?" countdown appears when the phone is laid down still. The "I'm OK" button is unit-tested, not yet tapped on the phone</td></tr>
+      <tr><td class="k">Replay labelling</td><td><span class="tag real">Verified on phone</span></td><td>Replay shows REPLAY and every stream is flagged non-real</td></tr>
+      <tr><td class="k">Signed exposure log</td><td><span class="tag real">Verified on phone</span></td><td>Hardware-backed key, a changed byte and a cut-off end are both caught</td></tr>
+      <tr><td class="k">No network</td><td><span class="tag real">Verified on phone</span></td><td>No network permission on the installed build</td></tr>
+      <tr><td class="k">Spoken alerts</td><td><span class="tag sim">Voices installed</span></td><td>All five voices are installed; how they sound has not been listened to yet</td></tr>
+      <tr><td class="k">Face pulse and fatigue</td><td><span class="tag unit">Laptop-tested</span></td><td>49 tests on synthetic signals. The face model loads on the phone with airplane mode on; a live face check has not been run yet</td></tr>
+      <tr><td class="k">Forehead thermal check</td><td><span class="tag unit">Logic only</span></td><td>No screen and no confirmed temperature-sensor source; never shows a number</td></tr>
+      <tr><td class="k">Light sensor in real sun and shade</td><td><span class="tag todo">Not verified</span></td><td>Indoor readings classify plausibly; the outdoor test is not yet recorded. GNSS outdoors is untested</td></tr>
+      <tr><td class="k">Weather</td><td><span class="tag sim">Cached</span></td><td>Open-Meteo hourly cache for 8 to 13 October 2026 only</td></tr>
+      <tr><td class="k">Shade layer</td><td><span class="tag sim">Estimated</span></td><td>Ray-cast from OpenStreetMap; about 95% of building heights guessed</td></tr>
+      <tr><td class="k">Language-model explainer</td><td><span class="tag todo">Not wired</span></td><td>Template lines are used; the validator and fallback are built and tested</td></tr>
+      <tr><td class="k">Speech-code check</td><td><span class="tag todo">Not built</span></td><td>No on-device recogniser yet</td></tr>
+      <tr><td class="k">Recorded real ride for the replay</td><td><span class="tag todo">Not recorded</span></td><td>The replay works on a short desk recording</td></tr>
+      <tr><td class="k">Supervisor console</td><td><span class="tag unit">Built, partly tested</span></td><td>Page, server and chain verifier exist; the full clipboard flow with the phone is not yet tested</td></tr>
+      <tr><td class="k">NPU delegation count</td><td><span class="tag todo">Not recorded</span></td><td>The seam and the Diagnostics read-out exist; the "N/N ops on NPU" figure for a real model is not recorded</td></tr>
+      <tr><td class="k">Crew mesh, Pyaau shop network</td><td><span class="tag todo">Not built</span></td><td>Roadmap</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="repo">
+  <h2><span class="n">12</span>Repo layout</h2>
+  <div class="eq">Thakaan/
+  app/src/main/java/com/thakaan/
+    sensorhub/   foreground service, provenance stamping, recorder and replayer
+    inference/   InferenceEngine seam: QNN, GPU, CPU back ends
+    ppg/         fingertip pulse: capture, DSP, quality gates, POS test, thermal guard
+    face/        optional face pulse, fatigue, forehead thermal, front camera, tracker
+    body/        ECTemp, heat-balance prior, hydration, HR context
+    brain/       tremor, Fitts taps, gait, CUSUM battery, symptom log
+    exposure/    light state, sun dose, WBGT, UTCI, rest ledger, weather cache
+    motion/      activity, stop detector, collapse and countdown
+    risk/        strain score, levels, alert ladder, explainer, safety checks, forecast
+    chhaya/      road graph, shade layer, strain-aware router
+    shift/       shift engine, runtime, Quick check plan
+    audit/       exposure hash chain, Keystore signer, crew status seal
+    coach/       cooling coach          settings/  profile, daily check-in
+    ui/          Compose screens        core/      provenance
+  app/src/main/assets/    road graph, ECTemp vectors, weather cache (large models are not in git)
+  app/src/main/cpp/       lwbgt native build (arm64)
+  console/                supervisor console page and chain verifier
+  tools/                  chhaya graph and shade builders, console server, smoke test
+  docs/                   bibles, build map, tickets, device results, limitations, pitch, this page</div>
+</section>
+
+<section id="judging">
+  <h2><span class="n">13</span>Judging fit</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Criterion</th><th>What Thakaan shows</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Problem and impact</td><td>Heat illness attacks judgement before the body gives up, and the people most exposed are paid per task and cannot afford a wearable. They already carry the sensor.</td></tr>
+      <tr><td class="k">Uses the phone's hardware</td><td>Camera and torch for the pulse, the accelerometer for tremor and collapse, the touchscreen for the brain test, the light sensor and GNSS for the sun, an on-device model runtime, Keystore for the proof log. No cloud, no wearable.</td></tr>
+      <tr><td class="k">Technical depth</td><td>A published core-temperature filter reproduced exactly, a Liljegren WBGT in native code, change detection against each worker's own baseline, strain-aware offline routing, and a pulse method that was tuned on real captures.</td></tr>
+      <tr><td class="k">Honesty and safety</td><td>Provenance on every reading, six guard switches that turn red, a property test that no degradation lowers a level, and this page's ledger of what is and is not verified.</td></tr>
+      <tr><td class="k">Design for the user</td><td>Cool, Warming, Strained, Danger by colour, shape and word, spoken in five languages, with the time cost shown, and never blocking the job.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="demo">
+  <h2><span class="n">14</span>Demo script</h2>
+  <p class="lede">About four minutes. Everything on this path works with the phone in airplane mode. Say "replay" out loud whenever the chip says REPLAY.</p>
+  <div class="script">
+    <div class="beat"><span class="t">0:00–0:20</span><p>A delivery rider at noon in 41 °C. Open Home: the chip says REAL for the live sensors.</p></div>
+    <div class="beat body"><span class="t">0:20–1:20</span><p>Replay the shift at 20x. The gauge goes Cool, Warming, Strained and the forecast line says when Strained is expected. The chip says REPLAY.</p></div>
+    <div class="beat"><span class="t">1:20–1:50</span><p>At Strained the phone speaks one action in the worker's language with its time cost, and vibrates. Switch the language from Hindi to Kannada.</p></div>
+    <div class="beat sun"><span class="t">1:50–2:50</span><p>Chhaya Route. At Cool the route is the fastest. At Strained the same trip detours to shade and adds a water stop, with the extra minutes shown. At Danger it points to the nearest cool seat.</p></div>
+    <div class="beat brain"><span class="t">2:50–3:50</span><p>A teammate who has never seen it does the Quick check: finger on the camera, hold still, tap, how do you feel.</p></div>
+    <div class="beat"><span class="t">3:50–4:20</span><p>Paste the phone's sealed status into the console: level and coarse reasons, no raw numbers. Change one byte of the exposure log and watch the verifier turn red.</p></div>
+    <div class="beat"><span class="t">4:20–4:40</span><p>Safety checks tab: all PASS, flip one guard off, its row turns red. Close with the limits from the ledger.</p></div>
+  </div>
+  <p class="note">Backups: if the camera misbehaves, skip the Quick check and show the Safety tab; if the phone is unavailable, run the Office Kit mirror.</p>
+</section>
+
+<section id="team">
+  <h2><span class="n">15</span>Team split</h2>
+  <p class="lede">Three roles by ticket range. Names are not assigned yet (decision 3 is still open).</p>
+  <div class="team">
+    <div class="person"><span class="role">Role A</span><b>Body</b><ul><li>Fingertip and face pulse, ECTemp, heat-balance prior</li><li>Body vectors, personalisation, hydration</li><li>Tickets 8 to 12 and 22 to 31</li></ul></div>
+    <div class="person"><span class="role">Role B</span><b>Brain and world</b><ul><li>Motion, collapse, brain battery</li><li>Light, GNSS, WBGT, shade layer</li><li>Chhaya Route, recorded ride</li><li>Tickets 13 to 21, 32 to 38 and 46 to 51</li></ul></div>
+    <div class="person"><span class="role">Role C</span><b>Systems and demo</b><ul><li>Skeleton, risk engine, safety checks</li><li>Office Kit, console, metrics, demo, pitch</li><li>Guards the held-out session</li><li>Tickets 5 to 7, 39 to 45, 52 to 56 and 60 to 65</li></ul></div>
+  </div>
+</section>
+
+<section id="refs">
+  <h2><span class="n">16</span>Sources</h2>
+  <ul class="src">
+    <li><a href="https://www.researchgate.net/publication/239948087_Estimation_of_human_core_temperature_from_sequential_heart_rate_observations">Buller et al., core temperature from heart rate (ECTemp)</a></li>
+    <li>Liljegren WBGT model (the <code>lwbgt</code> reference implementation)</li>
+    <li><a href="https://pypi.org/project/pythermalcomfort">pythermalcomfort</a> (UTCI transcription)</li>
+    <li><a href="https://doi.org/10.1109/TBME.2016.2609282">Wang et al., Algorithmic Principles of Remote PPG (POS)</a></li>
+    <li><a href="https://www.cinc.org/2020/Program/accepted/153.html">Effects of window length on remote PPG accuracy and cost</a></li>
+    <li><a href="https://bmva-archive.org.uk/bmvc/2024/papers/Paper_136/paper.pdf">Skin-tone bias in remote heart-rate estimation (BMVC 2024)</a></li>
+    <li><a href="https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/android">MediaPipe Face Landmarker for Android</a></li>
+    <li><a href="https://arxiv.org/pdf/2604.22479">Personalised eye and mouth thresholds for drowsiness</a></li>
+    <li><a href="https://ubicomplab.cs.washington.edu/publications/feverphone">FeverPhone, core temperature from phone thermistors</a></li>
+    <li><a href="https://open-meteo.com">Open-Meteo</a> weather data</li>
+    <li><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a> (ODbL)</li>
+    <li>Product Bible, Simplified Bible and Build Map v1 (this repository, <code>docs/</code>)</li>
+  </ul>
+  <footer>Thakaan architecture v1 · synced with the Product Bible and Build Map v1; built state as of 2026-10-10 (docs/DEVICE_RESULTS.md, docs/TICKETS.md) · iQOO Hackathon 2026 Grand Finale, Bengaluru, 9 to 11 October.</footer>
+</section>
+</main>
+</div>
+</body>
+</html>
