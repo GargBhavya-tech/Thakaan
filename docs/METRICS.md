@@ -4,14 +4,14 @@ Every number has a label. **Development-time** means we looked at it while build
 
 | # | Metric | Value | Label | How it was measured |
 | --- | --- | --- | --- | --- |
-| 1 | Fingertip heart-rate error vs a reference, at rest | NOT MEASURED | n/a | no paired reading with an oximeter or watch has been taken. The only counted pulse (70) was used for the chest, row 11 |
-| 2 | Fingertip heart-rate error vs a reference, after exercise | NOT MEASURED | n/a | same |
+| 1 | Fingertip heart-rate accuracy vs a reference | about 95% accurate (reported by the team on 2026-10-11) | development-time, REPORTED: no paired readings were logged, so the number cannot be reproduced or checked yet | checked by hand against a reference device; reference, number of readings, rest vs exercise and the meaning of 95% (within 5% of the reference?) are not recorded |
+| 2 | Fingertip heart-rate error vs a reference, after exercise | NOT SEPARATED: the report above does not say whether it includes post-exercise readings | n/a | needs its own paired readings |
 | 3 | Fingertip capture rejection rate | 3 of 4 real captures rejected (75%) | development-time, n = 4 | PPG lab, one person, hand-held vs on a table (`DEVICE_RESULTS.md`, fourth run). Too few to quote as a rate |
 | 4 | Quick-check duration | 95 s with the speech step, 82 s without | design value, NOT stopwatch-timed | sum of the step lengths in `QuickCheckPlan` (fingertip step is 35 s: 10 s settle + 25 s measured) |
 | 5 | Full-check duration | 60 s of clean pulse for HRV | design value, NOT stopwatch-timed | rule: no HRV from less than 60 s |
 | 6 | ECTemp reference vectors passed | 7 of 7, with personalisation off | development-time (fixed vectors, deterministic) | laptop unit test and on the phone (Diagnostics), seen 2026-10-10 |
 | 7 | Safety checks passed | 5 of 5 on the phone; check 6 added later (unit-tested, not yet seen on the phone); property test passes on the laptop | development-time | Safety checks tab, guards 1 to 5 turned their row red by hand |
-| 8 | Sun / shade label agreement with a hand log | NOT MEASURED | n/a | needs a walk outdoors with a hand log (see below) |
+| 8 | Shade accuracy vs real light | more than 90% accurate (reported by the team on 2026-10-11) | development-time, REPORTED: no log kept, so not reproducible yet | checked by hand outdoors; which layer (OSM or satellite), how many places, what was compared with (eyes or the light sensor) and the meaning of 90% are not recorded |
 | 9 | Route extra time vs shade gained, per level | see the route table below | development-time, modelled shade | `RouteMetricsTest` on the real Bengaluru graph, 150 random pairs 1.5 to 4 km apart, two seeds |
 | 10 | Time from collapse to alarm | at least 23 s after the impact (8 s of stillness, then a 15 s countdown that "haan" or the I'm-OK button cancels) | design value; countdown start and alarm both seen on the phone, NOT stopwatch-timed | constants in `CollapseRules` and `CountdownMachine` |
 | 11 | Chest pulse vs a counted pulse | 70.6 and 73.2 against a counted 70 (errors 0.6 and 3.2 beats) | development-time, n = 2, one person; the lab tolerance was set from these same two recordings | Chest lab, 2026-10-10 |
@@ -37,7 +37,7 @@ The satellite-height layer and the 11:00 and 14:00 slots are in `app/build/metri
 
 ## What I need from you
 
-1. **Rows 1 and 2:** a pulse oximeter or watch, and about 10 paired readings: fingertip check and reference at the same moment, 5 at rest and 5 after 2 minutes of stairs or push-ups. Tell me the reference numbers and which check each belongs to.
-2. **Row 8:** a 15-minute outdoor walk with sensing on, writing down every 2 minutes whether you are in sun or shade, with the time. I compare it with what the app said.
+1. **Rows 1 and 2:** to turn the reported 95% into a number that reproduces, I need the paired readings: for each, the fingertip heart rate, the reference heart rate, and whether it was at rest or after exercise. Even 10 pairs typed from memory or from photos is enough to compute the error and the share within 5%.
+2. **Row 8:** which shade layer you checked, roughly how many streets or points, and how you judged "accurate" (by eye, or with the phone's light sensor). If you can, one 15-minute walk with sun or shade written down every 2 minutes lets me compute it from the app's own log.
 3. **Rows 4, 5, 10:** with a stopwatch, time 3 quick checks start to summary, and 3 collapse tests (lay the phone down still after a tilt) from the tilt to the alarm.
 4. **The held-out session:** decide which one recording or walk nobody touches until this table is final (the C owner). Without it every row stays development-time.
