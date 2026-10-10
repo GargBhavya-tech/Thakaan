@@ -350,9 +350,10 @@ private fun DrawScope.label(m: TextMeasurer, text: String, at: Offset, color: Co
     drawText(r, topLeft = pos)
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun Legend(layer: MapLayer) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+    androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         when (layer) {
             MapLayer.SHADE -> { Swatch(SHADE_GREEN, "Shade"); Swatch(PART_SHADE, "Part shade"); Swatch(SUN, "Full sun"); Swatch(ROUTE_BLUE, "Your route"); Swatch(Color(0xFF455A64), "Fastest (dashed)") }
             MapLayer.WATER -> { Dot(WATER_BLUE, "Water (listed, not verified)"); Dot(SHELTER_PURPLE, "Shelter"); Swatch(ROUTE_BLUE, "Route") }
