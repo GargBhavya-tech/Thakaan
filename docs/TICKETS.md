@@ -4,7 +4,7 @@ Generated from `docs/Thakaan — Build Map v1.md` (65 tickets). Tick a box only 
 
 Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 🟥 CORE · 🟨 SUPPORTING · ⬜ SEED. Light: ⚪ PRE-BUILD · 🟢 GREEN · 🔴 RED-OK.
 
-**Status note:** `[~]` = code written and laptop unit tests green, but the device-only part (camera, GNSS, light sensor, speech, haptics, NPU, human-in-the-loop) is UNTESTED on the phone. #41 is `[x]` because its Test runs on the laptop (150+ tests, guard-off-must-fail proofs). Tickets 9-11, 13-21, 24-27, 29, 32-40, 42, 46-48, 50, 54 are in this state; see docs/PHONE_CHECKLIST.md when it exists.
+**Status note:** `[~]` = code written and laptop unit tests green, but the device-only part (camera, GNSS, light sensor, speech, haptics, NPU, human-in-the-loop) is UNTESTED on the phone. #41 is `[x]` because its Test runs on the laptop (150+ tests, guard-off-must-fail proofs). Tickets 9-11, 13-21, 24-27, 29, 32-40, 42, 46-48, 50, 54 are in this state; see docs/PHONE_CHECKLIST.md (items already seen on the phone are ticked there with the date) and docs/DEVICE_RESULTS.md. Audited 2026-10-10: no further ticket meets its Done-when on the phone yet, so none were flipped.
 
 
 ## Phase 0: Pre-build decisions and foundations

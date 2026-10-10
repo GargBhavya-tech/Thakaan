@@ -52,3 +52,12 @@ Fingertip pulse analysis, fourth run (PPG lab, 4 real captures; analysis done on
 - EfficientPhys and SegFormer: both load. Neither has seen a real face or street yet.
 - Vosk English and Hindi: both load from the pushed folders. Nothing has been spoken to them yet.
 - Gemma 4 E2B: loads on the GPU and writes a line. First try was rejected by the wording check (it wrote the minutes as a word, not the digit 3), so the template was shown: the guard works. After asking for digits, the line passed and was shown as "from the model". Load took well under 45 s.
+
+## Fifth run (2026-10-10, later; checked on the phone)
+
+- Whisper-tiny (#34): the three model files load, the self-test clip transcribes, and the Speech lab microphone path records and returns text (or "no speech heard" for silence). Real English, Hindi and Kannada voices have not been tried, so transcript quality is unknown.
+- Shift report: levels are logged and the report opens from Home. The process-survival fix was seen: closing the screen no longer stops the level engine.
+- Crew mesh: with Bluetooth off the card says so. Nothing has run between two phones.
+- Chest lab (#30): placing the phone tilts it, and the posture gate then dropped whole recordings; a 10 s placement countdown was added. Two real recordings against a counted pulse of 70 read 70.6 and 73.2, so the lab tolerance is now 6 beats while the continuous stream feeding the risk engine stays at 4. That is two recordings from one person, not an accuracy claim.
+- Gemma on GPU, all small models, EfficientPhys, SegFormer, Vosk: load (see the Models section above).
+- Not verified: flood report with the lens uncovered, pinch-zoom clipping, two-phone mesh and buddy pairing, real voices in Speech lab, face pulse and oxygen against a reference, shade against real light outdoors.
