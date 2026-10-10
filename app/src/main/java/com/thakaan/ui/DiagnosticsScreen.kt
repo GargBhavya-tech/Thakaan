@@ -154,6 +154,9 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     var small by remember { mutableStateOf<List<com.thakaan.ml.ModelLine>?>(null) }
                     var gemma by remember { mutableStateOf<String?>(null) }
                     var speech by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+                    var shadeText by remember { mutableStateOf<String?>(null) }
+                    var camOk by remember { mutableStateOf(androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) }
+                    val askCam = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { camOk = it }
                     Text("Trained on simulated data; they run beside the rules and never decide a level.", fontSize = 13.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { small = shadow.selfTest() }) { Text("Small models", fontSize = 14.sp) }
@@ -179,6 +182,21 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                             }
                         }) { Text("Speech", fontSize = 14.sp) }
                     }
+                    Button(onClick = {
+                        if (!camOk) { askCam.launch(android.Manifest.permission.CAMERA); return@Button }
+                        shadeText = "looking... hold the phone upright, pointing ahead and up, for 3 seconds"
+                        val cam = com.thakaan.face.FrontCameraCapture(ctx)
+                        val runner = com.thakaan.ml.ShadeRunner(ctx)
+                        var n = 0
+                        cam.start(onFrame = { _, bmp, _ ->
+                            if (++n == 60) { // about 2 s in, exposure has settled
+                                val v = runner.look(bmp)
+                                cam.stop(); runner.close()
+                                shadeText = v?.let { "overhead: ${it.summary}; sky %.0f%%, trees %.0f%%, buildings %.0f%%".format(it.skyShare * 100, it.vegetationShare * 100, it.buildingShare * 100) } ?: "model not available"
+                            }
+                        }, onError = { shadeText = "camera: $it" }, rear = true)
+                    }) { Text("Look up (shade)", fontSize = 14.sp) }
+                    shadeText?.let { Line("Shade from camera", it, ok = it.startsWith("overhead")) }
                     small?.forEach { Line(it.name, "${it.status}: ${it.detail}", ok = it.status == "runs") }
                     gemma?.let { Line("Gemma 4 E2B", it, ok = it.startsWith("loaded")) }
                     speech?.forEach { (n, s) -> Line("Vosk $n", s, ok = s == "loads") }

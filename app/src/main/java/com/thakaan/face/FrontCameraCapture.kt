@@ -41,15 +41,16 @@ class FrontCameraCapture(private val ctx: Context) {
     @Volatile var lastError: String? = null; private set
 
     @SuppressLint("MissingPermission") // the caller requests CAMERA first
-    fun start(onFrame: (tNanos: Long, bitmap: Bitmap, pixels: IntArray) -> Unit, onError: (String) -> Unit) {
+    fun start(onFrame: (tNanos: Long, bitmap: Bitmap, pixels: IntArray) -> Unit, onError: (String) -> Unit, rear: Boolean = false) {
         val mgr = ctx.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        val id = mgr.cameraIdList.firstOrNull { mgr.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT }
-            ?: return fail("no front camera", onError)
+        val facing = if (rear) CameraCharacteristics.LENS_FACING_BACK else CameraCharacteristics.LENS_FACING_FRONT
+        val id = mgr.cameraIdList.firstOrNull { mgr.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) == facing }
+            ?: return fail(if (rear) "no rear camera" else "no front camera", onError)
         val chars = mgr.getCameraCharacteristics(id)
         val orientation = chars.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 270
         val sizes = chars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)?.getOutputSizes(ImageFormat.YUV_420_888)
         val size = sizes?.filter { it.width >= 640 }?.minByOrNull { abs(it.width - 640) + abs(it.height - 480) } ?: sizes?.firstOrNull()
-            ?: return fail("front camera offers no YUV size", onError)
+            ?: return fail("camera offers no YUV size", onError)
         val fps = pickFps(chars)
 
         val t = HandlerThread("face-camera").also { it.start() }

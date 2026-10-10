@@ -81,6 +81,8 @@ class ShadowModels(private val ctx: Context) {
             line("Chest-vibration denoiser", scg != null, scg?.let { "${it.size} samples out" } ?: "-"),
             line("Strain GRU", gru != null, gru?.let { "+15 min ${it.first}, +30 min ${it.second}" } ?: "-"),
             line("Line-of-sight trees", l != null, l?.let { "open-sky satellite: %.0f%% in view".format(it * 100) } ?: "-"),
+            LearnedPulseRunner(ctx).let { r -> val ok = r.available; r.close(); line("Face pulse (EfficientPhys)", ok, if (ok) "loads" else "-") },
+            ShadeRunner(ctx).let { r -> val ok = r.available; r.close(); line("Shade segmentation (SegFormer)", ok, if (ok) "loads" else "-") },
         )
     }
 

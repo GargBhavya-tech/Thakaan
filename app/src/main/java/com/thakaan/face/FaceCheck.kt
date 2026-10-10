@@ -16,6 +16,8 @@ class FaceCheckOutcome(
     val frames: Int,
     /** Present only when this check was marked as the worker's rested baseline and the eyelid range was usable. */
     val newCalibration: FatigueCalibration?,
+    /** The learned (EfficientPhys) face pulse, shown beside the POS pulse. Display only; null when the model or the data is missing. */
+    val learnedPulse: com.thakaan.ml.LearnedPulse? = null,
 )
 
 /** What the screen shows while the check runs. */
@@ -42,6 +44,8 @@ class FaceCheckSession(private val ctx: Context) {
     private val faceFrames = ArrayList<FaceFrame>()
     private val fatigueFrames = ArrayList<FatigueFrame>()
     private val rawClosure = ArrayList<Double>()
+    private val learned = com.thakaan.ml.LearnedPulseRunner(ctx)
+    private val crops = ArrayList<ByteArray>()
     private var firstT = 0L
     private var startedElapsedMs = 0L
     @Volatile private var live = FaceLive(FrameState.NO_FACE, SETTLE_SEC + CAPTURE_SEC, 0, false)
@@ -69,6 +73,9 @@ class FaceCheckSession(private val ctx: Context) {
                         faceFrames += obs.toFaceFrame()
                         fatigueFrames += obs.toFatigueFrame()
                         if (obs.hasBlend) rawClosure += obs.eyeClosure
+                        // consecutive crops only: a lost face starts a new run, and only the longest run is used
+                        val box = obs.box
+                        if (box != null && learned.available) crops += learned.crop(bmp, box) else if (box == null && crops.size < MIN_RUN) crops.clear()
                     }
                 }
                 live = FaceLive(
@@ -88,24 +95,28 @@ class FaceCheckSession(private val ctx: Context) {
     fun finish(calibration: FatigueCalibration?, baseline: Boolean): FaceCheckOutcome {
         camera.stop(); tracker.close()
         val err = error
-        val ff: List<FaceFrame>; val tf: List<FatigueFrame>; val raw: DoubleArray
+        val ff: List<FaceFrame>; val tf: List<FatigueFrame>; val raw: DoubleArray; val cr: List<ByteArray>
         synchronized(this) {
-            ff = faceFrames.toList(); tf = fatigueFrames.toList(); raw = rawClosure.toDoubleArray()
-            faceFrames.clear(); fatigueFrames.clear(); rawClosure.clear()
+            ff = faceFrames.toList(); tf = fatigueFrames.toList(); raw = rawClosure.toDoubleArray(); cr = crops.toList()
+            faceFrames.clear(); fatigueFrames.clear(); rawClosure.clear(); crops.clear()
         }
         if (err != null) return FaceCheckOutcome(err, null, null, 0.0, ff.size, null)
         val newCal = if (baseline) FatigueCalibration.fromSamples(raw) else null
         val rppg = FaceRppg.analyse(ff)
         val fatigue = FatigueSignals.analyse(tf, newCal ?: calibration ?: FatigueCalibration())
         val seconds = if (ff.size > 1) (ff.last().tNanos - ff.first().tNanos) / 1e9 else 0.0
-        return FaceCheckOutcome(null, rppg, fatigue, seconds, ff.size, newCal)
+        val fps = if (seconds > 1.0) ff.size / seconds else 30.0
+        val lp = if (cr.size > MIN_RUN) learned.analyse(cr, fps) else null
+        learned.close()
+        return FaceCheckOutcome(null, rppg, fatigue, seconds, ff.size, newCal, lp)
     }
 
-    fun abort() { camera.stop(); tracker.close() }
+    fun abort() { camera.stop(); tracker.close(); learned.close() }
 
     companion object {
         const val SETTLE_SEC = 3
         const val CAPTURE_SEC = 35
+        private const val MIN_RUN = 150
     }
 }
 

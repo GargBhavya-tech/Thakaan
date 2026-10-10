@@ -150,6 +150,10 @@ private fun Result(o: FaceCheckOutcome?, saved: String, onAgain: () -> Unit, onB
         } else {
             Text("Pulse: not reliable here. ${r?.prompt ?: ""}", fontSize = 18.sp)
         }
+        o.learnedPulse?.let { lp ->
+            if (lp.bpm != null) Text("Second opinion (learned model): about %.0f beats a minute. Shown for comparison only.".format(lp.bpm), fontSize = 16.sp, color = Color.DarkGray)
+            else Text("Second opinion (learned model): no clear pulse (${lp.reason ?: "unclear"}).", fontSize = 16.sp, color = Color.DarkGray)
+        }
         val f = o.fatigue
         if (f != null && f.valid) {
             Text("Blinks about %.0f a minute, yawns %d, long eye closures %d".format(f.blinksPerMin, f.yawns, f.longClosures), fontSize = 18.sp)
