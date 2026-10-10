@@ -89,6 +89,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     }
                 }
 
+                Section("Light test (sun / shade / covered)") { LightTestSection() }
+
                 Section("Thermal") {
                     // Phone-case heat for throttling decisions only. Not a body-temperature reading.
                     Line("Thermal headroom (10 s)", headroom?.let { "%.2f".format(it) } ?: "unavailable", ok = headroom != null)
