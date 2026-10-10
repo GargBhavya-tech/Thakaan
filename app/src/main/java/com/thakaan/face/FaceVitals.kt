@@ -34,15 +34,15 @@ class VitalsSnapshot(
 
 object FaceVitals {
     const val HRV_SECONDS = 60.0
-    const val PULSE_WINDOW_SEC = 40.0
+    const val PULSE_WINDOW_SEC = 60.0
     const val MIN_RR_DIFFS = 25
 
     /** Beat times (s) from a band-passed pulse wave: local maxima at least 0.33 s apart, refined to a fraction of a sample. */
-    fun beatTimes(x: DoubleArray, fs: Double): List<Double> {
+    fun beatTimes(x: DoubleArray, fs: Double, minGapSec: Double = 0.33): List<Double> {
         if (x.size < 3) return emptyList()
         val sd = Dsp.std(x)
         if (sd < 1e-12) return emptyList()
-        val minGap = (0.33 * fs).roundToInt()
+        val minGap = (minGapSec * fs).roundToInt()
         val peaks = ArrayList<Int>()
         for (i in 1 until x.size - 1) {
             if (x[i] > 0.25 * sd && x[i] > x[i - 1] && x[i] >= x[i + 1]) {
@@ -114,7 +114,8 @@ object FaceVitals {
         // the per-region method when the frames carry region means, the pooled one otherwise
         val base = FaceRppgRegions.analyse(recent) ?: FaceRppg.analyse(recent)
         val recentUsed = recent.filter { it.faceFound }
-        val resp = if (recentUsed.size > 300) {
+        val regionBreath = FaceRppgRegions.breathing(frames)
+        val resp = if (regionBreath.perMin != null) regionBreath.perMin else if (regionBreath.traces > 0) null else if (recentUsed.size > 300) {
             val t = DoubleArray(recentUsed.size) { (recentUsed[it].tNanos - recentUsed[0].tNanos) / 1e9 }
             try { FaceRppg.respiration(Dsp.resampleUniform(t, DoubleArray(recentUsed.size) { recentUsed[it].g }, FaceRppg.FS).second) } catch (_: IllegalArgumentException) { null }
         } else null
@@ -125,13 +126,20 @@ object FaceVitals {
 
         var hrv: Hrv? = null
         if (pulse.accepted && used.size > 90) {
-            val longWin = used.filter { (tEnd - it.tNanos) / 1e9 <= HRV_SECONDS + 5 }
+            val longWin = used.filter { (tEnd - it.tNanos) / 1e9 <= HRV_SECONDS + 12 }
             val span = (longWin.last().tNanos - longWin.first().tNanos) / 1e9
             if (span >= HRV_SECONDS) {
-                val (r, g, b) = traces(longWin)
-                val trim = (FaceRppg.POS_WINDOW_SEC * FaceRppg.FS).roundToInt()
-                val w = Dsp.bandpass(FaceRppg.pos(r, g, b), FaceRppg.FS, 0.7, 3.0)
-                if (w.size > 4 * trim) hrv = hrv(beatTimes(w.copyOfRange(trim, w.size - trim), FaceRppg.FS))
+                val hr = pulse.hrBpm ?: pulse.estimateBpm ?: 75.0
+                // the pulse wave from the three regions in a narrow band around the measured pulse; pooled wide-band fallback
+                val regional = FaceRppgRegions.pulseWave(longWin, hr / 60.0)
+                if (regional != null) {
+                    hrv = hrv(beatTimes(regional, FaceRppg.FS, minGapSec = 0.6 * 60.0 / hr))
+                } else {
+                    val (r, g, b) = traces(longWin)
+                    val trim = (FaceRppg.POS_WINDOW_SEC * FaceRppg.FS).roundToInt()
+                    val w = Dsp.bandpass(FaceRppg.pos(r, g, b), FaceRppg.FS, 0.7, 3.0)
+                    if (w.size > 4 * trim) hrv = hrv(beatTimes(w.copyOfRange(trim, w.size - trim), FaceRppg.FS))
+                }
             }
         }
         val waitSec = if (hrv != null) 0 else (HRV_SECONDS - seconds).coerceAtLeast(0.0).roundToInt()

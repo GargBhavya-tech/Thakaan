@@ -14,6 +14,8 @@ class FaceFrame(
     val tNanos: Long, val r: Double, val g: Double, val b: Double, val faceFound: Boolean, val motion: Double = 0.0,
     /** Mean (r, g, b) of each skin region on its own (forehead, left cheek, right cheek); empty when not available. */
     val regions: List<DoubleArray> = emptyList(),
+    /** Mean (r, g, b) of a background patch, whose lighting drift is cancelled out of the breathing traces; null when unavailable. */
+    val background: DoubleArray? = null,
 )
 
 enum class FaceReason(val prompt: String) {

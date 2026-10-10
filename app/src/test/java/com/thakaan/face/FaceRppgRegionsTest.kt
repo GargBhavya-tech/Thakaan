@@ -65,6 +65,66 @@ class FaceRppgRegionsTest {
         assertTrue(r.reasons.contains(FaceReason.TOO_SHORT))
     }
 
+    /** Like [frames] but with a breathing wobble in the skin (not the background) and lighting drift in both. */
+    private fun breathingFrames(seconds: Double, breathPerMin: Double?, seed: Long = 1): List<FaceFrame> {
+        val rnd = Random(seed)
+        val n = (seconds * 30).toInt()
+        return List(n) { i ->
+            val t = i / 30.0
+            val drift = 0.02 * sin(2 * PI * 0.07 * t) + 0.01 * sin(2 * PI * 0.19 * t + 1.0)
+            val breath = if (breathPerMin == null) 0.0 else 0.004 * sin(2 * PI * breathPerMin / 60.0 * t)
+            fun region(base: DoubleArray) = DoubleArray(3) { c -> base[c] * (1 + drift + breath * (1 + 0.2 * c) + 0.0015 * rnd.nextGaussian()) }
+            val regs = listOf(region(doubleArrayOf(143.0, 105.0, 91.0)), region(doubleArrayOf(146.0, 108.0, 90.0)), region(doubleArrayOf(157.0, 120.0, 102.0)))
+            val bg = DoubleArray(3) { c -> doubleArrayOf(208.0, 201.0, 187.0)[c] * (1 + drift + 0.0008 * rnd.nextGaussian()) }
+            FaceFrame(1_000_000_000L + (t * 1e9).toLong(), regs.sumOf { it[0] } / 3, regs.sumOf { it[1] } / 3, regs.sumOf { it[2] } / 3, true, 0.001, regs, bg)
+        }
+    }
+
+    @Test fun aBreathingRateIsFoundAmongLightingDrift() {
+        for (rate in listOf(10.0, 14.0, 20.0)) {
+            val b = FaceRppgRegions.breathing(breathingFrames(60.0, rate))
+            assertNotNull("rate $rate: agreeing ${b.agreeing} of ${b.traces}", b.perMin)
+            assertEquals(rate, b.perMin!!, 1.5)
+        }
+    }
+
+    @Test fun noBreathingIsNotReportedFromDriftAndNoise() {
+        var reported = 0
+        for (seed in 1L..20L) if (FaceRppgRegions.breathing(breathingFrames(60.0, null, seed)).perMin != null) reported++
+        assertTrue("false breathing reports: $reported of 20", reported <= 1)
+    }
+
+    @Test fun breathingNeedsThirtySeconds() {
+        assertNull(FaceRppgRegions.breathing(breathingFrames(20.0, 14.0)).perMin)
+    }
+
+    private fun load(name: String): List<FaceFrame>? {
+        val dir = System.getenv("FACE_FIXTURES") ?: return null
+        val f = File(dir, name); if (!f.exists()) return null
+        return f.readLines().drop(1).filter { it.isNotBlank() }.map { l ->
+            val c = l.split(',').map { it.toDouble() }
+            FaceFrame(c[0].toLong() * 1_000_000L, c[1], c[2], c[3], c[4] > 0.5, c[5],
+                listOf(doubleArrayOf(c[9], c[10], c[11]), doubleArrayOf(c[12], c[13], c[14]), doubleArrayOf(c[15], c[16], c[17])), doubleArrayOf(c[18], c[19], c[20]))
+        }
+    }
+
+    @Test fun theThirdRealRecordingShowsPulseBreathingAndVariability() {
+        val fr = load("face_live_1791617309370.csv"); assumeTrue("no fixture", fr != null)
+        var dbg = ""
+        FaceRppgRegions.analyse(fr!!.filter { (fr.last().tNanos - it.tNanos) / 1e9 <= FaceVitals.PULSE_WINDOW_SEC }, debug = { a, b -> dbg = "pos " + a.map { it.toInt() } + " chrom " + b.map { it.toInt() } })
+        val s = FaceVitals.snapshot(fr, emptyList(), FatigueCalibration(), null, null)
+        assertTrue("pulse ${s.pulse?.reasons} est ${s.pulse?.estimateBpm} $dbg", s.pulse!!.accepted)
+        assertEquals(83.5, s.pulse!!.hrBpm!!, 2.5)
+        val bb = FaceRppgRegions.breathing(fr)
+        assertNotNull("breathing: agreeing ${bb.agreeing} of ${bb.traces}", s.pulse!!.respPerMin)
+        assertTrue("breathing ${s.pulse!!.respPerMin}", s.pulse!!.respPerMin!! in 11.0..16.0) // no reference count yet: a plausible resting range
+        val w = FaceRppgRegions.pulseWave(fr.filter { (fr.last().tNanos - it.tNanos) / 1e9 <= 72 }, 83.5 / 60.0)
+        val bt = if (w == null) emptyList() else FaceVitals.beatTimes(w, 30.0, 0.6 * 60 / 83.5)
+        val rr = bt.zipWithNext { a, b2 -> ((b2 - a) * 1000).toInt() }
+        assertNotNull("variability: wave ${w?.size} beats ${bt.size} rr $rr hrvwait ${s.hrvWaitSec} secs ${s.seconds}", s.hrv)
+        assertTrue("rmssd ${s.hrv!!.rmssdMs}", s.hrv!!.rmssdMs in 15.0..120.0)
+    }
+
     @Test fun framesWithoutRegionsFallBackToThePooledMethod() {
         val pooled = frames(40.0, 84.0).map { FaceFrame(it.tNanos, it.r, it.g, it.b, it.faceFound, it.motion) }
         assertNull(FaceRppgRegions.analyse(pooled))
