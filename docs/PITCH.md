@@ -47,15 +47,17 @@ Lead with Chhaya Route, then the body model. Let them touch the phone.
 | 2:40 | The limits | Shade is estimated; the level is an estimate; not a medical device. Pulse accuracy: say what ticket 60 measured, or say it is not measured yet. |
 | 2:55 | Ask | Rider feedback and a licence conversation for ECTemp. |
 
-## The two panels (built 2026-10-11, not yet seen with a person or on a bike)
+## The two panels (built 2026-10-11; seen on the phone with the simulated ride, not yet with a person's face on a bike)
 
 - **Delivery partner demo (Ride tab):** at the restaurant, set the drop point, run the pickup check (face, pulse, how you feel), get Fit to ride or Rest 5 minutes and drink water, then start the ride with Simulated ride on: turn-by-turn on top, map and score side by side, the camera on only while riding steadily. Say "simulated" aloud while the chip says SIMULATED.
 - **Construction, police or security, other gig:** the Today tab shows the score, the chance of reaching Strained in the next 20 minutes with one action, and when the next check is due.
 - Say the chance is a model with fixed settings, not a measurement, and that the riding camera has not been tried on a moving bike.
+- If the check reminder is part of the demo, trigger it once beforehand: on one run it did not appear on the first sensing start and the cause is unknown.
 
 ## Do not say
 - That rider monitoring while riding has been tested on a bike, with a helmet, or at night.
 - That the 20-minute chance is validated: it is a model with design constants.
+- That the check reminder always appears, or that the drowsiness limits were tuned on riders.
 - Any pulse or accuracy figure not in the ledger as verified.
 - "Detects heat stroke" (it flags strain and recommends an action).
 - That Gemma decides anything: it is wired in and runs on the phone's GPU, but it only re-words a line the risk engine already chose, a wording check can reject it, and the template is the fallback.

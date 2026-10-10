@@ -35,11 +35,11 @@ The first text of this bible described the product as designed. Three things hav
 
 **How to read status.** Three words are used on purpose:
 
-- **Built:** code exists and laptop unit tests pass (452 test cases across 56 test files at this writing).
+- **Built:** code exists and laptop unit tests pass (507 test cases across 63 test files at this writing).
 - **Seen on the phone:** the iQOO 15 has shown it working, recorded in `docs/DEVICE_RESULTS.md`.
 - **Not verified:** built, but a human, a reference device or real outdoor conditions are still needed. Nothing in this class may be claimed on stage.
 
-A full status table is in "Build status as of 10 Oct 2026" near the end.
+A full status table is in "Build status as of 11 Oct 2026" near the end.
 
 ## Vision
 
@@ -642,7 +642,7 @@ Build in phases, each ending in something demoable, so the pitch is safe wheneve
 | 9 Optional | Gemma coach, air dose, flood reports and crew mesh | Gemma and air built; mesh not run between two phones |
 | 10 Proof and demo | Metrics table, rehearsal, limitations slide, backup recording, pitch, rider feedback | Limitations drafted; metrics, rehearsal, backup, rider quote still to do |
 
-## Build status as of 10 Oct 2026
+## Build status as of 11 Oct 2026
 
 Legend: **Phone** = seen working on the iQOO 15; **Built** = code and laptop tests only; **No** = not built.
 
@@ -653,7 +653,7 @@ Legend: **Phone** = seen working on the iQOO 15; **Built** = code and laptop tes
 | ECTemp 7/7 vectors | Phone | Quadratic reference model matches at 1e-9; sigmoid is the personalised path |
 | Personalised filter live in the engine | Built | Vectors, 12-minute gap and 160 bpm spike tests pass on the laptop; live switch-on not confirmed |
 | Safety checks (6) with guard switches | Phone | 5/5 seen, guards 1 to 5 seen red; check 6 added after one guard turned nothing red, unit-tested, not re-seen |
-| Safety property test | Built | 452 test cases pass on the laptop; each guard off makes the property fail |
+| Safety property test | Built | 507 test cases pass on the laptop; each guard off makes the property fail |
 | Keystore signing, tamper detection | Phone | Hardware-backed key, StrongBox present; changed byte and cut-off end both caught |
 | Fingertip pulse | Built | Gates uncalibrated; no capture accepted by the red-only gates; POS method accepts a table capture, unconfirmed |
 | Tremor, Fitts, symptoms, CUSUM, gait, PVT-B | Built | Fitts accepted with real taps; five baseline runs still to do |
@@ -663,7 +663,11 @@ Legend: **Phone** = seen working on the iQOO 15; **Built** = code and laptop tes
 | WBGT (Liljegren) | Phone | Library loads, plausible value |
 | Risk engine, alerts, voices | Phone | Five voices installed; how they sound is unchecked |
 | Chhaya routing, OSM layers | Phone | 38% and 49% shade on two test routes; shade is computed |
-| Phone signal, Traffic, Air layers | Built | Laptop-tested, not yet seen on the phone |
+| Air and Traffic layers | Phone | Both draw with legends; Air matches Home's air dose, Traffic is an assumed pattern |
+| Phone signal layer | Built | Not tested: the test phone has no SIM; needs a phone with a SIM and a walk |
+| Tabs, work-type picker, Quick check by work | Phone | Seen; the onboarding step on a fresh profile not yet seen |
+| Shift panel: scheduled checks, outlook | Phone | Outlook card, check-due card and reminder seen; first-run reminder missed once, cause unknown; outlook above 0% in real heat not seen |
+| Ride panel: pickup check, simulated riding screen | Phone | Look again and Rest verdicts, rest countdown, riding page seen with the simulated ride; the Fit verdict, Delivered summary and the camera on a moving bike with a real face not verified |
 | Flood reports, crew mesh | Built | Photo check and relay rules laptop-tested; mesh not run between two phones |
 | Gemma explainer | Phone | Loads on GPU; wording guard seen rejecting a line |
 | Whisper-tiny, Vosk, EfficientPhys, SegFormer, four shadow models | Phone | Load and produce output; accuracy unproven |

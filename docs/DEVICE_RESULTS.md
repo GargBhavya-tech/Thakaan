@@ -66,3 +66,17 @@ Fingertip pulse analysis, fourth run (PPG lab, 4 real captures; analysis done on
 - Phone signal, Traffic and Air draw on the Chhaya screen with legends and notes. Air reads 25 micrograms (Good), the same number as Home's air dose card; Traffic correctly says it is outside rush hour on a Saturday evening.
 - Signal could NOT be tested: this phone has no SIM (gsm.sim.state ABSENT), so the signal logger now reports unknown without a SIM and nothing is logged. A phone with a SIM and a walk outdoors is still needed, and the measured-speed (thick) traffic lines need a ride with a GNSS fix.
 - Found in the crash log: the face camera crashed once when the screen was left while a frame was being read (buffer is inaccessible). Fixed by dropping that frame.
+
+## Panels on the phone (2026-10-11, I2501; what was seen, and what was not)
+Seen on the phone:
+- Redesigned screens (Today, Check, Route, Report, Settings) and the bottom tabs; the Settings page holds the demo tools, labs and About.
+- The "Your work" picker in Settings, and the Check tab text changing with the kind of work.
+- The face step inside the Quick check for a delivery partner: the camera ran, the screen said a face was found, the countdown ran. The step text tells the worker to take off helmet, goggles, sunglasses or cap.
+- Shift panel on Today: the outlook card, the amber check-due card, and the reminder notification posted. On the first sensing start the reminder did NOT appear; on the second it did. The cause is unexplained.
+- Ride tab: drop-point map, route 4.5 km and about 11 min, Simulated ride switch. "Start pickup check" is greyed out until sensing is on. The pickup check opens with the face step first.
+- Pickup check wording with no live pulse number ("Pulse not read", "Eyes not read"); verdicts Look again and Rest with the "Ride anyway" choice; the rest countdown.
+- The simulated riding page: SIMULATED chip, camera On and Off, speed, score column, a first instruction. That run still showed "Make a U-turn" at 150 m as the first instruction. It was an older build.
+- Route dump on the laptop with the real graph (not on the phone): the demo route is 4.5 km; after the fix the first instruction is "Turn sharp left" at 240 m, which is a real turn. The reinstalled build has not yet been ridden on the phone, so the corrected first instruction has not been seen there.
+- Air and Traffic layers, the legend wrapping, the night-time Shade note (earlier runs).
+
+Not verified: the riding camera on a moving bike with a real face; drowsy detection and its vibration banner; the Fit verdict with a readable face (needs the person at the phone); the Delivered summary; an outlook above 0% in real heat; the collapse banner on the Ride screens after the fix; the new tap limit on the drop-point map; the "Your work" step on a fresh profile; the Signal layer (this phone has no SIM); the unexplained missed first reminder.

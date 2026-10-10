@@ -14,6 +14,7 @@ Naming the limits yourself scores better than a judge finding them. This is draf
 6. **Some of it is estimated or experimental.** Oxygen from the face camera is uncalibrated. Air dose uses a modelled area value, not the worker's own air. Chest pulse is tuned on two recordings of one person.
 7. **Not a medical device.** It is a heat-strain warning and wellbeing aid. The core-temperature method (ECTemp) is patent-covered (US 10,702,165), so commercial use needs a licence. Two other components have licence limits to clear before commercial use.
 8. **Hindi, Kannada, Tamil and Telugu wording needs native-speaker review.**
+9. **The riding and shift panels are new.** The camera that watches a rider's eyes in short windows has not been tried on a moving bike; its drowsiness limits are design values, not tuned on riders. The chance of reaching Strained in the next 20 minutes is a model with fixed settings, not a calibrated probability.
 
 **What you can rely on:** losing or degrading information never lowers the level. A property test and the Safety checks tab on the phone prove it, and a switch turns each check red to show it can fail.
 
@@ -22,6 +23,8 @@ Naming the limits yourself scores better than a judge finding them. This is draf
 | Challenge | Answer |
 | --- | --- |
 | Heart rate on a moving bike? | We do not take it while moving: the fingertip and face checks run at stops and breaks, and the phone refuses a reading when the finger or head moves. |
+| Do you watch a rider's face while they ride? | Only in short camera windows, and only while riding steadily: it switches off when stopped, near the drop point and when the phone is hot. It reads eye closure and yawns, not a pulse, nothing is saved or sent, and it has not yet been tried on a moving bike. |
+| What is the chance of Strained? | A model from the strain score, its trend, the forecast heat rise and rising dust, with fixed settings. It is advice to drink, rest or be careful, not a calibrated probability. |
 | Core temperature? | We never show a temperature; we show Cool, Warming, Strained or Danger, and act at 38.5 or earlier because estimates lose sensitivity near 39. |
 | Dark skin? | Colour-based pulse is harder on dark skin and in bright light, so it is rejected when unsure; we have not yet tested across skin tones and will not claim accuracy until we have. |
 | Your 5-second tests? | We replaced them with a longer tremor hold and a tapping task compared against the same worker's own baseline, and they support a level, they never decide one alone. |

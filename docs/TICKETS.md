@@ -127,8 +127,5 @@ Owner: A = Body, B = Brain + World, C = Systems + Demo, all = shared. Priority: 
 | [~] | 64 | Pitch narrative, both formats | C | 🟥 CORE | 🔴 RED-OK | FINAL | #60, #61, #62 |
 | [ ] | 65 | Real-worker feedback | C | 🟨 SUPPORTING | ⚪ PRE-BUILD | FINAL | — |
 
-
-
-
-
-
+## App experience (11 Oct 2026, not Build Map tickets)
+The tabs, the Ride panel for delivery partners, the shift panel (scheduled checks and outlook), Quick check by kind of work and the clean-reading wording rule are described in `Thakaan — Product Bible.md` ("Worker panels and the app experience"). They are built with laptop tests green (507) and seen on the phone only in part (see `DEVICE_RESULTS.md`, "Panels on the phone"). They touch #60 (face check numbers still unreferenced), #61 (the demo script now has two panels to rehearse) and #62 (new limits). Nothing here is ticked `[x]`.
