@@ -69,3 +69,11 @@ Build and install: `gradlew :app:installDebug` (JAVA_HOME = Android Studio's `jb
 - [ ] #30 chest lab: Diagnostics > Chest lab: sit, phone flat on the chest, 45 s. Compare "Chest pulse" with a fingertip or watch at the same time: within a few beats is a pass. Walk during a second recording: it must say "not still enough". Save the numbers file for tuning (adb pull files/scg_lab_*.csv).
 - [ ] Face live view: record a minute (Record button) and count pulse and breaths by hand; compare with the pulse, breathing and variability cards.
 - [ ] Shade look-up (Diagnostics): outdoors under open sky and under a tree: the overhead summary should differ.
+
+## Shift report, crew mesh and Whisper (2026-10-10)
+
+- [ ] **Shift report:** start sensing, wait a few minutes, open Home > Shift report. Time at each level adds up to the time sensed, the bar shows colours and shapes, and "Copy levels-only summary" has no strain number, symptoms or air dose. Stop sensing for 3 minutes and start again: the gap shows as "No readings", not as Cool time. Replay a recording: the report says the data is replay.
+- [ ] **Crew mesh (needs two phones):** both phones: Chhaya > Crew mesh switch on, allow Bluetooth. Diagnostics should not say "does not support extended advertising". Make a flood report on phone A (uncovered camera): phone B shows the red road within about 10 seconds and "(1 from the crew mesh)". Walk a third phone 3 hops away to see the limit. Turn off one phone's Bluetooth and check nothing crashes.
+- [ ] **Buddy pairing (two phones):** type the same code on both. Demo-strain does not send; reach Strained for real or replay a recording: the buddy phone shows "Buddy XXXX: Strained at HH:MM". A phone with another code shows nothing.
+- [ ] **Whisper:** run `tools/push_models.sh whisper` with the phone connected, then Diagnostics > Speech shows "Whisper-tiny: files present", and Diagnostics > Speech lab (Whisper): say "I have been working in the sun for ten minutes" in English (expect a close transcript), then a Hindi and a Kannada sentence (expect rough text; note the quality). Time per read should be a few seconds.
+
