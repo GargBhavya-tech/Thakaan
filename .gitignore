@@ -53,3 +53,5 @@ app/src/main/assets/models/*.json
 # shade source windows (large, third-party data; see docs/ASSETS.md)
 assets/shade_src/
 !app/src/main/assets/chhaya/shade_h3.bin
+.kotlin/
+assets/osm/*.log
