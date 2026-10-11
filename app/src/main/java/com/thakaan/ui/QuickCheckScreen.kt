@@ -210,18 +210,35 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
     }
     LaunchedEffect(round, granted) {
         val total = CheckStepId.FINGERTIP.seconds
-        while (secs < total && failed == null) {
-            delay(1000); secs += 1
-            // running estimate for the person to compare with their own count: display only, never given to the risk engine
-        }
-        capture.stop()
-        if (failed == null) {
-            val snap = synchronized(frames) { frames.toList() }
-            val stamp = engine.stamp
-            val result = Checks.evaluate(
+        // The same strict gate is applied to the last 25 s each time. A capture that was steady for only part of the time gets up to
+        // three more looks (every 5 s, to 15 s longer) instead of one, so one shaky stretch does not fail it; nothing is loosened.
+        val window = CheckKind.QUICK.settleSec + CheckKind.QUICK.captureSec + 0.5
+        var nextLook = total
+        var snap: List<PpgFrame> = emptyList()
+        var last: com.thakaan.ppg.CheckResult? = null
+        var stamp = engine.stamp
+        while (failed == null) {
+            while (secs < nextLook && failed == null) {
+                delay(1000); secs += 1
+                // running estimate for the person to compare with their own count: display only, never given to the risk engine
+            }
+            if (failed != null) break
+            val all = synchronized(frames) { frames.toList() }
+            val tEnd = all.lastOrNull()?.tNanos ?: 0L
+            snap = all.filter { (tEnd - it.tNanos) / 1e9 <= window }
+            stamp = engine.stamp
+            val r = Checks.evaluate(
                 CheckKind.QUICK, snap,
                 CheckContext(System.currentTimeMillis(), stamp.state.name, stamp.secSinceStop, stamp.secSincePostureChange, engine.hotNow, Provenance.REAL),
             )
+            last = r
+            val noFinger = r.reasons.any { it == com.thakaan.ppg.Reason.NO_FINGER || it == com.thakaan.ppg.Reason.SATURATED }
+            if (r.accepted || noFinger || secs >= total + EXTRA_LOOK_SEC) break
+            nextLook += 5
+        }
+        capture.stop()
+        if (failed == null) {
+            val result = last!!
             o.heart = result
             val dts = (1 until snap.size).map { (snap[it].tNanos - snap[it - 1].tNanos) / 1e6 }
             val ap = capture.applied
@@ -261,14 +278,18 @@ private fun FingertipStep(engine: ShiftEngine, o: QuickCheckOutcome, round: Int,
     if (failed == null) {
         finalNote?.let { Text(it, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B7F3B)) }
         if (finalNote == null) {
-            Text("${CheckStepId.FINGERTIP.seconds - secs} s", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Text("Reading your pulse...", fontSize = 20.sp)
+            val left = CheckStepId.FINGERTIP.seconds - secs
+            Text(if (left > 0) "$left s" else "A few more seconds", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Text(if (left > 0) "Reading your pulse..." else "Keep still: checking the reading once more", fontSize = 20.sp)
         }
         Waveform(wave)
     } else {
         StepFailed(failed!!, retry, skip)
     }
 }
+
+/** How much longer the fingertip step may keep looking after its normal time when the reading was unsteady. */
+private const val EXTRA_LOOK_SEC = 15
 
 private fun thermalDecision(ctx: Context): com.thakaan.ppg.GuardDecision {
     val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
