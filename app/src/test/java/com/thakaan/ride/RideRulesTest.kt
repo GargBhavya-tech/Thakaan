@@ -61,9 +61,13 @@ class RideRulesTest {
         assertFalse(hot.on); assertTrue(hot.reason.contains("hot"))
     }
 
-    @Test fun anUnknownSpeedIsTreatedAsRidingSoProtectionIsNotLost() {
-        val seq = run(RideCameraPolicy(), 0, 5, speed = null)
-        assertTrue(seq.last())
+    @Test fun withNoSpeedReadingTheCameraStaysOffAndSaysWhy() {
+        val p = RideCameraPolicy()
+        assertTrue("never on without a speed", run(p, 0, 120, speed = null).none { it })
+        assertTrue(p.decide(121.0, null, 2000.0, false, false).reason.contains("waiting for speed"))
+        // and when the speed arrives it still waits for steady riding before the first window
+        val after = (122 until 140).map { p.decide(it.toDouble(), 8.0, 2000.0, false, false).on }
+        assertFalse(after[3]); assertTrue(after.last())
     }
 
     @Test fun theCameraIsOnLessThanHalfTheTimeWhileRiding() {

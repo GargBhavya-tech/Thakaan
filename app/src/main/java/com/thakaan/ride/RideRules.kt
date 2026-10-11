@@ -15,8 +15,9 @@ class CameraDecision(val on: Boolean, val reason: String)
  * - not while stopped (a red light is too short for a reading, and nothing is at stake while still);
  * - otherwise in windows of [WINDOW_SEC] seconds (long enough for one reading) with [REST_SEC] seconds off between them, or only
  *   [REST_DROWSY_SEC] seconds off after a window that showed drowsy signs, because that is when watching matters most.
- * A window starts only after [RIDING_HOLD_SEC] seconds of steady riding. If the speed is unknown the rider is assumed to be riding:
- * losing the speed must not switch the protection off.
+ * A window starts only after [RIDING_HOLD_SEC] seconds of steady riding. With no speed reading the camera stays off and the screen
+ * says "waiting for speed": the camera only adds information (a drowsy window can raise the score, never lower it), so having it
+ * off cannot lower a level, and a camera running with no sign of riding would only heat the phone.
  */
 class RideCameraPolicy {
     private var isOn = false
@@ -28,13 +29,13 @@ class RideCameraPolicy {
     fun decide(nowSec: Double, speedMs: Double?, distToDestM: Double?, phoneHot: Boolean, drowsyRecently: Boolean): CameraDecision {
         if (phoneHot) return off(nowSec, "Camera off: phone is hot")
         if (distToDestM != null && distToDestM < ARRIVE_M) return off(nowSec, "Camera off: near the drop point")
-        if (speedMs != null) {
-            if (speedMs >= RIDING_MS) { if (movingSince == null) movingSince = nowSec; stoppedSince = null }
-            else if (speedMs < STOPPED_MS) { if (stoppedSince == null) stoppedSince = nowSec; movingSince = null }
-        }
-        val stopped = speedMs != null && stoppedSince != null && nowSec - stoppedSince!! >= STOP_HOLD_SEC
+        // no speed reading (no GPS fix yet, or the fix is stale): nothing says the rider is moving, so the camera stays off
+        if (speedMs == null) { movingSince = null; stoppedSince = null; return off(nowSec, "Camera off: waiting for speed") }
+        if (speedMs >= RIDING_MS) { if (movingSince == null) movingSince = nowSec; stoppedSince = null }
+        else if (speedMs < STOPPED_MS) { if (stoppedSince == null) stoppedSince = nowSec; movingSince = null }
+        val stopped = stoppedSince != null && nowSec - stoppedSince!! >= STOP_HOLD_SEC
         if (stopped) return off(nowSec, "Camera off: stopped")
-        val riding = speedMs == null || (movingSince != null && nowSec - movingSince!! >= RIDING_HOLD_SEC)
+        val riding = movingSince != null && nowSec - movingSince!! >= RIDING_HOLD_SEC
 
         if (isOn) {
             if (nowSec - onSince >= WINDOW_SEC) return off(nowSec, "Camera off: saving the phone's battery")

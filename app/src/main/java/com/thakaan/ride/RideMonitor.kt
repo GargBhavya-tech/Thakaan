@@ -8,7 +8,7 @@ import com.thakaan.face.FatigueCalibrationStore
 import com.thakaan.ui.saveFaceResults
 
 /** What the last camera window said about the rider's eyes. */
-enum class Alertness(val word: String) { WAITING("Waiting"), ALERT("Alert"), DROWSY("Drowsy signs"), NO_FACE("Face not seen") }
+enum class Alertness(val word: String) { WAITING("Not read yet"), ALERT("Alert"), DROWSY("Drowsy signs"), NO_FACE("Face not seen") }
 
 /**
  * Runs the front camera in short windows while the rider rides, as told by [RideCameraPolicy]. Each window reads only the eyes and
