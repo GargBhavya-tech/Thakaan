@@ -422,22 +422,9 @@ Ownership by role (names are not yet assigned to roles in [`docs/DECISIONS.md`](
 - [`docs/Thakaan — Product Bible, Simplified.md`](docs/Thakaan%20—%20Product%20Bible%2C%20Simplified.md): the same product in plain words
 - [`docs/Thakaan — Build Map v1.md`](docs/Thakaan%20—%20Build%20Map%20v1.md): 65 tickets in strict dependency order (source of truth on *execution*)
 - [`docs/TICKETS.md`](docs/TICKETS.md): live checklist
-- [`docs/DEVICE_RESULTS.md`](docs/DEVICE_RESULTS.md): what the phone has actually shown
-- [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) · [`docs/PITCH.md`](docs/PITCH.md): limits and the claim ledger of every number the pitch may say
-- [`docs/METRICS.md`](docs/METRICS.md): the metrics table, each number labelled development-time or reported
 - [`docs/Thakaan-Architecture.html`](docs/Thakaan-Architecture.html): the architecture diagram
 
 ---
-
-## Development with Claude Code
-
-| Command | Does |
-|---|---|
-| `/status [A\|B\|C]` | Progress, unblocked tickets per owner, next checkpoint |
-| `/ticket <n>` | Build ticket #n: check blockers, build, run its test, tick the tracker |
-| `safety-invariant-reviewer` agent | Reviews changes against the fail-safe rules |
-
-Project invariants and traps for AI assistants live in [`CLAUDE.md`](CLAUDE.md). The code-review-graph MCP server is configured in `.mcp.json`; build it once code exists with `code-review-graph build`.
 
 
 
