@@ -439,16 +439,7 @@ Ownership by role (names are not yet assigned to roles in [`docs/DECISIONS.md`](
 
 Project invariants and traps for AI assistants live in [`CLAUDE.md`](CLAUDE.md). The code-review-graph MCP server is configured in `.mcp.json`; build it once code exists with `code-review-graph build`.
 
----
 
-## Licences and credits
-
-- Map data © OpenStreetMap contributors (ODbL), shown wherever OSM data appears. Water points are "listed, quality unverified" until riders confirm them.
-- Satellite-height and canopy layers carry their own CC BY credits (see [`docs/ASSETS.md`](docs/ASSETS.md)). The SegFormer weights are non-commercial research use only.
-- **ECTemp is covered by US Patent 10,702,165 (US Army, USARIEM).** A commercial product needs a licence through the Defense Health Agency.
-- Thakaan is a heat-strain warning and wellbeing aid, **not a medical device.** The language strings need native-speaker review before any real deployment.
-
----
 
 <div align="center">
 
