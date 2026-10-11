@@ -92,7 +92,8 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
         session = null
         phase = Phase.RESULT
         val usable = o.error == null && o.fatigue?.valid == true
-        onFinished(usable, if (usable) "Face check done" else "Face check not read: ${o.error ?: o.fatigue?.reason?.prompt ?: "try again in better light"}", o.fatigue)
+        val pulseNote = o.rppg?.takeIf { it.accepted }?.hrBpm?.let { ", pulse %.0f beats a minute".format(it) } ?: ""
+        onFinished(usable, if (usable) "Face check done$pulseNote" else "Face check not read: ${o.error ?: o.fatigue?.reason?.prompt ?: "try again in better light"}", o.fatigue)
     }
 
     val frame = if (embedded) Modifier.fillMaxWidth() else Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)
@@ -101,7 +102,7 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
         when (phase) {
             Phase.INTRO -> {
                 Text(
-                    "Take off any helmet, goggles, sunglasses or cap. Hold the phone at arm's length and look at the screen, in good light but not direct sun. Keep still for about 40 seconds. " +
+                    "Take off any helmet, goggles, sunglasses or cap. Hold the phone at arm's length and look at the screen, in good light but not direct sun. Keep still for 40 to 60 seconds; you will see your face on the screen. " +
                         "It looks at your eyes and skin colour. Nothing is saved or sent. It does not replace the finger check.",
                     fontSize = 18.sp,
                 )
@@ -124,9 +125,16 @@ fun FaceCheckBody(embedded: Boolean, onDone: () -> Unit, onSkip: (() -> Unit)? =
             }
             Phase.RUNNING -> {
                 val l = live
-                Text(l?.state?.prompt ?: "Starting the camera", fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
-                Text("${l?.secondsLeft ?: (FaceCheckSession.SETTLE_SEC + FaceCheckSession.CAPTURE_SEC)} s left", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("Face seen in ${l?.facePercent ?: 0}% of frames" + if (l?.cameraLocked == true) "" else " (camera settling)", fontSize = 16.sp, color = Color.DarkGray)
+                // the worker sees their own face with the skin it reads outlined, so they can stay centred and still
+                Preview(com.thakaan.face.LiveView(l?.picture, l?.observation, l?.frameNo ?: 0, null, l?.cameraLocked == true))
+                val p = l?.pulse
+                Text(
+                    if (p?.accepted == true && p.hrBpm != null) "Pulse: %.0f beats a minute".format(p.hrBpm) else "Reading your pulse...",
+                    fontSize = 28.sp, fontWeight = FontWeight.Bold,
+                )
+                Text(l?.state?.prompt ?: "Starting the camera", fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text("Up to ${l?.secondsLeft ?: (FaceCheckSession.SETTLE_SEC + FaceCheckSession.MAX_SEC)} s left. It stops sooner once the pulse is clear.", fontSize = 16.sp)
+                Text("Face seen in ${l?.facePercent ?: 0}% of frames" + if (l?.cameraLocked == true) "" else " (camera settling)", fontSize = 14.sp, color = Color.DarkGray)
                 OutlinedButton(onClick = { session?.abort(); session = null; phase = Phase.INTRO }, Modifier.fillMaxWidth()) { Text("Cancel", fontSize = 18.sp) }
             }
             Phase.RESULT -> Result(outcome, saved, doneLabel = if (embedded) "Continue" else "Done", onAgain = { outcome = null; phase = Phase.INTRO }, onBack = onDone)

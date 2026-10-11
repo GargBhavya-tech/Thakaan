@@ -128,7 +128,7 @@ fun FaceLiveScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun Preview(v: LiveView?) {
+internal fun Preview(v: LiveView?) {
     val bmp = v?.picture
     val ratio = if (bmp != null && bmp.height > 0) bmp.width.toFloat() / bmp.height else 0.75f
     Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.Black)) {

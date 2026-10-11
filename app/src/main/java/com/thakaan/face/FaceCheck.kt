@@ -21,7 +21,13 @@ class FaceCheckOutcome(
 )
 
 /** What the screen shows while the check runs. */
-class FaceLive(val state: FrameState, val secondsLeft: Int, val facePercent: Int, val cameraLocked: Boolean)
+class FaceLive(
+    val state: FrameState, val secondsLeft: Int, val facePercent: Int, val cameraLocked: Boolean,
+    /** The latest picture and what was found in it, for the screen to draw; null in the light mode. */
+    val picture: android.graphics.Bitmap? = null, val observation: FaceObservation? = null, val frameNo: Int = 0,
+    /** The pulse read from the last seconds so far, accepted or not; null until there is enough to read. */
+    val pulse: FaceRppgResult? = null,
+)
 
 /** The worker's own open-eye and closed-eye levels, kept on the phone only. */
 class FatigueCalibrationStore(ctx: Context) {
@@ -52,6 +58,12 @@ class FaceCheckSession(private val ctx: Context, private val lite: Boolean = fal
     @Volatile private var error: String? = null
     private var seen = 0
     private var found = 0
+    // the picture and a pulse that is re-read every 2 s from the last seconds (full mode only), so the worker sees the face and the pulse lock
+    private var shown: android.graphics.Bitmap? = null
+    private var frameNo = 0
+    @Volatile private var pulseNow: FaceRppgResult? = null
+    @Volatile private var computing = false
+    private var lastComputeMs = 0L
 
     fun live(): FaceLive = live
     fun cameraInfo(): FrontCameraCapture.Applied? = camera.applied
@@ -78,9 +90,31 @@ class FaceCheckSession(private val ctx: Context, private val lite: Boolean = fal
                         if (!lite && box != null && learned.available) crops += learned.crop(bmp, box) else if (box == null && crops.size < MIN_RUN) crops.clear()
                     }
                 }
+                frameNo++
+                if (!lite) {
+                    // every 3rd frame the picture is copied for the screen (10 fps is plenty to look at)
+                    if (frameNo % 3 == 0) {
+                        val copy = shown?.takeIf { it.width == bmp.width && it.height == bmp.height }
+                            ?: android.graphics.Bitmap.createBitmap(bmp.width, bmp.height, android.graphics.Bitmap.Config.ARGB_8888).also { shown = it }
+                        android.graphics.Canvas(copy).drawBitmap(bmp, 0f, 0f, null)
+                    }
+                    val now = SystemClock.elapsedRealtime()
+                    if (elapsed >= SETTLE_SEC + 10 && now - lastComputeMs >= 2000 && !computing) {
+                        lastComputeMs = now; computing = true
+                        Thread {
+                            try {
+                                val recent = synchronized(this) { recentFrames(faceFrames) }
+                                pulseNow = analysePulse(recent)
+                            } catch (_: Throwable) {
+                            } finally { computing = false }
+                        }.start()
+                    }
+                }
+                val total = if (lite) SETTLE_SEC + CAPTURE_SEC else SETTLE_SEC + MAX_SEC
                 live = FaceLive(
-                    FrameGuideRules.guide(obs.box).state, (SETTLE_SEC + CAPTURE_SEC - elapsed).toInt().coerceAtLeast(0),
+                    FrameGuideRules.guide(obs.box).state, (total - elapsed).toInt().coerceAtLeast(0),
                     if (seen == 0) 0 else 100 * found / seen, camera.applied?.aeLocked == true,
+                    if (lite) null else shown, if (lite) null else obs, frameNo, pulseNow,
                 )
             },
             onError = { error = it },
@@ -89,7 +123,16 @@ class FaceCheckSession(private val ctx: Context, private val lite: Boolean = fal
     }
 
     fun elapsedSec(): Double = (SystemClock.elapsedRealtime() - startedElapsedMs) / 1000.0
-    fun done(): Boolean = error != null || elapsedSec() >= SETTLE_SEC + CAPTURE_SEC + 1
+    /**
+     * The light mode (riding) always runs [CAPTURE_SEC]. The full mode keeps reading until the pulse is confirmed (after at least
+     * [MIN_SEC]) or [MAX_SEC] has passed, so a moment of drift does not fail the whole check.
+     */
+    fun done(): Boolean {
+        if (error != null) return true
+        val t = elapsedSec()
+        if (lite) return t >= SETTLE_SEC + CAPTURE_SEC + 1
+        return t >= SETTLE_SEC + MAX_SEC + 1 || (t >= SETTLE_SEC + MIN_SEC && pulseNow?.accepted == true)
+    }
 
     /** Stops the camera, analyses what was captured, and drops it all. [baseline] true saves the eyelid range as this worker's own. */
     fun finish(calibration: FatigueCalibration?, baseline: Boolean): FaceCheckOutcome {
@@ -102,11 +145,11 @@ class FaceCheckSession(private val ctx: Context, private val lite: Boolean = fal
         }
         if (err != null) return FaceCheckOutcome(err, null, null, 0.0, ff.size, null)
         val newCal = if (baseline) FatigueCalibration.fromSamples(raw) else null
-        val rppg = if (lite) null else (FaceRppgRegions.analyse(ff) ?: FaceRppg.analyse(ff))
+        val rppg = if (lite) null else analysePulse(recentFrames(ff))
         val fatigue = FatigueSignals.analyse(tf, newCal ?: calibration ?: FatigueCalibration())
         val seconds = if (ff.size > 1) (ff.last().tNanos - ff.first().tNanos) / 1e9 else 0.0
         val fps = if (seconds > 1.0) ff.size / seconds else 30.0
-        val lp = if (!lite && cr.size > MIN_RUN) learned.analyse(cr, fps) else null
+        val lp = if (!lite && cr.size > MIN_RUN) learned.analyse(cr.takeLast(1100), fps) else null
         if (!lite) learned.close()
         return FaceCheckOutcome(null, rppg, fatigue, seconds, ff.size, newCal, lp)
     }
@@ -116,6 +159,19 @@ class FaceCheckSession(private val ctx: Context, private val lite: Boolean = fal
     companion object {
         const val SETTLE_SEC = 3
         const val CAPTURE_SEC = 35
+        /** Full mode: earliest and latest end of the measured part, and how far back the pulse is read. */
+        const val MIN_SEC = 33
+        const val MAX_SEC = 60
+        const val PULSE_WINDOW_SEC = 45.0
+
+        /** The last [PULSE_WINDOW_SEC] seconds of frames. */
+        fun recentFrames(f: List<FaceFrame>): List<FaceFrame> {
+            val end = f.lastOrNull()?.tNanos ?: return f
+            return f.filter { (end - it.tNanos) / 1e9 <= PULSE_WINDOW_SEC }
+        }
+
+        /** The same reading the live view makes: per-region when the frames carry regions, pooled otherwise. */
+        fun analysePulse(f: List<FaceFrame>): FaceRppgResult = FaceRppgRegions.analyse(f) ?: FaceRppg.analyse(f)
         private const val MIN_RUN = 150
     }
 }
