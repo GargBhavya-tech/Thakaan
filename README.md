@@ -243,21 +243,7 @@ All of the following are recorded in [`docs/DEVICE_RESULTS.md`](docs/DEVICE_RESU
 | Chest-pocket pulse | Two real recordings read 70.6 and 73.2 against a counted pulse of 70 |
 | Provenance | Replay 20x shows the REPLAY chip on Home and Chhaya |
 
-### What we have not measured
 
-Naming the limits ourselves scores better than a judge catching them.
-
-- **Strain accuracy and early-warning lead time are unmeasured.** Fingertip pulse was about 95% accurate against a reference device in our own check on 11 Oct, but we did not log the paired readings, so it cannot be reproduced and is not validated. The same goes for shade (more than 90% in our own outdoor check, no log). No held-out session exists, so every figure in [`docs/METRICS.md`](docs/METRICS.md) is development-time. The fingertip quality gates were set from the literature and never calibrated on real data, and we did not loosen them to make a capture pass.
-- **Core-temperature estimates fail near the danger zone.** Field validations report high sensitivity below about 38.75 °C and almost every hot reading missed above 39 °C. That is why every action fires at or below 38.5 °C.
-- **Validation populations are narrow.** The underlying models were validated mostly on young, Western, often military or athletic men. No study covers South Asian workers, women, older workers or budget phones in motion.
-- **Brain signals are personal drift signals,** not validated heat-illness detectors.
-- **Shade is computed, not measured,** and has not been checked against real light outdoors.
-- **Four small learned models were trained on simulated data** and run as shadow models that never decide a level.
-- **TSS weights are fixed by hand,** with no probability calibration yet.
-- **Battery cost and early-warning lead time** have not been measured.
-- **Not a medical device.** ECTemp is covered by US Patent 10,702,165, so commercial use needs a licence.
-
-Full lists: [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) and [`docs/LIMITATIONS_SLIDE.md`](docs/LIMITATIONS_SLIDE.md).
 
 ---
 
