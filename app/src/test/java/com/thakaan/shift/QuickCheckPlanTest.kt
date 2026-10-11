@@ -85,15 +85,19 @@ class QuickCheckPlanTest {
 
     @Test fun deliveryPartnersGetThePickupCheckFaceThenPulseThenHowTheyFeel() {
         val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.DELIVERY)
-        assertEquals(listOf(CheckStepId.FACE, CheckStepId.FINGERTIP, CheckStepId.SYMPTOMS), p.steps)
-        assertTrue("about a minute and a half: ${p.totalSeconds}", p.totalSeconds in 80..100)
+        assertEquals(listOf(CheckStepId.FACE, CheckStepId.FINGERTIP, CheckStepId.TAPPING, CheckStepId.SYMPTOMS), p.steps)
+        assertTrue("under two minutes: ${p.totalSeconds}", p.totalSeconds in 100..125)
     }
 
-    @Test fun constructionWorkersGetPulseFaceHandHoldAndSymptoms() {
+    @Test fun constructionWorkersGetPulseFaceHandHoldTappingAndSymptoms() {
         val p = QuickCheckPlan(speechAvailable = true, workType = WorkType.CONSTRUCTION)
-        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TREMOR, CheckStepId.SYMPTOMS), p.steps)
-        assertFalse("no tapping in gloves, no spoken digits in noise", p.steps.any { it == CheckStepId.TAPPING || it == CheckStepId.SPEECH })
-        assertTrue(p.totalSeconds <= 110)
+        assertEquals(listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TREMOR, CheckStepId.TAPPING, CheckStepId.SYMPTOMS), p.steps)
+        assertFalse("no spoken digits in noise", p.steps.any { it == CheckStepId.SPEECH })
+        assertTrue(p.totalSeconds <= 135)
+    }
+
+    @Test fun everyKindOfWorkGetsTheTappingGame() {
+        WorkType.entries.forEach { w -> assertTrue(w.name, CheckStepId.TAPPING in QuickCheckPlan(true, w).steps) }
     }
 
     @Test fun securityWorkersGetNoSpokenNumbers() {

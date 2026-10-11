@@ -395,8 +395,8 @@ The face check is no longer called optional. Every worker gets a Face check card
 
 | Work | Steps | Why |
 | --- | --- | --- |
-| Delivery partner | Face, fingertip, symptoms | Hands and voice are busy on a bike; the face is the quickest read |
-| Construction | Fingertip, face, tremor hold, symptoms | Gloves and noise rule out tapping and speech |
+| Delivery partner | Face, fingertip, tapping game, symptoms | The face is the quickest read; the tapping game is a short hand and eye check |
+| Construction | Fingertip, face, tremor hold, tapping game, symptoms | Noise rules out speech; if gloves make the taps unreadable the step is recorded as skipped, never as fine |
 | Police or security | Fingertip, face, Fitts tapping, symptoms | Caps and sunglasses come off for the face step; no quiet place for speech |
 | Other gig | Fingertip, face, tremor, tapping, speech, symptoms | The full set |
 
@@ -410,7 +410,7 @@ This keeps the fail-safe rule intact. Showing a failed signal as a sure number w
 
 ### Delivery partner: the Ride panel
 
-1. **At pickup (restaurant).** The worker sets the drop point by tapping the offline map, then starts the pickup check: face, fingertip, symptoms, about 90 seconds.
+1. **At pickup (restaurant).** The worker sets the drop point by tapping the offline map, then starts the pickup check: face, fingertip, tapping game, symptoms, about 2 minutes.
 2. **The verdict.** One of four, never a fifth:
    - **Fit to ride.** The face was read and the level is Cool or Warming with no symptoms and no sign of drowsiness. The map starts.
    - **Rest 5 minutes and drink water.** Strained, any symptom, or drowsy eyes (eye closure at or above 15% of the time, two or more long closures, or two or more yawns).

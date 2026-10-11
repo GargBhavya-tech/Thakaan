@@ -187,7 +187,7 @@ fun RideTab(
                         }
                         AppCard {
                             Text("Before you ride", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text("Check your face, pulse and how you feel. About 1½ minutes. If you are fit to ride, the map starts. If not, you rest first.", fontSize = 15.sp, color = Ink.sub)
+                            Text("Check your face, pulse, a quick tapping game and how you feel. About 2 minutes. If you are fit to ride, the map starts. If not, you rest first.", fontSize = 15.sp, color = Ink.sub)
                             PrimaryAction("Start pickup check", onClick = onStartCheck, enabled = running)
                         }
                     }

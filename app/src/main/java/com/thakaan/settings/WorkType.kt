@@ -15,11 +15,11 @@ import com.thakaan.shift.CheckStepId
 enum class WorkType(val label: String, val hint: String, val steps: List<CheckStepId>) {
     DELIVERY(
         "Delivery partner", "Phone on the bike or in hand, face free at a stop",
-        listOf(CheckStepId.FACE, CheckStepId.FINGERTIP, CheckStepId.SYMPTOMS),
+        listOf(CheckStepId.FACE, CheckStepId.FINGERTIP, CheckStepId.TAPPING, CheckStepId.SYMPTOMS),
     ),
     CONSTRUCTION(
         "Construction worker", "Gloves, dust, helmet and noise",
-        listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TREMOR, CheckStepId.SYMPTOMS),
+        listOf(CheckStepId.FINGERTIP, CheckStepId.FACE, CheckStepId.TREMOR, CheckStepId.TAPPING, CheckStepId.SYMPTOMS),
     ),
     SECURITY(
         "Police or security", "Uniform, cap, on duty around people",
