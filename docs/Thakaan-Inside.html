@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inside Thakaan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a field notebook. Sticky contents rail on the left (desktop), one reading column, formulas set as instrument readouts. */
+:root {
+  --bg: #f5f6f3;
+  --paper: #ffffff;
+  --ink: #17201d;
+  --muted: #5a6661;
+  --line: #d9ddd7;
+  --accent: #0d6b62;
+  --accent-soft: #e2efec;
+  --eq-bg: #f0f2ee;
+  --cool: #1b7f3b; --warm: #b26a00; --strain: #c03a00; --danger: #9b0000;
+  --cool-bg: #e3f2e7; --warm-bg: #fbf0dc; --strain-bg: #fbe6dc; --danger-bg: #f8dfdf;
+  --f-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121715; --paper: #1a201e; --ink: #e5ebe8; --muted: #9aa7a1; --line: #2e3734;
+    --accent: #5cc4b6; --accent-soft: #1d2f2c; --eq-bg: #202826;
+    --cool: #5fcf80; --warm: #f0b04a; --strain: #ff8a5c; --danger: #ff6b6b;
+    --cool-bg: #183021; --warm-bg: #33280f; --strain-bg: #3a2016; --danger-bg: #3a1717;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121715; --paper: #1a201e; --ink: #e5ebe8; --muted: #9aa7a1; --line: #2e3734;
+  --accent: #5cc4b6; --accent-soft: #1d2f2c; --eq-bg: #202826;
+  --cool: #5fcf80; --warm: #f0b04a; --strain: #ff8a5c; --danger: #ff6b6b;
+  --cool-bg: #183021; --warm-bg: #33280f; --strain-bg: #3a2016; --danger-bg: #3a1717;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.62 var(--f-body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 80px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; padding-inline: 16px; } nav.toc { display: none; } }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+nav.toc p { font: 600 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+nav.toc a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+main { min-width: 0; }
+h1, h2, h3, h4 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(34px, 5vw, 52px); font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
+h3 { font-size: 20px; font-weight: 600; }
+h4 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); }
+section { padding-block: 44px 8px; border-top: 1px solid var(--line); margin-top: 44px; display: grid; gap: 18px; }
+section:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+.eyebrow { font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 19px; color: var(--muted); max-width: 62ch; }
+code, .mono { font-family: var(--f-mono); font-size: .88em; }
+code { background: var(--eq-bg); padding: 1px 5px; border-radius: 4px; }
+
+/* hero facts */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 8px; }
+.fact { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.fact b { font: 700 26px/1.1 var(--f-display); }
+.fact span { color: var(--muted); font-size: 14px; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pipe > div { padding: 16px 14px; display: grid; gap: 8px; align-content: start; position: relative; border-right: 1px solid var(--line); }
+.pipe > div:last-child { border-right: 0; }
+.pipe > div:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 14px; background: var(--paper); color: var(--accent); font-weight: 700; line-height: 1; padding: 2px 0; z-index: 1; }
+.pipe h4 { font-size: 13px; font-family: var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.pipe ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13.5px; line-height: 1.4; }
+.pipe li { background: var(--eq-bg); border-radius: 6px; padding: 6px 8px; }
+.pipe li.key { background: var(--accent-soft); font-weight: 600; }
+@media (max-width: 900px) {
+  .pipe { grid-template-columns: minmax(0, 1fr); }
+  .pipe > div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .pipe > div:last-child { border-bottom: 0; }
+  .pipe > div:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -11px; padding: 0 6px; }
+}
+
+/* tables */
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 640px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 11.5px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--eq-bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+
+/* chips */
+.chip { display: inline-block; font: 600 11.5px/1 var(--f-mono); padding: 4px 7px; border-radius: 999px; white-space: nowrap; border: 1px solid currentColor; }
+.chip.decides { color: var(--strain); }
+.chip.shadow { color: var(--muted); }
+.chip.display { color: var(--warm); }
+.chip.ok { color: var(--cool); }
+.chip.no { color: var(--danger); }
+
+/* model cards */
+.group { display: grid; gap: 12px; }
+.group > p.gh { color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.card dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; font-size: 13.5px; }
+.card dt { color: var(--muted); font-family: var(--f-mono); font-size: 12px; padding-top: 2px; }
+.card dd { margin: 0; }
+.card p { font-size: 14.5px; }
+
+/* callouts */
+.rule { background: var(--accent-soft); border-radius: 12px; padding: 20px; display: grid; gap: 10px; }
+.rule h3 { color: var(--accent); }
+.note { border-left: 3px solid var(--warm); padding: 4px 0 4px 14px; color: var(--muted); font-size: 15px; max-width: 68ch; }
+
+/* equations */
+.eq { background: var(--eq-bg); border-radius: 8px; padding: 14px 16px; font: 15px/1.9 var(--f-mono); overflow-x: auto; white-space: pre; }
+.eq .c { color: var(--muted); }
+.legend { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; font-size: 14.5px; max-width: 72ch; }
+.legend dt { font-family: var(--f-mono); font-weight: 600; color: var(--accent); }
+.legend dd { margin: 0; }
+.mathblock { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 14px; }
+.mathblock .plain { font-size: 15.5px; }
+.mathblock .plain b { color: var(--ink); }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 70ch; }
+
+/* level strip */
+.levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+.levels div { padding: 12px; display: grid; gap: 2px; font-size: 13.5px; }
+.levels b { font: 700 16px/1.2 var(--f-display); }
+.lv-cool { background: var(--cool-bg); } .lv-cool b { color: var(--cool); }
+.lv-warm { background: var(--warm-bg); } .lv-warm b { color: var(--warm); }
+.lv-strain { background: var(--strain-bg); } .lv-strain b { color: var(--strain); }
+.lv-danger { background: var(--danger-bg); } .lv-danger b { color: var(--danger); }
+@media (max-width: 560px) { .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* playground */
+.play { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+@media (max-width: 760px) { .play { grid-template-columns: minmax(0, 1fr); } }
+.controls { padding: 18px; display: grid; gap: 14px; border-right: 1px solid var(--line); }
+@media (max-width: 760px) { .controls { border-right: 0; border-bottom: 1px solid var(--line); } }
+.controls fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; }
+.controls legend { font: 600 11.5px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; padding: 0; }
+.ctl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 14px; }
+.ctl input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.ctl output { font: 600 13px var(--f-mono); }
+.row { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.row label { display: inline-flex; gap: 6px; align-items: center; }
+select { font: inherit; font-size: 14px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.result { padding: 18px; display: grid; gap: 14px; align-content: start; }
+.gauge { border-radius: 12px; padding: 18px; display: grid; gap: 4px; transition: background .2s; }
+.gauge .lvl { font: 700 34px/1.1 var(--f-display); }
+.gauge .tss { font: 600 14px var(--f-mono); color: var(--muted); }
+.bars { display: grid; gap: 8px; font-size: 13.5px; }
+.bar { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+.bar .track { height: 8px; border-radius: 4px; background: var(--eq-bg); overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .2s; }
+.bar span:last-child { font-family: var(--f-mono); text-align: right; }
+.why { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 4px; }
+.why:empty::before { content: "No anchor fired. The level comes from the score alone."; color: var(--muted); margin-left: -18px; }
+.zline { font: 13px var(--f-mono); color: var(--muted); overflow-x: auto; white-space: nowrap; }
+
+.gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px 24px; }
+.gloss div { display: grid; gap: 2px; padding-block: 8px; border-bottom: 1px solid var(--line); }
+.gloss b { font-family: var(--f-display); font-weight: 600; }
+.gloss span { color: var(--muted); font-size: 14.5px; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <p>Contents</p>
+  <ol>
+    <li><a href="#picture">The big picture</a></li>
+    <li><a href="#sensors">Sensors</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#combine">How it all combines</a></li>
+    <li><a href="#score">Maths: the Strain Score</a></li>
+    <li><a href="#ectemp">Maths: core trend (ECTemp)</a></li>
+    <li><a href="#heat">Maths: heat balance &amp; water</a></li>
+    <li><a href="#ppg">Maths: pulse from the camera</a></li>
+    <li><a href="#env">Maths: sun, shade, WBGT</a></li>
+    <li><a href="#brain">Maths: brain tests</a></li>
+    <li><a href="#route">Maths: Chhaya Route</a></li>
+    <li><a href="#extra">Maths: forecast, air, audit</a></li>
+    <li><a href="#play">Try it: score playground</a></li>
+    <li><a href="#safety">Safety rules</a></li>
+    <li><a href="#status">Proven vs not yet</a></li>
+    <li><a href="#glossary">Word list</a></li>
+  </ol>
+</nav>
+
+<main>
+<section id="top">
+  <span class="eyebrow">Thakaan · how the app thinks</span>
+  <h1>Inside Thakaan</h1>
+  <p class="lede">Which sensors we read, which models we run, which ones we trained, and the maths that turns all of it into one of four words: Cool, Warming, Strained, Danger. Written from the actual code in <code>app/src/main/java/com/thakaan</code>.</p>
+  <div class="facts">
+    <div class="fact"><b>11 sensors</b><span>All inside the phone. No smartwatch, no internet in the main loop.</span></div>
+    <div class="fact"><b>5 + 4 models</b><span>5 downloaded ready-made, 4 we trained ourselves on made-up (simulated) data.</span></div>
+    <div class="fact"><b>0 models decide</b><span>The level comes from physics formulas and fixed rules. AI models only give a second opinion or reword a sentence.</span></div>
+    <div class="fact"><b>1 score + floors</b><span>A 0 to 100 Strain Score, plus "anchor" rules that can push the level up but never down.</span></div>
+  </div>
+</section>
+
+<section id="picture">
+  <span class="eyebrow">1 · The big picture</span>
+  <h2>From raw sensor numbers to one word on the screen</h2>
+  <p>Read this left to right. Each column feeds the next. The phone runs this loop about once a second, and the body part of it moves forward once a minute.</p>
+  <div class="pipe" role="figure" aria-label="Thakaan data pipeline">
+    <div><h4>Sensors</h4><ul>
+      <li>Accelerometer + gyroscope</li><li>Light + colour-temperature</li><li>GPS + satellite signal strength</li><li>Rear camera + torch</li><li>Front camera</li><li>Microphone</li><li>Touchscreen</li><li>Phone temperature</li><li>Saved weather, air, map files</li>
+    </ul></div>
+    <div><h4>What we work out</h4><ul>
+      <li>Activity + effort (METs)</li><li>Moving / stopped / resting</li><li>Sun or shade right now</li><li>Sun minutes, rest debt</li><li>WBGT heat index</li><li>Heart rate (fingertip)</li><li>Brain test scores</li><li>Symptoms (2 taps)</li><li>Fall / collapse</li>
+    </ul></div>
+    <div><h4>Body estimates</h4><ul>
+      <li class="key">Core-temperature trend (ECTemp)</li><li>Heat-balance push (Gagge)</li><li>Water lost (hydration)</li><li>Strain index (PSI)</li><li class="key">Brain flags (CUSUM)</li>
+    </ul></div>
+    <div><h4>Risk engine</h4><ul>
+      <li class="key">Strain Score 0–100</li><li class="key">Anchor rules (floors)</li><li>Rise fast, fall slow</li><li>Danger only clears after a recovery check</li>
+    </ul></div>
+    <div><h4>What the worker gets</h4><ul>
+      <li class="key">Level: Cool / Warming / Strained / Danger</li><li>One action + time cost, spoken in their language</li><li>Chhaya Route to shade or water</li><li>"Strained in ~15 min" forecast</li><li>Supervisor sees level only</li>
+    </ul></div>
+  </div>
+</section>
+
+<section id="sensors">
+  <span class="eyebrow">2 · Sensors</span>
+  <h2>What the phone actually reads</h2>
+  <p>Everything comes from the iQOO 15 itself. Every reading is stamped <code>REAL</code>, <code>REPLAY</code> or <code>SIMULATED</code> the moment it enters the app (in <code>sensorhub/SensorHub.kt</code>), and anything calculated from it carries the worst of its inputs' stamps, so a replayed demo can never pretend to be live.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Sensor</th><th>What it gives</th><th>What we use it for</th><th>How often</th></tr></thead>
+    <tbody>
+      <tr><td>Accelerometer</td><td>Acceleration on 3 axes (m/s²)</td><td>Activity (riding, walking, stairs, lifting, idle), stop detection, fall/slump detection, hand tremor, walking steadiness, chest heartbeat vibration</td><td>200 per second</td></tr>
+      <tr><td>Gyroscope</td><td>Rotation speed on 3 axes</td><td>Tells lifting apart from walking; checks the body is still for the chest heartbeat reading</td><td>200 per second</td></tr>
+      <tr><td>Light sensor</td><td>Brightness in lux</td><td>Sun or shade right now; how strong the sunlight is (W/m²)</td><td>~5 per second</td></tr>
+      <tr><td>Colour-temp sensor</td><td>How blue or yellow the light is (kelvin)</td><td>Shade light is bluer (sky only) than direct sun, so it helps split sun from shade</td><td>Whatever the vendor sensor allows</td></tr>
+      <tr><td>GPS position + speed</td><td>Location, speed</td><td>Where you are on the map, routing, moving or stopped, wind felt while riding</td><td>1 per second</td></tr>
+      <tr><td>GPS satellites</td><td>Signal strength of each satellite, and where it is in the sky</td><td>"Sky view": if satellites near the sun's direction go weak, something (tree, building) is blocking the sky there</td><td>1 per second</td></tr>
+      <tr><td>Rear camera + torch</td><td>Average colour of a fingertip pressed on the lens</td><td>Heart rate and heart-rate variability (fingertip pulse)</td><td>~30 frames/s, during a 35 or 70 s check</td></tr>
+      <tr><td>Rear camera (pointed up)</td><td>One street photo</td><td>How much sky vs trees vs buildings is overhead (second opinion on shade)</td><td>On request</td></tr>
+      <tr><td>Front camera</td><td>Face video</td><td>Face pulse, breathing rate, eye closing, yawns</td><td>30 frames/s, optional 35 s check</td></tr>
+      <tr><td>Microphone</td><td>Audio</td><td>Speech test: worker reads a 4-digit code aloud; also "pani piya" drink logging</td><td>During the test only</td></tr>
+      <tr><td>Touchscreen</td><td>Exact time and place of each tap</td><td>Tapping test (speed + accuracy) and reaction-time test</td><td>During the test only</td></tr>
+      <tr><td>Phone temperature</td><td>Thermal status and battery temperature</td><td>Blocks a fingertip check when the phone is too hot (the torch dims); small nudge to air temperature</td><td>Each check</td></tr>
+    </tbody>
+  </table></div>
+  <p>Plus three files saved on the phone in advance (never downloaded during the demo): the <b>Open-Meteo weather forecast</b> for Bengaluru (temperature, humidity, wind, cloud, sunlight), a <b>PM2.5 air-pollution forecast</b>, and the <b>OpenStreetMap road graph with a pre-computed shade layer</b>.</p>
+  <p class="note">Camera frames and audio stay in RAM and are thrown away right after the numbers are pulled out. No photo, video or recording is ever saved.</p>
+</section>
+
+<section id="models">
+  <span class="eyebrow">3 · Models</span>
+  <h2>Every model in the app, and what it is allowed to do</h2>
+  <p>"Model" can mean two things here. An <b>AI model</b> learned its behaviour from data (a neural network, a tree ensemble). A <b>physics or maths model</b> is a formula written by scientists from experiments. Thakaan uses both, but only the second kind is allowed to decide your level. Each card says what the model may do:</p>
+  <div class="row"><span class="chip decides">DECIDES</span> feeds the level &nbsp; <span class="chip display">DISPLAY ONLY</span> shown on screen, never changes a level &nbsp; <span class="chip shadow">SHADOW</span> runs next to a rule as a cross-check</div>
+
+  <div class="group">
+    <h3>A. Ready-made AI models we downloaded (not trained by us)</h3>
+    <p class="gh">Someone else trained these on big real datasets. We converted them to run on the phone.</p>
+    <div class="cards">
+      <div class="card"><div class="top"><h4>Gemma 4 E2B</h4><span class="chip display">REWORDS ONLY</span></div>
+        <p>A small large-language-model (LLM). The risk engine first writes a fixed template sentence like "Rest in shade for 3 min: 40 min in direct sun". Gemma may rephrase it to sound natural.</p>
+        <dl><dt>Size</dt><dd>1.9 GB, runs on the GPU (LiteRT-LM)</dd><dt>Guard</dt><dd>A checker rejects its line if it changes the minutes, adds any number, mentions temperature or pulse, or reassures ("you're fine"). Then the template is shown.</dd><dt>File</dt><dd><code>risk/GemmaPhraser.kt</code>, <code>risk/Explainer.kt</code></dd></dl></div>
+      <div class="card"><div class="top"><h4>MediaPipe Face Landmarker</h4><span class="chip decides">FEEDS BRAIN TESTS</span></div>
+        <p>Finds your face and places 478 points on it, plus "blendshape" scores such as how closed each eye is and how open the jaw is.</p>
+        <dl><dt>Size</dt><dd>3.8 MB, inside the app</dd><dt>Used for</dt><dd>Where the forehead and cheeks are (for face pulse), eye closing (PERCLOS) and yawn rate. Those two become brain-test scores.</dd><dt>File</dt><dd><code>face/FaceTracker.kt</code></dd></dl></div>
+      <div class="card"><div class="top"><h4>EfficientPhys</h4><span class="chip display">DISPLAY ONLY</span></div>
+        <p>A neural network that reads the pulse from small 72×72 face pictures. Trained by researchers on the public UBFC-rPPG face-video dataset.</p>
+        <dl><dt>Size</dt><dd>8.7 MB</dd><dt>Used for</dt><dd>A second opinion beside our own formula-based face pulse (POS). Never sent to the risk engine.</dd><dt>File</dt><dd><code>ml/LearnedPulse.kt</code></dd></dl></div>
+      <div class="card"><div class="top"><h4>SegFormer-B0 (Cityscapes)</h4><span class="chip shadow">SHADOW</span></div>
+        <p>Labels every pixel of a street photo as sky, tree, building, road… Trained by NVIDIA on Cityscapes street scenes.</p>
+        <dl><dt>Size</dt><dd>15 MB, input 512×256</dd><dt>Used for</dt><dd>"How much of the sky above is blocked?" shown beside the map shade. Never decides shade. Non-commercial licence.</dd><dt>File</dt><dd><code>ml/ShadeRunner.kt</code>, <code>ml/ShadeView.kt</code></dd></dl></div>
+      <div class="card"><div class="top"><h4>Vosk (English-India + Hindi)</h4><span class="chip decides">FEEDS BRAIN TESTS</span></div>
+        <p>Offline speech-to-text. We limit its vocabulary to the ten digit words, so it can only answer with digits.</p>
+        <dl><dt>Size</dt><dd>55 MB + 79 MB</dd><dt>Used for</dt><dd>Speech test: did you say the right digits, and how fast? Wrong digits or slow speech become brain-test scores.</dd><dt>File</dt><dd><code>speech/DigitRecognizer.kt</code>, <code>brain/SpeechCode.kt</code></dd></dl></div>
+    </div>
+  </div>
+
+  <div class="group">
+    <h3>B. AI models we trained ourselves (on simulated data)</h3>
+    <p class="gh">We have no labelled real recordings yet, so <code>tools/models/train_models.py</code> generates fake-but-realistic data and trains on it (fixed random seed 2026). Because of that, all four run in shadow mode: they are on the phone and they run, but they are never trusted to decide.</p>
+    <div class="cards">
+      <div class="card"><div class="top"><h4>activity_cnn</h4><span class="chip shadow">SHADOW</span></div>
+        <p>Guesses what you are doing from 2 seconds of accelerometer data.</p>
+        <dl><dt>Type</dt><dd>1D convolutional neural network (CNN)</dd><dt>Layers</dt><dd>Conv(16 filters, width 7) → pool → Conv(32, width 5) → average → Dense 24 → 5 outputs</dd><dt>In → out</dt><dd>100 × 3 numbers (2 s at 50 Hz, x/y/z) → probability of idle, riding, walking, stairs, lifting</dd><dt>Decides instead</dt><dd>Hand-written rules in <code>motion/Activity.kt</code></dd></dl></div>
+      <div class="card"><div class="top"><h4>scg_denoiser</h4><span class="chip shadow">SHADOW</span></div>
+        <p>Cleans the tiny heartbeat vibration you get when the phone is pressed on your chest (seismocardiography, SCG).</p>
+        <dl><dt>Type</dt><dd>1D CNN with "dilated" convolutions (each layer looks further apart: 1, 2, 4)</dd><dt>In → out</dt><dd>500 samples (5 s at 100 Hz) → cleaned 500 samples</dd><dt>Decides instead</dt><dd>Plain filter + beat finder in <code>ml/ScgPipeline.kt</code>. Chest HR itself is display only.</dd></dl></div>
+      <div class="card"><div class="top"><h4>strain_gru</h4><span class="chip shadow">NOT USED</span></div>
+        <p>Tries to predict your Strain Score 15 and 30 minutes ahead.</p>
+        <dl><dt>Type</dt><dd>GRU (a small recurrent network that reads a sequence step by step), 24 units → Dense 16 → 2 outputs</dd><dt>In → out</dt><dd>Last 20 minutes of (score, sun share) → score at +15 and +30 min</dd><dt>Status</dt><dd>It was no better than a straight-line forecast, so the straight line is used. If it is ever turned on, the app takes the <b>higher</b> of the two.</dd></dl></div>
+      <div class="card"><div class="top"><h4>los_xgboost</h4><span class="chip shadow">SHADOW</span></div>
+        <p>For each GPS satellite: is there a clear line of sight, or is something blocking it?</p>
+        <dl><dt>Type</dt><dd>XGBoost: 40 small decision trees, each 3 levels deep, whose votes are added up</dd><dt>Inputs</dt><dd>Signal strength (C/N0), its change, satellite height, Doppler error, L1 vs L5 signal gap</dd><dt>Decides instead</dt><dd>Signal-strength rules in <code>exposure/SkyView.kt</code></dd></dl></div>
+    </div>
+    <p class="note">There is also a fifth tiny file, <code>tiny.tflite</code>. It is not a real model; it only proves the "inference seam" can load a model on the NPU, GPU or CPU and reports honestly how many operations really ran on the NPU.</p>
+  </div>
+
+  <div class="group">
+    <h3>C. Physics and maths models (these are the ones that decide)</h3>
+    <p class="gh">No training. Each is a published formula, and most have reference test cases we must match.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Model</th><th>What it does, simply</th><th>Where</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>ECTemp (Buller 2013)</td><td>Guesses the trend of core body temperature from heart rate, minute by minute</td><td><code>body/EcTemp.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>Gagge two-node</td><td>Heat in vs heat out for "core" and "skin"; nudges the core guess between heart readings</td><td><code>body/HeatBalance.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>Sweat rate (PHS-style)</td><td>How much you sweat for this heat and effort</td><td><code>body/HeatBalance.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>Liljegren WBGT</td><td>The standard workplace heat index (a C library called through JNI)</td><td><code>exposure/Wbgt.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>UTCI</td><td>A "feels-like" comfort index (211-term polynomial)</td><td><code>exposure/Utci.kt</code></td><td><span class="chip display">DISPLAY ONLY</span></td></tr>
+        <tr><td>NOAA sun position + Haurwitz + Kasten</td><td>Where the sun is; how strong sunlight is on a clear day; how much cloud cuts it</td><td><code>exposure/SolarPosition.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>MET table / Pandolf</td><td>Energy you burn for each activity</td><td><code>motion/Activity.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>POS / CHROM</td><td>Colour-maths tricks to pull a pulse out of skin colour</td><td><code>face/FaceRppg.kt</code></td><td><span class="chip display">FACE: DISPLAY</span></td></tr>
+        <tr><td>CUSUM</td><td>Notices a slow, steady worsening in brain-test scores</td><td><code>brain/Cusum.kt</code></td><td><span class="chip decides">DECIDES</span></td></tr>
+        <tr><td>Dijkstra + HMM</td><td>Shortest "cost" path on the road map; snapping wobbly GPS onto the right road</td><td><code>chhaya/</code></td><td>Routing</td></tr>
+        <tr><td>Greenwald ventilation</td><td>How much air you breathe from heart rate (for air-pollution dose)</td><td><code>exposure/AirDose.kt</code></td><td><span class="chip display">DISPLAY ONLY</span></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section id="combine">
+  <span class="eyebrow">4 · How it all combines</span>
+  <h2>Two layers: a score, and floors under it</h2>
+  <p>The risk engine (<code>risk/RiskEngine.kt</code>) runs every time new data arrives. It does three things.</p>
+  <ol class="steps">
+    <li><b>Squash four sub-scores into one number.</b> Exposure <i>E</i>, Body <i>B</i>, Brain <i>N</i> and Symptoms <i>S</i>, each between 0 and 1, are added with weights and passed through a sigmoid to give the Strain Score (TSS) from 0 to 100.</li>
+    <li><b>Check the anchor rules.</b> These are hard "if this, then at least that level" rules taken from occupational-health practice, for example "core trend at 38.5 °C → at least Strained" or "2 brain families slower → at least Strained". Each anchor is a floor.</li>
+    <li><b>Take the highest.</b> Shown level = max(level from score, every anchor). Then smooth it: rise immediately, but drop only one step at a time after the score has been clearly lower for a few minutes.</li>
+  </ol>
+  <div class="levels" aria-label="Score to level">
+    <div class="lv-cool"><b>● Cool</b><span>TSS 0–29</span></div>
+    <div class="lv-warm"><b>▲ Warming</b><span>TSS 30–54</span></div>
+    <div class="lv-strain"><b>◆ Strained</b><span>TSS 55–79</span></div>
+    <div class="lv-danger"><b>■ Danger</b><span>TSS 80–100</span></div>
+  </div>
+  <div class="rule">
+    <h3>The one rule behind every combination: use max(), never average</h3>
+    <p>Whenever two sources disagree, Thakaan keeps the <b>more worried</b> one. Missing data counts as bad, not as fine. Some places you will see this:</p>
+    <ul class="steps">
+      <li>Two core-trend filters (plain and adaptive): anchors use <code>max(plain, adaptive)</code>.</li>
+      <li>Rule forecast vs GRU forecast: <code>max(rule, model)</code>, so a model can only bring a warning earlier.</li>
+      <li>Weather file missing → WBGT counts as the hottest case. Shade unknown → counts as sun.</li>
+      <li>Heart reading goes old → the last body strain is <b>held</b>, it does not fade back to "fine".</li>
+      <li>Gemma's sentence can never change the level or the action; those come from the engine only.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="score">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>The Strain Score (TSS)</h2>
+  <div class="mathblock">
+    <p class="plain"><b>In plain words:</b> work out four "how bad is it" numbers between 0 and 1, add them up with equal weights, subtract 3, and squash through a sigmoid (an S-curve that turns any number into something between 0 and 1). Multiply by 100.</p>
+    <div class="eq">z   = 3·E + 3·B + 3·N + 3·S − 3
+TSS = 100 · 1 / (1 + e^(−z))          <span class="c">// sigmoid, gives 0..100</span></div>
+    <p class="plain">The −3 means: with everything at 0, TSS = 100/(1+e³) ≈ 4. Any one sub-score at full (1.0) gives z = 0, so TSS = 50. Two at full gives z = 3, TSS ≈ 95.</p>
+
+    <h4>E · Exposure (how hard the environment is pushing)</h4>
+    <div class="eq">E = clamp( (0.5·W + 0.2·sun + 0.15·rest + 0.15·now) × time × acclim , 0, 1 )
+
+W     = WBGT score: 0 below 24 °C, 0.35 at 28, 0.7 at 31, 1.0 at 33 (straight lines in between)
+sun   = min(sun-minutes / 120, 1)
+rest  = min(rest-debt-minutes / 60, 1)
+now   = 1 if in sun right now (or unknown), 0 if in shade
+time  = 1.0 at 12:00–16:00, 0.85 at 10–12 & 16–17:30, 0.65 at 8–10 & 17:30–19, else 0.45
+acclim= 1 − 0.2 · min(days used to heat / 10, 1)     <span class="c">// up to 20% less for acclimatised workers</span></div>
+
+    <h4>B · Body (what the heart and body estimates say)</h4>
+    <div class="eq">B = max of:
+      PSI / 10
+      core trend: 0 at 37.0 °C → 1 at 38.5 °C  (38.0 °C if not acclimatised)
+      resting HR held ≥ 5 min: 0.3 at 90 bpm → 0.9 at 110 bpm
+      water deficit: 0.5 · min(deficit% / 4, 1)
+
+PSI = 5·(core − 37)/2.5 + 5·(HR − 60)/120     <span class="c">// Physiological Strain Index, 0..10</span></div>
+    <p class="plain">B uses <b>max</b>, not a sum: one clearly bad body sign is enough. If the last heart reading is older than 15 minutes, B is held at the last fresh value; in very hot exposure (E ≥ 0.8) it cannot go below 0.5 × E.</p>
+
+    <h4>N · Brain and S · Symptoms</h4>
+    <div class="eq">N = 0, 0.4, 0.8, 1.0   for 0, 1, 2, 3+ brain families flagged
+S = 1 if confusion or faintness, else min(0.4 × number of symptoms, 1)</div>
+
+    <h4>Anchors (floors)</h4>
+    <div class="tbl"><table>
+      <thead><tr><th>If…</th><th>Then at least</th></tr></thead>
+      <tbody>
+        <tr><td>WBGT ≥ 28 °C (25 °C if not acclimatised)</td><td>Warming</td></tr>
+        <tr><td>Weather unknown</td><td>Warming</td></tr>
+        <tr><td>Core trend ≥ 38.5 °C (38.0 °C not acclimatised)</td><td>Strained</td></tr>
+        <tr><td>Core trend ≥ 39.0 °C</td><td>Danger</td></tr>
+        <tr><td>PSI &gt; 3 / &gt; 5 / &gt; 7</td><td>Warming / Strained / Danger</td></tr>
+        <tr><td>Resting HR ≥ 90 / ≥ 100 bpm for 5+ min (independent of core trend)</td><td>Warming / Strained</td></tr>
+        <tr><td>Water deficit &gt; 2% of body mass</td><td>Strained</td></tr>
+        <tr><td>2 brain families slower</td><td>Strained (Danger if 3 families, or hot, or symptoms)</td></tr>
+        <tr><td>Dizzy or sick while E ≥ 0.5</td><td>Strained</td></tr>
+        <tr><td>Confusion or faintness, or a confirmed collapse</td><td>Danger</td></tr>
+      </tbody>
+    </table></div>
+    <p class="plain"><b>Going down:</b> Strained drops to Warming only after TSS stays below 52 for 3 minutes; Warming to Cool after TSS below 27 for 5 minutes. Danger never drops by itself: only a passed 10-minute recovery check clears it. Anchors stay active for 10 minutes after they fire.</p>
+  </div>
+</section>
+
+<section id="ectemp">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Core-temperature trend from heart rate (ECTemp)</h2>
+  <div class="mathblock">
+    <p class="plain"><b>The idea:</b> when your core heats up, your heart beats faster. If we know the curve "expected heart rate for each core temperature", we can work backwards from heart rate to a core guess. But heart readings are noisy and arrive only at stops, so we use a <b>Kalman filter</b>: it keeps a best guess <i>ct</i> and a "how unsure am I" number <i>v</i>, and every minute does two steps.</p>
+    <ol class="steps">
+      <li><b>Predict:</b> without new data the guess stays put, but we become a bit less sure (v grows).</li>
+      <li><b>Correct:</b> when a heart rate arrives, compare it with the heart rate we expected. Move the guess toward the reading, by an amount that depends on how unsure we were versus how noisy heart rate is.</li>
+    </ol>
+    <div class="eq"><span class="c">// one minute</span>
+v⁻  = v + Q                               <span class="c">// predict: Q = 0.000484 (≈ 0.022 °C per minute drift)</span>
+M   = h'(ct)                              <span class="c">// slope of the HR curve at the current guess</span>
+K   = v⁻·M / (M²·v⁻ + R)                  <span class="c">// Kalman gain: how much to trust the new reading. R = 356.45 (≈ 18.9 bpm noise)</span>
+ct  = ct + K·(HR − h(ct))                 <span class="c">// correct the guess</span>
+v   = (1 − K·M)·v⁻                        <span class="c">// now more sure</span>
+
+h(ct) = −4.5714·ct² + 384.4286·ct − 7887.1   <span class="c">// published curve: expected HR at core temp ct</span></div>
+    <dl class="legend">
+      <dt>ct</dt><dd>current best guess of core temperature (start 37.1 °C, or a time-of-day value: 36.8 at 05:00 rising to 37.4 at 17:00)</dd>
+      <dt>v</dt><dd>how unsure the guess is (variance). Starts at 0.02, or 0.2 if the worker logs on already hot</dd>
+      <dt>HR</dt><dd>that minute's heart rate: median of readings between 40 and 210 bpm</dd>
+      <dt>K</dt><dd>between 0 and about 0.03 °C per bpm. Big when we are unsure, small when we are confident</dd>
+    </dl>
+    <h4>Extra pieces we added on top</h4>
+    <ul class="steps">
+      <li><b>Gaps:</b> no reading for 12 minutes? We run 12 "predict only" steps, so <i>v</i> grows by 12·Q. Uncertainty can only grow across a gap, never shrink.</li>
+      <li><b>Outlier gate (NIS):</b> if (HR − h)² / (M²·v⁻ + R) &gt; 3.84 (the 95% line of a chi-square test), the reading is too surprising and is skipped like a missing minute.</li>
+      <li><b>Personal curve:</b> after onboarding, h(ct) becomes an S-shaped curve with your own floor <i>A</i> (lowest 5-minute resting HR) and ceiling <i>K</i> = 208 − 0.7·age (max heart rate): <code>HR = A + (K−A) / (1 + 0.06·e^(−0.89(ct−37.84)))^(1/0.07)</code>.</li>
+      <li><b>Adaptive R:</b> if the last 4 surprises average more than 6 bpm the same way, the extra heart rate is probably humidity or dehydration, not heat. R is inflated (up to 10×) so the core guess does not run away. Because that could <i>lower</i> the guess, anchors use max(plain, adaptive).</li>
+      <li><b>Check:</b> the plain filter must match 7 published reference cases in <code>ectemp_vectors.json</code> to 1e-9. It does, on the laptop and on the phone.</li>
+    </ul>
+    <p class="note">This number is never shown to the worker as a temperature. It only drives the score and anchors. ECTemp is patent-covered (US 10,702,165).</p>
+  </div>
+</section>
+
+<section id="heat">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Heat balance and water loss</h2>
+  <div class="mathblock">
+    <p class="plain"><b>Gagge two-node model:</b> treat the body as two boxes, core and skin. Each minute (in 15-second sub-steps) heat flows in from your muscles and out through skin, sweat and breathing. Whatever is left over warms the box.</p>
+    <div class="eq">change in core = (M − breathing loss − K·(Tcore − Tskin)) / core heat capacity
+change in skin = (K·(Tcore − Tskin) − dry loss − sweat evaporation) / skin heat capacity
+
+M     = metabolic heat = METs × body mass (from the activity)
+K     = 5.28 + 1.163 × skin blood flow       <span class="c">// more blood flow → more heat to the skin</span>
+sweat = 170 × (body warmth above normal) × e^(skin warmth / 10.7)   g/m²/h
+dry   = (Tskin − T_operative) / (clothing + air resistance)        <span class="c">// T_operative mixes air temp and radiant (sun) temp</span></div>
+    <p class="plain">Its job is a <b>prior</b>: between heart readings it nudges the ECTemp guess each minute. The nudge is clamped to at most +0.05 °C per minute warming and only −0.002 °C per minute cooling, and is exactly 0 if the weather is missing. So the model can warn earlier but cannot invent recovery.</p>
+    <h4>Water lost (hydration ledger)</h4>
+    <div class="eq">loss per minute = sweat × body surface area / 60 + (30 + 0.1·(M − 100)) / 60    <span class="c">// grams = ml</span>
+body surface area = 0.202 × mass^0.425 × height^0.725                                   <span class="c">// DuBois formula</span>
+
+deficit band (% of body mass):
+  low  = 0.8·loss − drinks − 100 ml per hour (unlogged sips)
+  mid  = loss − 0.9·drinks        <span class="c">// this one feeds the score</span>
+  high = 1.2·loss − 0.8·drinks</div>
+    <p class="plain">A forgotten drink makes the number too high, which is the safe direction. After 45 minutes with a deficit over 1%, the app asks "did you drink?" before escalating.</p>
+  </div>
+</section>
+
+<section id="ppg">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Pulse from a fingertip on the camera (PPG)</h2>
+  <div class="mathblock">
+    <p class="plain"><b>The idea:</b> with the torch on and a finger on the lens, each heartbeat pushes more blood into the fingertip, which absorbs more light, so the picture gets slightly darker. Average the red value of each frame and you get a wave that beats with your heart. The hard part is cleaning it.</p>
+    <ol class="steps">
+      <li><b>Even spacing:</b> camera frames arrive unevenly, so fit a smooth curve (natural cubic spline) through them and resample at exactly 100 per second. Flip the sign so a beat is a peak.</li>
+      <li><b>Band-pass 0.5–4 Hz</b> (30 to 240 bpm) with a Butterworth filter run forward then backward, so the peaks do not shift in time.</li>
+      <li><b>Wavelet denoise:</b> split the signal into coarse and fine parts (Daubechies-4), estimate the noise level as median(|finest part|)/0.6745, and shrink fine parts below σ·√(2 ln N) toward zero.</li>
+      <li><b>Find beats:</b> a peak is where the slope turns from up to down, with a "refractory" gap (at least 300 ms, or 55% of a beat) so the small second bump of each beat is not counted twice.</li>
+      <li><b>Track heart rate over time (Viterbi):</b> in each 8-second window, take the few strongest frequencies. Then choose one per window so the path is both strong and smooth: cost = −log(strength) + (jump in bpm)² / (2σ²). Viterbi is dynamic programming that finds the cheapest path through all windows.</li>
+    </ol>
+    <h4>Quality gates: a bad capture gives no number, only a retry prompt</h4>
+    <div class="tbl"><table>
+      <thead><tr><th>Check</th><th>Pass if</th><th>Prompt if it fails</th></tr></thead>
+      <tbody>
+        <tr><td>Finger present</td><td>mean brightness ≥ 30</td><td>"Cover the camera and torch with your fingertip"</td></tr>
+        <tr><td>Not saturated</td><td>≤ 20% of frames at max</td><td>"Shade the phone"</td></tr>
+        <tr><td>Perfusion index</td><td>pulse size ≥ 0.3% of the light level</td><td>"Press lighter"</td></tr>
+        <tr><td>Signal-to-noise</td><td>≥ 5 dB (power near HR and its harmonics vs the rest)</td><td>"Wipe your finger and the lens"</td></tr>
+        <tr><td>Beat shape</td><td>each beat correlates ≥ 0.85 with the average beat</td><td>"Hold still"</td></tr>
+        <tr><td>Two methods agree</td><td>spectrum HR and beat-interval HR within 8 bpm</td><td>"Hold still and try again"</td></tr>
+        <tr><td>Phone not too hot</td><td>thermal status below SEVERE, torch not dimming</td><td>Check blocked</td></tr>
+      </tbody>
+    </table></div>
+    <p class="plain"><b>Second method (POS):</b> real captures on the iQOO 15 showed the pulse is tiny in red alone. So we also combine red, green and blue with POS, a projection that cancels changes common to all colours (pressure, movement) and keeps the pulse. Accepted only if the rate stays within 3 bpm in 75% of the 8-second windows and matches an independent colour view.</p>
+    <p class="plain"><b>Heart-rate variability (RMSSD):</b> only from 60 s or more of clean data. RMSSD = √(average of (gap between beat i and beat i−1 minus the gap before)²), skipping pairs that jump more than 20% (missed or extra beats).</p>
+  </div>
+</section>
+
+<section id="env">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Sun, shade and the WBGT heat index</h2>
+  <div class="mathblock">
+    <h4>Sun or shade right now</h4>
+    <p class="plain">We compare the light sensor with what the sun <i>should</i> give at this time and place. The sun's position comes from the NOAA formula. Clear-sky sunlight (Haurwitz) and cloud correction (Kasten–Czeplak):</p>
+    <div class="eq">clear sky (W/m²) = 1098 · sin(elev) · e^(−0.059 / sin(elev))
+cloud factor     = 1 − 0.75 · (cloud fraction)^3.4         <span class="c">// unknown cloud → 1 (assume clear: worst case)</span>
+expected lux     ≈ 110 lux per W/m²
+
+ratio = measured lux / expected lux
+  ratio ≥ 0.45 → SUN       ratio &lt; 0.12 → SHADE
+  colour temp ≤ 6300 K → sun-like     ≥ 7000 K → shade-like (blue sky light)</div>
+    <p class="plain">Traps the code handles: the sensor tops out near 66,000 lux, so a pinned reading switches to the model value; a low sun behind the rider's body makes the sensor read "shade" falsely, so a dim reading is only believed if GPS sky view agrees. Unknown always counts as SUN.</p>
+    <h4>GPS sky view</h4>
+    <p class="plain">The sky is split into 10° cells. Each cell keeps a "log-odds" score of being open (positive = probably open), nudged every second by satellite signal strength and decayed by 0.85 each second so it remembers about 5–10 seconds. If cells near the sun's direction are blocked, you are probably under a tree or building. The rider's own body blocks satellites behind them, so the code learns that pattern and ignores it.</p>
+    <h4>WBGT (Wet Bulb Globe Temperature)</h4>
+    <p class="plain">WBGT is the standard number used worldwide for work-rest limits in heat. It combines air temperature, humidity, wind and sunlight. We use the <b>Liljegren</b> model: a published C program, compiled for the phone with the NDK and called from Kotlin through JNI.</p>
+    <div class="eq">inputs:  air temp, humidity, pressure  ← weather file
+         sunlight  = max(forecast, light sensor) in sun, 0.2 × forecast in shade
+         wind      = √(wind² + riding speed²), at least 0.5 m/s
+output:  WBGT °C   (null if anything is missing → treated as hottest)</div>
+    <h4>Sun dose and rest debt</h4>
+    <p class="plain"><b>Sun dose</b> counts minutes in direct sun, weighted by how high the sun is (noon counts more than morning). <b>Rest debt</b> grows when there has been no real rest: a real rest means shade <i>and</i> still for more than 5 minutes. A long red light in the sun does not count.</p>
+  </div>
+</section>
+
+<section id="brain">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Brain tests: noticing you are slowing down</h2>
+  <div class="mathblock">
+    <p class="plain"><b>The idea:</b> heat makes the brain slower and clumsier before you feel ill. We run short tests and compare each score only with <b>your own</b> cool-morning scores on <b>the same phone, same placement, similar time of day</b>.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Family</th><th>Tests</th><th>What is measured</th></tr></thead>
+      <tbody>
+        <tr><td>Motion</td><td>Tremor, walking</td><td>Hand shake: power of acceleration between 4 and 12 Hz while holding the phone out. Walking: how uneven step timing is (coefficient of variation), side-to-side sway</td></tr>
+        <tr><td>Touch</td><td>Tapping, reaction time</td><td>Tapping (Fitts): throughput = ID / time, with ID = log₂(distance / Wₑ + 1), Wₑ = 4.133 × spread of taps. Reaction (PVT-B, 3 min): mean of 1/reaction time; over 500 ms is a lapse</td></tr>
+        <tr><td>Voice</td><td>Speech code</td><td>Say a 4-digit code: wrong digits, digits per second, long pauses</td></tr>
+        <tr><td>Face</td><td>Eyes, yawns</td><td>PERCLOS = share of time eyes are ≥ 80% closed; yawns per minute</td></tr>
+        <tr><td>Navigation</td><td>Riding</td><td>How erratic the riding pattern is (entropy)</td></tr>
+      </tbody>
+    </table></div>
+    <h4>Step 1 · Robust z-score: how unusual is this score for you?</h4>
+    <div class="eq">z = (today's score − median of your baseline) / (1.4826 × MAD)
+MAD = median of |each baseline score − baseline median|     <span class="c">// needs at least 5 baseline samples</span></div>
+    <p class="plain">Median and MAD are used instead of mean and standard deviation because one weird baseline test barely moves them. The 1.4826 makes MAD comparable to a standard deviation. The sign is set so that positive always means worse.</p>
+    <h4>Step 2 · CUSUM: is it drifting, not just one bad try?</h4>
+    <div class="eq">S = max(0, S + w × (min(z, 3.5) − 0.5))
+alarm when S ≥ 4.5,   clears when S ≤ 2.25</div>
+    <p class="plain">CUSUM ("cumulative sum") adds up how far each result is above normal. The −0.5 lets ordinary small bad days drain away. Capping z at 3.5 means one wild result cannot trigger it alone. The weight <i>w</i> is 1 normally, 0.5 if you slept badly and it is cool, 1.25 in heavy heat, and 0.7 if the baseline is from a different time of day.</p>
+    <p class="plain"><b>Output:</b> the set of families with an alarm. 1 family adds to N; 2 or more is an anchor (at least Strained).</p>
+  </div>
+</section>
+
+<section id="route">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Chhaya Route: the shade-aware map</h2>
+  <div class="mathblock">
+    <p class="plain"><b>The idea:</b> normal maps find the fastest route. Chhaya Route makes sunny roads "cost" more, and the extra cost grows with your strain. When you are Cool it is exactly the fastest route.</p>
+    <div class="eq">edge cost = travel time × (1 + λ(TSS) × sun fraction) + heat-island penalty + flood penalty
+
+λ(TSS) = 0                          if TSS &lt; 30
+       = 3 × min((TSS − 30) / 45, 1)  otherwise       <span class="c">// reaches 3 at TSS 75</span>
+heat-island penalty = 0.15 on sunny main roads
+flood penalty = 100,000 s on a road someone reported flooded (used only if no other way)</div>
+    <ul class="steps">
+      <li><b>Search:</b> our own Dijkstra shortest-path over a road graph built from OpenStreetMap. Runs offline in milliseconds.</li>
+      <li><b>Detour budget:</b> Warming may add up to 1 minute, Strained up to 3 minutes (and inserts a water stop). The code tries the largest λ whose route still fits the budget. Danger drops the destination and goes to the nearest cool place to sit.</li>
+      <li><b>Where shade comes from:</b> a Python script ray-casts sun rays against OSM building shapes for each road segment and half-hour. About 95% of building heights are guesses (3 floors × 3.2 m), so those segments are marked low-confidence and pushed halfway toward full sun.</li>
+      <li><b>Learning from riders (Bayesian update):</b> per road and half-hour, shade = (s × computed + sunny passes) / (s + all passes), where the computed value counts as s = 4 observations (2 if low-confidence).</li>
+      <li><b>GPS snapping (HMM + Viterbi):</b> each GPS point has a few candidate roads; the path that stays on the same or a connected road wins, so a jumpy GPS fix is not put on the parallel street.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="extra">
+  <span class="eyebrow">5 · Maths</span>
+  <h2>Forecast, air dose and the audit log</h2>
+  <div class="mathblock">
+    <h4>"Strained in about 15 minutes"</h4>
+    <div class="eq">fit a straight line through the last 20 minutes of TSS   <span class="c">// least squares</span>
+slope = max(0, slope)                                   <span class="c">// never promise recovery</span>
+slope × (0.8 + 0.6 × planned route's sun share)         <span class="c">// a sunny route steepens it</span>
+minutes to Strained = (55 − TSS now) / slope, rounded to 5, shown only if ≤ 60
+band = 1.64 × spread of the fit × √(1 + h/20) + 0.1 × h</div>
+    <h4>Air dose (PM2.5 breathed in today)</h4>
+    <div class="eq">dose += PM2.5 (µg/m³, from the saved forecast) × air breathed (L/min) × 1 min ÷ 1000
+
+air breathed from heart rate (Greenwald 2019):
+  VE = e^(−9.59) × HR^2.39 × age^0.274 × sex^(−0.204) × FVC^0.52
+between heart readings:  VE = 7 + 4 × (METs − 1)</div>
+    <h4>Tamper-evident shift log</h4>
+    <p class="plain">Each shift entry stores the SHA-256 hash of the previous entry and is signed with an ECDSA P-256 key kept in the phone's secure hardware (Android Keystore). Change, delete or reorder any entry and every later hash breaks. The supervisor console checks this in the browser. It proves nobody edited the log afterwards; it does not prove the readings were true.</p>
+  </div>
+</section>
+
+<section id="play">
+  <span class="eyebrow">6 · Try it</span>
+  <h2>Score playground</h2>
+  <p>This is the risk engine's single-step maths ported to JavaScript: the four sub-scores, the sigmoid, and the anchors. It leaves out the time effects (hold, dwell, latches). Move things and see which part pushes the level.</p>
+  <div class="play">
+    <div class="controls">
+      <fieldset><legend>Exposure</legend>
+        <div class="ctl"><label for="wbgt">WBGT</label><output id="wbgtO"></output><input id="wbgt" type="range" min="20" max="35" step="0.5" value="29"></div>
+        <div class="row"><label><input id="wbgtUnknown" type="checkbox"> Weather unknown</label></div>
+        <div class="ctl"><label for="sunMin">Minutes in direct sun</label><output id="sunMinO"></output><input id="sunMin" type="range" min="0" max="180" step="5" value="45"></div>
+        <div class="ctl"><label for="restDebt">Rest debt (min)</label><output id="restDebtO"></output><input id="restDebt" type="range" min="0" max="90" step="5" value="15"></div>
+        <div class="ctl"><label for="hour">Time of day</label><output id="hourO"></output><input id="hour" type="range" min="6" max="20" step="0.5" value="13"></div>
+        <div class="ctl"><label for="acclim">Days used to heat</label><output id="acclimO"></output><input id="acclim" type="range" min="0" max="14" step="1" value="3"></div>
+        <div class="row"><label for="sunNow">Right now:</label><select id="sunNow"><option value="sun">In sun</option><option value="shade">In shade</option><option value="unknown">Unknown</option></select></div>
+      </fieldset>
+      <fieldset><legend>Body (internal estimates, never shown to the worker)</legend>
+        <div class="row"><label><input id="fresh" type="checkbox" checked> Fresh heart reading (under 15 min old)</label></div>
+        <div class="ctl"><label for="core">Core trend (°C)</label><output id="coreO"></output><input id="core" type="range" min="36.8" max="39.5" step="0.1" value="37.6"></div>
+        <div class="ctl"><label for="hr">Resting heart rate, held 5+ min</label><output id="hrO"></output><input id="hr" type="range" min="55" max="120" step="1" value="84"></div>
+        <div class="ctl"><label for="water">Water deficit (% body mass)</label><output id="waterO"></output><input id="water" type="range" min="0" max="4" step="0.1" value="0.8"></div>
+      </fieldset>
+      <fieldset><legend>Brain and symptoms</legend>
+        <div class="row"><label for="fam">Brain families flagged:</label><select id="fam"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>
+        <div class="row"><label for="sym">Ordinary symptoms:</label><select id="sym"><option>0</option><option>1</option><option>2</option><option>3</option></select>
+          <label><input id="dizzy" type="checkbox"> one is dizziness/nausea</label>
+          <label><input id="severe" type="checkbox"> confusion or faintness</label></div>
+      </fieldset>
+    </div>
+    <div class="result" aria-live="polite">
+      <div class="gauge" id="gauge"><span class="lvl" id="lvl">–</span><span class="tss" id="tssLine"></span></div>
+      <div class="bars" id="bars"></div>
+      <div class="zline" id="zline"></div>
+      <div><h4 style="margin-bottom:6px">Anchors that fired</h4><ul class="why" id="why"></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="safety">
+  <span class="eyebrow">7 · Safety rules</span>
+  <h2>The eight guard switches</h2>
+  <p>Each fail-safe rule is a switch in <code>Guards</code> inside the risk engine. All are ON in the product. The Safety checks tab turns them off one at a time to prove each check really can go red, because a check that can never fail proves nothing. A property test (#41) runs thousands of random shifts and checks that losing information never lowers the level.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Switch</th><th>What it guarantees</th></tr></thead>
+    <tbody>
+      <tr><td>holdWhenEvidenceStale</td><td>An old heart reading is held, never faded to "fine"</td></tr>
+      <tr><td>exposureFloorOnStale</td><td>No fresh heart reading in severe heat: body strain is at least half of exposure</td></tr>
+      <tr><td>unknownShadeIsSun</td><td>GPS lost or light sensor blocked counts as sun</td></tr>
+      <tr><td>missingWbgtIsHot</td><td>No weather counts as the hottest case, and is itself a Warming anchor</td></tr>
+      <tr><td>brainFamiliesFloorStrained</td><td>Two slower brain families force at least Strained</td></tr>
+      <tr><td>llmCannotChangeLevel</td><td>Gemma's output is never read back as a level</td></tr>
+      <tr><td>coreAnchorsFire</td><td>Core-trend anchors fire at 38.5 °C (38.0 °C before acclimatisation); nothing waits for 39 °C</td></tr>
+      <tr><td>independentHrRule</td><td>Resting HR above 90–100 bpm raises the level even if the core estimate is wrong</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="status">
+  <span class="eyebrow">8 · Honest status</span>
+  <h2>What is proven on the phone, and what is not yet</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Status</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>ECTemp</td><td><span class="chip ok">VERIFIED</span></td><td>7/7 reference cases pass on the phone</td></tr>
+      <tr><td>WBGT library</td><td><span class="chip ok">VERIFIED</span></td><td>Native library loads and gives a sensible value</td></tr>
+      <tr><td>Safety checks</td><td><span class="chip ok">VERIFIED</span></td><td>5/5 pass on the phone; each goes red with its switch off</td></tr>
+      <tr><td>Offline routing, replay label, signing</td><td><span class="chip ok">VERIFIED</span></td><td>Works with airplane mode on</td></tr>
+      <tr><td>Gemma</td><td><span class="chip ok">RUNS</span></td><td>Loads on GPU; first line was rejected by the checker (template shown), second passed</td></tr>
+      <tr><td>4 self-trained models</td><td><span class="chip display">RUNS, NOT ACCURATE YET</span></td><td>Load and give numbers, but were trained on simulated data</td></tr>
+      <tr><td>EfficientPhys, SegFormer, Vosk</td><td><span class="chip display">LOADS</span></td><td>Have not seen a real face, street or voice yet</td></tr>
+      <tr><td>Fingertip pulse</td><td><span class="chip no">NOT YET</span></td><td>No capture has passed all quality gates on the phone so far</td></tr>
+      <tr><td>Light sensor + GPS outdoors</td><td><span class="chip no">NOT YET</span></td><td>Not tested in real sun and shade</td></tr>
+      <tr><td>Built but not wired in</td><td><span class="chip shadow">CODE ONLY</span></td><td>Excess-HR-for-workload, perfusion drop and sit-to-stand exist in <code>body/HrContext.kt</code> but do not feed the live engine yet</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="glossary">
+  <span class="eyebrow">9 · Word list</span>
+  <h2>Terms used on this page</h2>
+  <div class="gloss">
+    <div><b>Core temperature</b><span>Temperature deep inside the body. Normal ≈ 37 °C. Above ≈ 38.5 °C during work is the action point.</span></div>
+    <div><b>WBGT</b><span>Wet Bulb Globe Temperature: one heat number that includes humidity, wind and sun, used for work-rest rules.</span></div>
+    <div><b>Acclimatised</b><span>Body used to heat after ~7+ days of working in it. Sweats earlier, copes better.</span></div>
+    <div><b>PPG</b><span>Photoplethysmography: reading the pulse from changes in light passing through skin.</span></div>
+    <div><b>rPPG</b><span>Remote PPG: the same thing from a face video, no touch.</span></div>
+    <div><b>SCG</b><span>Seismocardiography: feeling the heartbeat as a tiny chest vibration with the accelerometer.</span></div>
+    <div><b>RMSSD / HRV</b><span>Heart-rate variability: how much the gap between beats changes. Needs 60 s of clean data.</span></div>
+    <div><b>Kalman filter</b><span>Keeps a best guess plus how unsure it is, and blends in each new noisy reading by the right amount.</span></div>
+    <div><b>Sigmoid</b><span>S-shaped curve 1/(1+e^(−z)) that squashes any number into 0..1.</span></div>
+    <div><b>Band-pass filter</b><span>Keeps only the frequencies in a range (here, heartbeat speeds) and removes the rest.</span></div>
+    <div><b>Viterbi</b><span>Dynamic programming that picks the best sequence of choices (smoothest heart-rate path, most likely road).</span></div>
+    <div><b>HMM</b><span>Hidden Markov Model: the true state (which road) is hidden; we see noisy clues (GPS points).</span></div>
+    <div><b>CUSUM</b><span>Cumulative sum: adds up small deviations so a slow drift is caught.</span></div>
+    <div><b>Median / MAD</b><span>Middle value, and the middle distance from it. Outlier-proof versions of mean and standard deviation.</span></div>
+    <div><b>MET</b><span>Metabolic equivalent: 1 = sitting still, 3.5 ≈ walking, 6 ≈ stairs.</span></div>
+    <div><b>Lux / CCT</b><span>Brightness, and colour temperature of light in kelvin (higher = bluer).</span></div>
+    <div><b>C/N0</b><span>Satellite signal strength. Drops when a tree or building is in the way.</span></div>
+    <div><b>Shadow mode</b><span>A model runs and is shown, but its output is not used to decide.</span></div>
+    <div><b>NPU / GPU / CPU</b><span>Phone chips. NPU is built for neural networks; GPU for graphics and big models like Gemma.</span></div>
+    <div><b>LiteRT / TFLite</b><span>Google's runtime for running AI models on phones.</span></div>
+    <div><b>JNI / NDK</b><span>Ways to call C code (like the WBGT library) from Kotlin on Android.</span></div>
+    <div><b>Provenance</b><span>Where a reading came from: REAL, REPLAY or SIMULATED.</span></div>
+  </div>
+</section>
+
+<footer>Built from the Thakaan source as of 10 Oct 2026. Thakaan is a heat-strain wellbeing tool, not a medical device. Map data © OpenStreetMap contributors.</footer>
+</main>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp01 = function (x) { return Math.max(0, Math.min(1, x)); };
+  var lerp = function (x, x0, x1, y0, y1) { return y0 + (y1 - y0) * clamp01((x - x0) / (x1 - x0)); };
+  var LEVELS = [
+    { name: "● Cool", c: "--cool", bg: "--cool-bg" },
+    { name: "▲ Warming", c: "--warm", bg: "--warm-bg" },
+    { name: "◆ Strained", c: "--strain", bg: "--strain-bg" },
+    { name: "■ Danger", c: "--danger", bg: "--danger-bg" }
+  ];
+  function wbgtScore(w) {
+    if (w === null) return 1;
+    if (w <= 24) return 0;
+    if (w <= 28) return lerp(w, 24, 28, 0, 0.35);
+    if (w <= 31) return lerp(w, 28, 31, 0.35, 0.7);
+    return lerp(w, 31, 33, 0.7, 1);
+  }
+  function timeFactor(h) {
+    if (h >= 12 && h <= 16) return 1;
+    if ((h >= 10 && h <= 12) || (h >= 16 && h <= 17.5)) return 0.85;
+    if ((h >= 8 && h <= 10) || (h >= 17.5 && h <= 19)) return 0.65;
+    return 0.45;
+  }
+  function levelForTss(t) { return t < 30 ? 0 : t < 55 ? 1 : t < 80 ? 2 : 3; }
+  function fmtHour(h) { var hh = Math.floor(h), mm = h % 1 ? "30" : "00"; return (hh < 10 ? "0" : "") + hh + ":" + mm; }
+
+  function run() {
+    var unknownW = $("wbgtUnknown").checked;
+    var w = unknownW ? null : +$("wbgt").value;
+    var sunMin = +$("sunMin").value, restDebt = +$("restDebt").value, hour = +$("hour").value, acc = +$("acclim").value;
+    var sunSel = $("sunNow").value;
+    var fresh = $("fresh").checked, core = +$("core").value, hr = +$("hr").value, water = +$("water").value;
+    var fam = +$("fam").value, sym = +$("sym").value, dizzy = $("dizzy").checked, severe = $("severe").checked;
+    if (dizzy && sym === 0) sym = 1;
+
+    $("wbgtO").textContent = unknownW ? "unknown" : w.toFixed(1) + " °C";
+    $("wbgt").disabled = unknownW;
+    $("sunMinO").textContent = sunMin + " min";
+    $("restDebtO").textContent = restDebt + " min";
+    $("hourO").textContent = fmtHour(hour);
+    $("acclimO").textContent = acc + (acc === 1 ? " day" : " days");
+    $("coreO").textContent = core.toFixed(1);
+    $("hrO").textContent = hr + " bpm";
+    $("waterO").textContent = water.toFixed(1) + " %";
+
+    var acclimatised = acc >= 7;
+    var sunNow = sunSel === "sun" ? 1 : sunSel === "shade" ? 0 : 1;
+    var accF = 1 - 0.2 * clamp01(acc / 10);
+    var E = clamp01((0.5 * wbgtScore(w) + 0.2 * clamp01(sunMin / 120) + 0.15 * clamp01(restDebt / 60) + 0.15 * sunNow) * timeFactor(hour) * accF);
+
+    var psi = Math.max(0, Math.min(10, 5 * (core - 37) / 2.5 + 5 * (hr - 60) / 120));
+    var B;
+    if (fresh) {
+      B = Math.max(psi / 10, lerp(core, 37, acclimatised ? 38.5 : 38, 0, 1), 0.5 * clamp01(water / 4));
+      if (hr >= 90) B = Math.max(B, lerp(hr, 90, 110, 0.3, 0.9));
+      B = clamp01(B);
+    } else {
+      B = E >= 0.8 ? 0.5 * E : 0; // no earlier fresh reading in this one-step view: only the exposure floor
+    }
+    var N = [0, 0.4, 0.8, 1][fam];
+    var S = severe ? 1 : clamp01(0.4 * (sym + (severe ? 1 : 0)));
+    var z = 3 * E + 3 * B + 3 * N + 3 * S - 3;
+    var tss = Math.max(0, Math.min(100, Math.floor(100 / (1 + Math.exp(-z)))));
+    var scoreLv = levelForTss(tss);
+
+    var anchors = [];
+    function A(lv, text) { anchors.push({ lv: lv, text: text }); }
+    var limit = acclimatised ? 28 : 25;
+    if (w !== null && w >= limit) A(1, "WBGT " + w.toFixed(1) + " ≥ " + limit + " (work-rest limit)");
+    if (w === null) A(1, "weather unknown: assumed hot");
+    if (fresh) {
+      var strainedAt = acclimatised ? 38.5 : 38.0;
+      if (core >= 39) A(3, "core trend ≥ 39.0");
+      else if (core >= strainedAt) A(2, "core trend ≥ " + strainedAt.toFixed(1) + " (action point)");
+      if (psi > 7) A(3, "PSI " + psi.toFixed(1) + " > 7");
+      else if (psi > 5) A(2, "PSI " + psi.toFixed(1) + " > 5");
+      else if (psi > 3) A(1, "PSI " + psi.toFixed(1) + " > 3");
+      if (water > 2) A(2, "water deficit " + water.toFixed(1) + "% > 2%");
+      if (hr >= 100) A(2, "resting HR ≥ 100 for 5+ min");
+      else if (hr >= 90) A(1, "resting HR ≥ 90 for 5+ min");
+    }
+    if (fam >= 2) {
+      var dang = fam >= 3 || E >= 0.5 || sym > 0 || severe;
+      A(dang ? 3 : 2, fam + " brain families slower" + (dang ? " (with heat, symptoms or 3 families)" : ""));
+    }
+    if (severe) A(3, "severe symptom (confusion or faintness)");
+    else if (sym > 0) {
+      if (dizzy && E >= 0.5) A(2, "dizzy or sick in heavy exposure");
+      else if (sym >= 2) A(1, "several symptoms");
+    }
+    var anchorLv = anchors.reduce(function (m, a) { return Math.max(m, a.lv); }, 0);
+    var lv = Math.max(scoreLv, anchorLv);
+    var L = LEVELS[lv];
+    var g = $("gauge");
+    g.style.background = "var(" + L.bg + ")";
+    $("lvl").textContent = L.name;
+    $("lvl").style.color = "var(" + L.c + ")";
+    $("tssLine").textContent = "TSS " + tss + " → score alone says " + LEVELS[scoreLv].name.slice(2) + (anchorLv > scoreLv ? "; an anchor lifts it to " + L.name.slice(2) : "");
+
+    var parts = [["E · Exposure", E], ["B · Body", B], ["N · Brain", N], ["S · Symptoms", S]];
+    $("bars").innerHTML = parts.map(function (p) {
+      return '<div class="bar"><span>' + p[0] + '</span><span class="track"><span class="fill" style="display:block;width:' + (p[1] * 100).toFixed(0) + '%"></span></span><span>' + p[1].toFixed(2) + '</span></div>';
+    }).join("");
+    $("zline").textContent = "z = 3·" + E.toFixed(2) + " + 3·" + B.toFixed(2) + " + 3·" + N.toFixed(2) + " + 3·" + S.toFixed(2) + " − 3 = " + z.toFixed(2) + "   →   TSS = " + tss + (fresh ? "   (PSI " + psi.toFixed(1) + ")" : "   (no fresh heart reading)");
+    var why = $("why");
+    why.innerHTML = "";
+    anchors.sort(function (a, b) { return b.lv - a.lv; }).forEach(function (a) {
+      var li = document.createElement("li");
+      li.innerHTML = '<b style="color:var(' + LEVELS[a.lv].c + ')">' + LEVELS[a.lv].name.slice(2) + "</b> · " + a.text;
+      why.appendChild(li);
+    });
+  }
+  ["wbgt", "wbgtUnknown", "sunMin", "restDebt", "hour", "acclim", "sunNow", "fresh", "core", "hr", "water", "fam", "sym", "dizzy", "severe"].forEach(function (id) {
+    $(id).addEventListener("input", run);
+    $(id).addEventListener("change", run);
+  });
+  run();
+})();
+</script>
+</body>
+</html>

@@ -8,6 +8,8 @@
 
 **iQOO Hackathon 2026 · Grand Finale, Bengaluru · Track: HealthTech · iQOO 15 (Snapdragon 8 Elite Gen 5)**
 
+**Team Chole Bhature** · 📄 [**Pitch deck (PDF, 15 slides)**](Thakaan%20—%20iQOO%20Hackathon%202026.pdf)
+
 </div>
 
 ---
@@ -232,7 +234,7 @@ All of the following are recorded in [`docs/DEVICE_RESULTS.md`](docs/DEVICE_RESU
 |---|---|
 | ECTemp reference vectors | **7/7 pass** on the phone (quadratic reference model matches at 1e-9) |
 | Safety checks | 5/5 PASS seen on the phone, guards 1 to 5 each turned red when switched off; check 6 added afterward and unit-tested |
-| Safety property test | **452 laptop test cases pass**; each guard off makes the property fail |
+| Safety property test | **508 laptop test cases pass**; each guard off makes the property fail |
 | Camera stream | Steady **30 fps** (mean 33.4 ms, one dropped frame in 743) |
 | Offline operation | No `INTERNET` permission (checked with `dumpsys package`); Chhaya re-routes instantly with **airplane mode on** |
 | Chhaya shade | 38% and 49% shade on two test routes; 9 to 35% of each route on guessed heights |
@@ -245,7 +247,7 @@ All of the following are recorded in [`docs/DEVICE_RESULTS.md`](docs/DEVICE_RESU
 
 Naming the limits ourselves scores better than a judge catching them.
 
-- **Pulse and strain accuracy are unmeasured.** No fingertip capture has yet been confirmed against a reference. The fingertip quality gates were set from the literature and never calibrated on real data, and we did not loosen them to make a capture pass.
+- **Strain accuracy and early-warning lead time are unmeasured.** Fingertip pulse was about 95% accurate against a reference device in our own check on 11 Oct, but we did not log the paired readings, so it cannot be reproduced and is not validated. The same goes for shade (more than 90% in our own outdoor check, no log). No held-out session exists, so every figure in [`docs/METRICS.md`](docs/METRICS.md) is development-time. The fingertip quality gates were set from the literature and never calibrated on real data, and we did not loosen them to make a capture pass.
 - **Core-temperature estimates fail near the danger zone.** Field validations report high sensitivity below about 38.75 °C and almost every hot reading missed above 39 °C. That is why every action fires at or below 38.5 °C.
 - **Validation populations are narrow.** The underlying models were validated mostly on young, Western, often military or athletic men. No study covers South Asian workers, women, older workers or budget phones in motion.
 - **Brain signals are personal drift signals,** not validated heat-illness detectors.
@@ -390,7 +392,9 @@ Full script: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 ## Team
 
-Built by a three-person team in 48 hours.
+**Team Chole Bhature** (Atharv Phutela, Bhavya Garg, Bhaskar Kumar Arya) built Thakaan in 48 hours at the iQOO Hackathon 2026 Grand Finale, Bengaluru, 9 to 11 October. The pitch deck is [`Thakaan — iQOO Hackathon 2026.pdf`](Thakaan%20—%20iQOO%20Hackathon%202026.pdf).
+
+Ownership by role (names are not yet assigned to roles in [`docs/DECISIONS.md`](docs/DECISIONS.md)):
 
 | Role | Owns |
 |---|---|
@@ -427,12 +431,14 @@ Built by a three-person team in 48 hours.
 
 ## Documentation
 
+- [`Thakaan — iQOO Hackathon 2026.pdf`](Thakaan%20—%20iQOO%20Hackathon%202026.pdf): the 15-slide pitch deck. The Bible maps each slide to its section and lists where the deck's wording differs from the code
 - [`docs/Thakaan — Product Bible.md`](docs/Thakaan%20—%20Product%20Bible.md): intent, vectors, formulas, UX, demo and privacy (source of truth on *why*)
 - [`docs/Thakaan — Product Bible, Simplified.md`](docs/Thakaan%20—%20Product%20Bible%2C%20Simplified.md): the same product in plain words
 - [`docs/Thakaan — Build Map v1.md`](docs/Thakaan%20—%20Build%20Map%20v1.md): 65 tickets in strict dependency order (source of truth on *execution*)
 - [`docs/TICKETS.md`](docs/TICKETS.md): live checklist
 - [`docs/DEVICE_RESULTS.md`](docs/DEVICE_RESULTS.md): what the phone has actually shown
 - [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) · [`docs/PITCH.md`](docs/PITCH.md): limits and the claim ledger of every number the pitch may say
+- [`docs/METRICS.md`](docs/METRICS.md): the metrics table, each number labelled development-time or reported
 - [`docs/Thakaan-Architecture.html`](docs/Thakaan-Architecture.html): the architecture diagram
 
 ---

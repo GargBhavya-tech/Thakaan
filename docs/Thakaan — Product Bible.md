@@ -1,8 +1,8 @@
 # Thakaan — Product Bible
 
-Oct 10, 2026 · @Ashish
+Oct 11, 2026 · @Ashish · Team Chole Bhature
 
-**Version:** v3, updated to the as-built state on 10 Oct 2026 (end of day). Where this text and `Thakaan — Build Map v1.md` disagree, this document wins on intent and the Build Map wins on execution order. Where either disagrees with what the phone has shown, `docs/DEVICE_RESULTS.md` and `docs/TICKETS.md` win on status.
+**Version:** v3, updated to the as-built state on 11 Oct 2026, and reconciled with the pitch deck (`Thakaan — iQOO Hackathon 2026.pdf`), `docs/METRICS.md` and `docs/PITCH.md`. Where this text and `Thakaan — Build Map v1.md` disagree, this document wins on intent and the Build Map wins on execution order. Where either disagrees with what the phone has shown, `docs/DEVICE_RESULTS.md` and `docs/TICKETS.md` win on status. Where the deck disagrees with the code or the phone, the code and the phone win, and the difference is listed in "The pitch deck" below so the slide can be fixed.
 
 ## About this version
 
@@ -24,6 +24,12 @@ The first text of this bible described the product as designed. Three things hav
 - Everyone else gets a shift panel: scheduled checks with a reminder, the score, and the chance of reaching Strained in the next 20 minutes from heat, dust and the trend, with one line of advice.
 - The worker never sees "not sure" wording. A clean number is shown only when the reading passed its gates; otherwise there is no number and one instruction.
 
+**Alignment with the deck and the proof docs (11 Oct 2026, later).** Three sources were folded in; the status words below are unchanged.
+
+- **The pitch deck** (15 slides, `Thakaan — iQOO Hackathon 2026.pdf`) is now described in "The pitch deck" under the pitch section: a slide-to-section map, and ten places where the deck's wording does not match the code or the phone.
+- **The metrics table** (`docs/METRICS.md`, ticket #60) is in: twelve rows, each labelled development-time or reported. Two numbers the team reported by hand on 11 Oct, fingertip pulse about 95% and shade more than 90%, are recorded here **as reported, with no log kept**, never as validated. The measured route trade-off (a minute or less of extra time for a few points of shade) is in the Chhaya section.
+- **The vision slide** (platforms, compliance, government) is in "Where this goes". It is a direction, not a result and not a funded plan.
+
 **Build decisions that differ from the first text** (each is marked **As built** where it applies):
 
 - Routing is our own Dijkstra over an OSM-derived graph, not GraphHopper or Valhalla.
@@ -35,7 +41,7 @@ The first text of this bible described the product as designed. Three things hav
 
 **How to read status.** Three words are used on purpose:
 
-- **Built:** code exists and laptop unit tests pass (507 test cases across 63 test files at this writing).
+- **Built:** code exists and laptop unit tests pass (508 test cases across 64 test files at this writing).
 - **Seen on the phone:** the iQOO 15 has shown it working, recorded in `docs/DEVICE_RESULTS.md`.
 - **Not verified:** built, but a human, a reference device or real outdoor conditions are still needed. Nothing in this class may be claimed on stage.
 
@@ -50,7 +56,8 @@ Thakaan turns the phone an outdoor worker already carries into a personal heat-s
 - **Name:** Thakaan (थकान) means exhaustion; the product exists so the worker never reaches it.
 - **Sub-product:** Chhaya Route (छाया, shade), strain-aware routing to shade and water.
 - **Platform:** iQOO 15 (Snapdragon 8 Elite Gen 5, Hexagon NPU, Adreno 840), OriginOS 6 / Android 16, Kotlin and Compose.
-- **Track:** HealthTech ("heat illness is an occupational-health emergency"); fallback Open Innovation.
+- **Track:** `docs/DECISIONS.md` locked **HealthTech** on 10 Oct ("heat illness is an occupational-health emergency"; fallback Open Innovation). The deck cover, produced later, is labelled **Open Innovation**. **Open decision:** confirm which track the entry was submitted under, then make the deck, `DECISIONS.md` and this line say the same thing.
+- **Team:** Team Chole Bhature: Atharv Phutela, Bhavya Garg, Bhaskar Kumar Arya. Role ownership (A Body, B Brain + World, C Systems + Demo) is not yet assigned to names (`DECISIONS.md` row 3).
 - **Framing:** a heat-strain wellbeing tool, not a medical device.
 
 ## Problem and users
@@ -97,6 +104,26 @@ E1 light readings and E12 sky-view readings also flow into the shared shade map 
 
 A plain way to hold the picture: a **nurse** watches the body (heart and the hidden core trend), a **teacher** watches the mind (hands, taps, speech, gait), and a **weather reporter** watches the street (sun, shade, heat). All three report to a **coach**, the strain score, which decides what to say and where to send the worker. The weather reporter is always available, so the score never goes blank.
 
+### The eleven sensors
+
+All eleven are inside the phone. The deck (slide 5) lists them; the rates are the ones the sensor hub registers or the phone measured (`docs/DEVICE_RESULTS.md`).
+
+| Sensor | Rate | What it is used for |
+| --- | --- | --- |
+| Accelerometer | 200 Hz | Activity, stops, falls and collapse, tremor, gait, chest heartbeat |
+| Gyroscope | 200 Hz | Lifting vs walking; stillness gate for the chest heartbeat |
+| Light sensor | measured 10 Hz (deck says about 5 Hz) | Sun or shade now; sunlight strength in W/m² |
+| Colour-temperature sensor | on change | Blue shade light vs yellow direct sun. Gave no data indoors |
+| GPS position | 1 Hz | Map position, routing, moving or stopped, riding wind |
+| GPS satellites (GnssMeasurement) | 1 Hz | Sky view: weak satellites near the sun mean a tree or roof overhead. Indoors only so far |
+| Rear camera + torch | 30 fps | Fingertip heart rate and HRV; street photo for sky share and flood reports |
+| Front camera | 30 fps | Face pulse, breathing, eye closing, yawns (display only) |
+| Microphone | on demand | Spoken digit test; "pani piya" drink logging |
+| Touchscreen | event time | Tapping speed and accuracy |
+| Phone temperature | on change | Blocks checks when the phone is too hot; nudges air temperature (device care only, never a body or globe temperature) |
+
+Saved on the phone for offline use: the weather and PM2.5 forecast cache and the OSM road graph with its shade layer.
+
 ## Body model (physiological detection)
 
 Thakaan simulates the worker's body heat balance every minute and corrects the simulation with every clean heart-rate reading. Fingertip PPG is the primary heart channel; chest vibration (SCG) is a supporting channel; the front camera is optional and display-only.
@@ -142,7 +169,9 @@ Here m is the slope of expected HR against core temperature, Q = 0.000484 is the
 
 **Quality gates (design values):** reject a window if perfusion index is under 0.3%, beat-template correlation under 0.85, SNR under 5 dB, frames were dropped, or the torch dimmed mid-capture. No capture starts while the phone is thermally critical.
 
-**As built, and the honest state.** These gates were set from the literature and have never been calibrated on real data, and they were not loosened to make a capture pass. On the phone, no red-channel capture has passed them yet (best perfusion 0.4 to 1.7%, correlation 0.63 to 0.79, SNR −4 to 0 dB). A real-recording analysis found the pulse present in the signal (strongest in green) but jumping between windows in the red-only view. The fix is `FingertipPos`: POS over red, green and blue, plus "must stay consistent across 8 s windows", plus agreement with one independent colour view. On four real captures it accepted only the table-resting capture (about 62 bpm) and rejected the other three. That 62 bpm is not yet confirmed against a counted pulse. Until a reference exists, treat the accepted rate as unconfirmed and do not claim a working pulse.
+**As built, and the honest state.** These gates were set from the literature and have never been calibrated on real data, and they were not loosened to make a capture pass. On the phone, no red-channel capture has passed them yet (best perfusion 0.4 to 1.7%, correlation 0.63 to 0.79, SNR −4 to 0 dB). A real-recording analysis found the pulse present in the signal (strongest in green) but jumping between windows in the red-only view. The fix is `FingertipPos`: POS over red, green and blue, plus "must stay consistent across 8 s windows", plus agreement with one independent colour view. On four real captures it accepted only the table-resting capture (about 62 bpm) and rejected the other three. That 62 bpm was not confirmed against a counted pulse.
+
+**11 Oct update.** The fingertip step now looks again every 5 s for up to 15 s longer when the reading was unsteady, applying the same strict gate to the last 25 s each time (nothing was loosened). The team then reported, by hand, about **95% accuracy against a reference device**. That figure is **reported, not logged**: no paired readings were kept, the reference, the number of readings, the rest-versus-exercise split and the meaning of "95%" (within 5% of the reference?) are not recorded, so it cannot be reproduced. Post-exercise accuracy is not separated. The only counted rejection rate is 3 of 4 real captures (n = 4, one person). In `docs/METRICS.md` it is a development-time, REPORTED row. Say "about 95% in our own check against a reference", never "validated", and never for exercise.
 
 ### Body vectors
 
@@ -229,7 +258,7 @@ Passive and event vectors run alongside the battery:
 - **Confirmation rule:** a past-threshold battery raises the level one step and schedules N11 at the next break; two families flagged with high exposure force at least Strained.
 - **Speech check (as built):** a fixed digit code, so it works across Kannada, Tamil, Telugu, Hindi and English, but the offline recogniser is Vosk with a digit grammar (English-India and Hindi models), which has not yet been tried with a real voice. Whisper-tiny multilingual runs in a lab screen as an advisory second opinion; it is weak in Hindi and weaker in Kannada, and no transcript ever changes a level.
 - **Squint correction (N8):** sun squint is separated from eyelid-closure fatigue using ambient light (E1) and eye-aperture shape. Because face checks do not work outdoors, N8 is off there.
-- **Collapse (N7):** detects falls, bike tip-overs and slow slumps followed by stillness. Heat collapse is often a slump, not a fall. A spoken "are you OK, say haan" countdown always runs first; an on-screen "I'm OK" button ends the countdown or clears the alarm. A phone put down after being carried can still start a countdown, and the countdown plus the button are the safeguard.
+- **Collapse (N7):** detects falls, bike tip-overs and slow slumps followed by stillness. Heat collapse is often a slump, not a fall. A spoken "are you OK, say haan" countdown always runs first; an on-screen "I'm OK" button ends the countdown or clears the alarm. A phone put down after being carried can still start a countdown, and the countdown plus the button are the safeguard. **Timing:** at least 23 s from impact to alarm (8 s of stillness, then a 15 s countdown that "haan" or the I'm-OK button cancels). These are design constants in `CollapseRules` and `CountdownMachine`; the countdown start and the alarm were seen on the phone, but the time was not stopwatch-measured.
 - **Symptom vector (N10):** one-tap or voice symptoms, asked at every check and level change. Dizziness or confusion with high exposure forces at least Strained; a severe symptom forces Danger.
 
 ## Detection vectors: environmental and exposure
@@ -327,6 +356,18 @@ t is travel time, S the sun-exposure fraction at hour h, H the heat-island penal
 - **Shade ETA:** every route shows extra time (in seconds under 90 s), shade share, the fastest route dashed for comparison, and how much of the route rests on guessed heights.
 - **Navigation hand-off:** the map is its own screen. Turn-by-turn overlay on top of a delivery app is not built.
 - **Not built:** shift planner, return-trip choice, walking-leg shade preference.
+
+**What the router actually buys (measured, `docs/METRICS.md` row 9, `RouteMetricsTest`).** Median over 150 random walking trips of 1.5 to 4 km per run on the real Bengaluru graph, two seeds, at 16:15 (the hottest slot in the table), OSM shade layer. "Changed" is the share of trips where the strain-aware route is not the fastest one.
+
+| Level | Changed (seed 1 / seed 2) | Extra time (seed 1 / seed 2) | Shade gain, points of route length |
+| --- | --- | --- | --- |
+| Cool | 0% / 0% | none | 0 |
+| Warming | 65% / 64% | +4 s (1.0%) / +3 s (0.7%) | +2.5 / +2.0 |
+| Strained | 86% / 90% | +30 s (6.7%) / +51 s (11.5%) | +4.8 / +2.4 |
+
+Read it plainly: Cool is always the fastest route, as designed. The shade gain is **small**. At Strained the fastest route is about 18% shaded and the strain-aware one about 21 to 23% (OSM layer; about 34% rising to 37% on the satellite layer). There is shade to find, so the limit is the detour budget, not a shortage of shade: a shadier street usually means a longer walk. Claim "never costs time at Cool, and at Strained trades under a minute for a few points of shade". Do not claim much shadier routes. The two seeds disagree on Strained extra time by a factor of about 1.7, so quote a range. If a bigger difference is wanted, the budget is the knob, and the cost is more walking in the heat. Shade is modelled and has not been compared with real light.
+
+**Shade accuracy (reported, not logged).** The team reported on 11 Oct that shade matched real conditions more than 90% of the time in an outdoor check by hand. Which layer (OSM or satellite), how many places, whether it was judged by eye or by the light sensor, and what 90% means are not recorded (`METRICS.md` row 8). Say "in our own check", never "validated". A 15-minute walk with sun or shade written down every 2 minutes would let the app's own log turn it into a reproducible number.
 
 **Map layers (as built, one at a time, each with a legend in plain words).** Shade; Water; Floods; Phone signal; Traffic; Air. Credit: © OpenStreetMap contributors (ODbL).
 
@@ -486,6 +527,8 @@ Small models run on the phone through LiteRT; the language model runs on the Adr
 | Explainer + coach phrasing | Gemma 4 E2B | LiteRT-LM | GPU; loads on the phone in well under 45 s |
 | Voice out | Android offline TextToSpeech (hi, kn, ta, te, en) | Android | CPU |
 
+**Model inventory (deck slide 13).** Made by us: `activity_cnn` (1D CNN, 2 s of motion to idle, riding, walking, stairs or lifting); `scg_denoiser` (dilated 1D CNN, cleans chest vibration, 5 s at 100 Hz); `strain_gru` (GRU with 24 units, the last 20 minutes of strain and sun to a score at +15 and +30 minutes); `los_xgboost` (40 trees, per satellite: clear sky or blocked by a tree or building); and POS, a colour-maths pulse method that is not a learned model. Converted to run on the phone: Gemma 4 E2B (1.9 GB, GPU), MediaPipe Face Landmarker (478 face points), EfficientPhys (72×72 face frames), SegFormer-B0 (sky, tree or building per pixel) and Vosk (English-India and Hindi). Maths models that set the level: ECTemp, Gagge, Liljegren WBGT, NOAA sun position and CUSUM. The four learned models were trained on simulated data and are shadow models.
+
 **Runtime architecture**
 
 - **Sensor hub:** a foreground service owns all sensors and publishes timestamped streams, each stamped REAL, REPLAY or SIMULATED. OriginOS kills background work, so the app must be locked in Recents with battery set to unrestricted. The level engine runs in a process-wide scope so it survives the screen closing.
@@ -560,12 +603,16 @@ The demo runs about 3 to 4 minutes. Everything on the path works with the phone 
 | 0:20 to 1:20 | Tap Replay 20x. "Replay." | Gauge goes Cool, Warming, Strained; forecast line; REPLAY chip |
 | 1:20 to 1:50 | The alert: one action, in the worker's language, with its time cost. Switch Hindi to Kannada. | Spoken line + haptic |
 | 1:50 to 2:50 | Chhaya Route with airplane mode on: fastest at Cool; detour to shade plus a water stop at Strained; nearest cool seat at Danger | Route, "+N min, N% shade", shade is estimated |
-| 2:50 to 3:50 | A teammate who has never seen it does the 90-second check: finger, hold still, tap, how do you feel | Quick check |
+| 2:50 to 3:50 | A teammate who has never seen it does the Quick check for their kind of work (Settings > Your work; every kind includes the face step: about 87 s for the delivery pickup check, about 2 minutes for the general check). For a delivery partner, continue into the Ride tab: fit or rest, then a Simulated ride | Quick check, then Ride |
 | 3:50 to 4:20 | Supervisor console: Copy status, paste, levels and coarse reasons only; change one byte in the log, "Chain BROKEN" | Console |
 | 4:20 to 4:40 | Safety checks 6/6 PASS; flip one guard, its row turns red; ECTemp 7/7 | Diagnostics |
 | Close | Limits: shade is computed, the level is an estimate, not a medical device, ECTemp needs a licence | Limitations slide |
 
 Backups: if the camera misbehaves, skip the finger step and show the Safety tab. If the phone is unavailable, run the Office Kit mirror. A recorded backup video is still to do (#63).
+
+**Two formats (`docs/PITCH.md`).** The table above is the 3-minute **stage narrative**. The second format is a **table walkaround** for evaluators, about 5 minutes and hands on: hand them the phone on Home (REAL chip, then Replay 20x, said aloud as "replay"); lead with **Chhaya Route** in airplane mode (this is the thing they remember); show ECTemp 7/7; flip a Safety guard red and change one byte in the log; let them do the Quick check; close on the first three limits. Both formats say aloud: shade is computed from map data, not measured; the level is an estimate, never a body temperature; this is a wellbeing tool, not a medical device; ECTemp needs a licence for commercial use.
+
+**The two panels on stage.** Delivery-partner demo: Ride tab, set the drop point, run the pickup check, get Fit to ride or Rest 5 minutes and drink water, then start the ride with Simulated ride on. Say "simulated" aloud while the chip says SIMULATED. For construction, police, security and other gig work, the Today tab shows the score, the 20-minute outlook with one action, and when the next check is due. Say the outlook is a model with fixed settings, not a measurement, and that the riding camera has not been tried on a moving bike. If the check reminder is part of the demo, trigger it once beforehand: on one run it did not appear on the first sensing start and the cause is unknown.
 
 **Demo prep checklist**
 
@@ -575,10 +622,26 @@ Backups: if the camera misbehaves, skip the finger step and show the Safety tab.
 - [ ] Phone cool, case off, not charging
 - [ ] Office Kit loop rehearsed by all three (#3)
 - [ ] Backup video (#63)
+- [ ] Listen to one alert in each language and note which sound wrong
+- [ ] Trigger the check reminder once before going on stage
+- [ ] Dry run of each format for someone who has not seen the project, and time them
+- [ ] One real rider quote (#65), or say "we have not yet tested this with riders"
+- [ ] Fix the deck wording listed under "The pitch deck"
 
 ## Pitch narrative and judge Q&A
 
-The pitch argues three things: the problem is personal and invisible, the phone can sense it, and Thakaan acts before collapse rather than after. **Rule: every number spoken must be in the claim ledger in `docs/PITCH.md` with its source.** Pulse and strain accuracy, early-warning lead time and a rider's quote are not yet measured; say so instead of guessing.
+The pitch argues three things: the problem is personal and invisible, the phone can sense it, and Thakaan acts before collapse rather than after. **Rule: every number spoken must be in the claim ledger in `docs/PITCH.md` with its source.** Strain accuracy, early-warning lead time and a rider's quote are not measured; say so instead of guessing. Two numbers are **team-reported with no log kept** and may be said only as "in our own check": fingertip pulse about 95% against a reference device, and shade more than 90% accurate. There is **no held-out session** (a recording or walk nobody tuned against), so nothing is validation; every row in `docs/METRICS.md` is development-time.
+
+**Do not say** (from `docs/PITCH.md`):
+
+- That riding was tested on a bike, with a helmet, or at night.
+- That the 20-minute outlook is validated: it is a model with design constants.
+- That the check reminder always appears, or that the drowsiness limits were tuned on riders.
+- "Detects heat stroke" (it flags strain and recommends an action).
+- That Gemma decides anything: it only re-words a line the engine chose, a wording check can reject it, and the template is the fallback.
+- That the 95% pulse or the 90% shade figure is validated or held-out.
+- That Strained routes are much shadier: the measured gain is a few points of shade for under a minute.
+- That the recorded ride is real: replay is labelled replay.
 
 **Story arc**
 
@@ -589,22 +652,60 @@ The pitch argues three things: the problem is personal and invisible, the phone 
 5. **Depth:** ECTemp Kalman filter with a Gagge prior, Liljegren WBGT, CUSUM brain battery, GNSS sky view, offline routing, guarded LLM phrasing.
 6. **Honesty:** truth labels on every number, a safety invariant with guard switches, 7/7 reference vectors, a tamper-evident log.
 
+### The pitch deck (`Thakaan — iQOO Hackathon 2026.pdf`)
+
+A 15-slide deck, Team Chole Bhature, Bengaluru, 9 to 11 Oct 2026. It follows the story arc above and states **no accuracy figure**, which is consistent with the claim ledger. Slide to section map:
+
+| Slide | Title | Bible section |
+| --- | --- | --- |
+| 1 | Cover: tagline, team, event | Vision |
+| 2 | The problem, and the red-light spike | Problem and users |
+| 3 | The idea: one phone, no wearable, fully offline | Vision |
+| 4 | Three watchers, one score, one action | System architecture; Risk engine |
+| 5 | Eleven sensors, all inside the phone | The eleven sensors |
+| 6 | Four levels, never a temperature; anchors; no flicker | Risk engine; Interventions |
+| 7 | Watcher 1, Body: fingertip pulse, ECTemp 7/7, heat-balance prior, 38.5 °C | Body model |
+| 8 | Watcher 2, Brain: tremor, tapping, speech code, symptoms, CUSUM | Neurological and behavioural vectors |
+| 9 | Watcher 3, Sun: light and colour, satellite sky view, WBGT, "when unsure, assume worse" | Environmental and exposure vectors |
+| 10 | Chhaya Route: the cost formula and the budget per level | Chhaya Route |
+| 11 | Map layers: shade, pollution, flooding, traffic and signal, crew mesh | Chhaya Route; Additional features 7 |
+| 12 | Built for the iQOO 15: what runs where, the LLM guardrail | On-device AI and runtime stack |
+| 13 | Models: five made by us, five converted | On-device AI and runtime stack |
+| 14 | Privacy: the worker owns the data, no INTERNET permission | Data, privacy, consent |
+| 15 | The vision: platforms, compliance, government | Where this goes |
+
+**Where the deck's wording does not match the code or the phone.** Fix these before presenting; the code and the phone are the source of truth.
+
+1. **Track (cover).** The cover says Open Innovation; `DECISIONS.md` locked HealthTech. Confirm which was submitted.
+2. **Speech code (slides 8 and 12).** The deck says "on-device Whisper-tiny" and lists kn. The Quick check speech step uses the **Vosk digit grammar**, which has English-India and Hindi models only. Whisper-tiny runs in the Speech lab as an advisory second opinion, is weak in Hindi and weaker in Kannada, and never changes a level. Neither has been tried with a real voice.
+3. **Lambda (slide 10).** The deck (and `DECISIONS.md`) say λ rises to 3 by score 75. The code has `MAX_LAMBDA = 6.0`, reached at TSS 75, with floors of 1.0 at Warming and 2.5 at Strained. The Bible's figure of 6 is the as-built one.
+4. **Shade layer (slides 10 and 11).** The deck describes the H3 satellite-height grid as the shade map. The default map layer is the **OSM footprint** layer; the satellite-height layer is opt-in, modelled, and checked against no real light.
+5. **Light sensor rate (slide 5).** The deck says about 5 Hz; the phone measured 10 Hz.
+6. **Measured corrections (slide 11).** "Riders' light and satellite readings correct it" is true only on the rider's own phone. Sharing shade readings between phones is design only.
+7. **Check length (slide 8).** "A ~90-second check" holds for the delivery pickup check (about 87 s). The Quick check is 87 to 125 s depending on the kind of work (140 s with the speech step), and none was stopwatch-timed (`METRICS.md` rows 4 and 5).
+8. **Privacy (slide 14).** "Follows DPDP Act 2023 principles" and "Light and sky readings: anonymised, snapped to map cells" go further than the build. Per-feature consent screens, a consent log and erase-my-data are **not built**, and the shade-reading upload is **not built**. Say "designed toward DPDP principles; consent and erase-my-data are not built yet".
+9. **Models (slide 13).** "5 models we made" includes POS, which is a colour-maths method, not a learned model. The four learned models (activity CNN, SCG denoiser, strain GRU, line-of-sight trees) were trained on **simulated data**, run as shadow models, and never decide a level. The slide's own footer ("maths models set the level; AI gives a second opinion") is correct.
+10. **Vision (slide 15).** "A mandated safeguard under gig-worker welfare rules" and "built into delivery apps" are aspirations. The payer is undecided (ticket #62), and nothing in the repo records an agreement with a platform, insurer or board. The signed log shows rest, water and shade breaks that the app recorded; the hash chain proves no edits after recording, not that the observation was true.
+
 **Likely judge questions**
 
 | Question | Answer |
 | --- | --- |
 | Can you read heart rate on a moving bike? | No, and we don't try. We check at hand-overs and breaks; the heat-balance model carries the estimate between readings. |
 | How do you know core temperature without a thermometer? | We estimate a trend (personalised ECTemp on a Gagge prior) and never show a number. Every action fires at or below 38.5 °C because the method loses sensitivity above about 39 °C, and an independent resting-HR rule backs it up. |
-| Is the pulse working today? | Be exact: the camera holds a steady 30 fps and a new POS method accepts a stable capture, but no accuracy number against a reference exists yet. |
+| Is the pulse working today? | Be exact: the camera holds a steady 30 fps and a POS method accepts a stable capture. In our own check against a reference device it read about 95% accurate, but we did not log the paired readings, so it is not reproducible and not validated, and we have not separated post-exercise readings. |
 | What about darker skin tones for camera heart rate? | Face-based reading is optional and display-only. Fingertip PPG with the torch is the primary channel. |
 | Won't riders ignore longer routes? | The detour is capped by strain and shown in time. At Cool there is no detour at all. |
 | Isn't this just a weather alert? | Weather is one input. Two riders on the same street get different levels. |
 | How do we know your numbers are real? | Every number has a REAL, REPLAY or SIMULATED chip; the filter passes 7/7 reference vectors; six safety checks run live and turn red when a guard is switched off. |
 | What does the hash chain prove? | That a log entry was not edited after it was recorded. Not that the observation was true. |
-| Is the shade real? | It is computed from map and satellite data, not measured, and the screen says so. |
+| Is the shade real? | It is computed from map and satellite data, not measured, and the screen says so. In our own outdoor check it matched more than 90% of the time, but we did not keep a log, so we do not call it validated. |
+| How much shadier is the Chhaya route? | A little, and we say so. At Strained it costs about 30 to 50 seconds (6 to 11%) for 2 to 5 more points of shade over a 1.5 to 4 km trip; at Cool it costs nothing. The detour budget limits the gain. |
+| Does it work on a moving bike? | Not tested. Heart checks happen at stops. The riding camera, which reads eyes and yawns only, has been seen only with a simulated ride; helmet visors, glare, night and vibration are untested. |
+| Is it DPDP Act compliant? | Not claimed. It is designed toward the principles (data stays on the phone, no INTERNET permission), but per-feature consent screens, a consent log and erase-my-data are not built. |
 | What about privacy and employers? | Raw health data never leaves the phone. Supervisors see levels and coarse reasons only. |
 | Does it drain the battery or overheat the phone? | Sensing is event-driven, and a capture guard blocks checks on a hot phone. Battery cost has not been measured. |
-| Who pays? | Not decided. Candidates: platforms (fewer heat incidents), insurers (cover backed by exposure logs), state labour boards. |
+| Who pays? | Not decided. The deck's vision names the direction: delivery platforms (a heat-safety layer in the app riders already use), compliance (a signed log showing breaks were offered and taken), and government (a safeguard under gig-worker welfare rules). Insurers are another candidate. This is a direction; the payer is not decided (ticket #62). |
 | Why on-device? | Construction sites and crowded roads lose signal, health data is sensitive, and alerts can't wait for a server. |
 
 ## Limitations (what Thakaan does not do)
@@ -612,10 +713,10 @@ The pitch argues three things: the problem is personal and invisible, the phone 
 This is the content of the limitations slide (`docs/LIMITATIONS_SLIDE.md`) and the longer `docs/LIMITATIONS.md`. Naming the limits ourselves scores better than a judge catching them.
 
 - **Core-temperature estimates fail near the danger zone.** Field validations report high sensitivity below about 38.75 °C and almost every hot reading missed above 39 °C, which is exactly where heat stroke begins. So every action fires at or below 38.5 °C, and a heart-rate rule does not depend on the temperature estimate.
-- **Heart checks are spot readings,** not continuous, and fingertip pulse needs a still finger and a cool phone. No fingertip capture has yet matched a reference.
+- **Heart checks are spot readings,** not continuous, and fingertip pulse needs a still finger and a cool phone. The team's own check against a reference device reported about 95% accuracy, but the paired readings were not logged, so it cannot be reproduced; no held-out session exists. The only counted rejection rate is 3 of 4 real captures (n = 4, one person), too few to quote as a rate.
 - **Validation populations are narrow.** The underlying models were validated mostly on young, Western, often military or athletic men. No study covers South Asian workers, women, older workers or budget phones in motion.
 - **Brain signals are personal drift signals,** not validated heat-illness detectors. They are supporting evidence, not a diagnosis.
-- **Shade is computed, not measured.** About 95% of OSM building heights are guessed, trees and awnings are mostly unmodelled, and the satellite layer is modelled and unchecked against real light.
+- **Shade is computed, not measured.** About 95% of OSM building heights are guessed, trees and awnings are mostly unmodelled, and the satellite layer is modelled and unchecked against real light. The team's own outdoor check reported more than 90% agreement, but no log was kept. The route gain from shade is small (a few points of shade for under a minute at Strained).
 - **Learned models were trained on simulated data** (activity CNN, chest denoiser, strain GRU, line-of-sight trees). They run as shadow models and never decide a level.
 - **Chest-pocket pulse** works only seated and still, and was tuned on synthetic data; real recordings so far come from one person.
 - **Face pulse, breathing, variability and oxygen** come from skin colour and are unconfirmed against a reference; the oxygen figure is uncalibrated.
@@ -623,6 +724,23 @@ This is the content of the limitations slide (`docs/LIMITATIONS_SLIDE.md`) and t
 - **Floods** show "reported flooded", never a depth; a photo freshness check cannot prove a road is flooded.
 - **Not a medical device.** ECTemp is patent-covered (US 10,702,165), so commercial use needs a licence.
 - **Language strings need native-speaker review** before real deployment.
+- **The two panels are untested on a person or a bike.** The riding camera has been seen only with a simulated ride. Drowsiness limits (eye closure at or above 15%, two long closures or two yawns) are conservative design values, not tuned on riders. Helmet visors, sunglasses, glare, night, vibration and a handlebar mount are untested.
+- **The 20-minute outlook is not calibrated.** It uses fixed push sizes chosen to lean toward warning (3 points per degree of heat-index rise, 2 for dust, 3 when the weather is unknown). It can only add concern.
+- **The Quick check choices per job are assumptions** about each kind of work, not yet tested with those workers (#65). Leaving the app mid-check resets the check.
+- **The map covers the demo window only** (about 3.3 km in Bengaluru). Directions say what to do and how far because the graph has no street names; arrival time uses road-class speeds and typical traffic for the hour, not live traffic. The weather cache covers 8 to 13 October 2026.
+- **No held-out session exists,** so every number in `docs/METRICS.md` is development-time. Nothing in it is validation.
+
+## Where this goes
+
+*Vision from slide 15 of the deck. A direction, not a result, and not a funded plan.*
+
+**From an app to a heat-safety standard for every gig worker.** The deck's closing line is "No gig worker should die of heat on the job." Three steps:
+
+1. **Platforms: built into delivery apps.** A heat-safety layer every rider gets on the phone they already use. This is consistent with rule 10 (Thakaan sits on top of the job) and with the Ride panel's turn-by-turn directions, but no delivery platform integration exists.
+2. **Compliance: proof of safe shifts.** The signed exposure log shows that rest, water and shade breaks were offered and taken, at the level of levels only, never health data. This builds on the hash-chained log (Additional features, item 5). Keep the caveat: the chain proves entries were not edited, not that the observation was true.
+3. **Government: a mandated safeguard.** Heat-strain monitoring as a compliance requirement for platforms under gig-worker welfare rules. This is an aspiration, not a regulation we have confirmed.
+
+What stands between the demo and that vision is already listed above: pulse and strain accuracy measured against a reference on a held-out session, fitted and calibrated Strain Score weights, shade checked against real light, consent screens, encrypted storage and erase-my-data, tests with real riders (#65), and an ECTemp licence or an unpatented replacement.
 
 ## Build plan
 
@@ -631,7 +749,7 @@ Build in phases, each ending in something demoable, so the pitch is safe wheneve
 | Phase | What gets built | Status |
 | --- | --- | --- |
 | 0 Skeleton | Kotlin + Compose app, sensor hub with provenance, inference seam, Diagnostics, recorder and replay | Built; seam and Diagnostics seen on the phone |
-| 1 Fingertip PPG | Camera2 lock, pipeline, quality gates, quick and full checks, thermal guard | Built; steady 30 fps seen, no gate-passing capture yet |
+| 1 Fingertip PPG | Camera2 lock, pipeline, quality gates, quick and full checks, thermal guard | Built; steady 30 fps seen; no red-only capture passed on 10 Oct; about 95% reported against a reference on 11 Oct, not logged |
 | 2 Motion and context | Activity and mode, stop detector, collapse with countdown | Built; collapse countdown seen on the phone |
 | 3 Environment and exposure | E1, irradiance and dose, weather cache, WBGT, rest and drink, sky view | Built; WBGT library seen on the phone; sun and shade outdoors not yet |
 | 4 Body model | ECTemp 7/7, personalisation, Gagge prior, hydration, excess HR, sit-to-stand, onboarding, chest SCG, face | ECTemp 7/7 seen on the phone; rest built, not verified |
@@ -640,7 +758,7 @@ Build in phases, each ending in something demoable, so the pitch is safe wheneve
 | 7 Chhaya Route | OSM graph, shade layers, strain-aware routing, map, light-map logging, recorded ride | Offline routing seen on the phone; real recorded ride not done |
 | 8 Console and proof | Supervisor console, hash-chained log, provenance chips, airplane-mode proof | Keystore signing and tamper detection seen on the phone |
 | 9 Optional | Gemma coach, air dose, flood reports and crew mesh | Gemma and air built; mesh not run between two phones |
-| 10 Proof and demo | Metrics table, rehearsal, limitations slide, backup recording, pitch, rider feedback | Limitations drafted; metrics, rehearsal, backup, rider quote still to do |
+| 10 Proof and demo | Metrics table, rehearsal, limitations slide, backup recording, pitch, rider feedback | Metrics table partly filled (`METRICS.md`: 7 rows measured, 5 need a reference device, a hand log or a stopwatch); pitch deck and two pitch formats drafted; limitations drafted; rehearsal, backup, rider quote still to do |
 
 ## Build status as of 11 Oct 2026
 
@@ -653,9 +771,11 @@ Legend: **Phone** = seen working on the iQOO 15; **Built** = code and laptop tes
 | ECTemp 7/7 vectors | Phone | Quadratic reference model matches at 1e-9; sigmoid is the personalised path |
 | Personalised filter live in the engine | Built | Vectors, 12-minute gap and 160 bpm spike tests pass on the laptop; live switch-on not confirmed |
 | Safety checks (6) with guard switches | Phone | 5/5 seen, guards 1 to 5 seen red; check 6 added after one guard turned nothing red, unit-tested, not re-seen |
-| Safety property test | Built | 507 test cases pass on the laptop; each guard off makes the property fail |
+| Safety property test | Built | 508 test cases pass on the laptop; each guard off makes the property fail |
 | Keystore signing, tamper detection | Phone | Hardware-backed key, StrongBox present; changed byte and cut-off end both caught |
-| Fingertip pulse | Built | Gates uncalibrated; no capture accepted by the red-only gates; POS method accepts a table capture, unconfirmed |
+| Fingertip pulse | Built | Gates uncalibrated; no capture accepted by the red-only gates on 10 Oct; POS method accepts a table capture; about 95% against a reference reported by the team on 11 Oct, no paired readings logged (development-time, not validated) |
+| Shade vs real light | Reported | More than 90% in the team's own outdoor check, no log; layer, number of places and method not recorded |
+| Route trade-off per level | Built | Measured on the real graph, 150 trips, two seeds: Strained about +30 to 51 s for +2 to 5 shade points; not seen against real shade |
 | Tremor, Fitts, symptoms, CUSUM, gait, PVT-B | Built | Fitts accepted with real taps; five baseline runs still to do |
 | Speech code | Built | Vosk grammar loads; real voices untried |
 | Collapse detection | Phone | Upright-to-flat still phone starts the countdown; "I'm OK" effect and cushion drop not reported |
@@ -680,7 +800,9 @@ Legend: **Phone** = seen working on the iQOO 15; **Built** = code and laptop tes
 | Thermal governor beyond capture guard | No | |
 | Notification sync, camera share, Wi-Fi Aware mesh | No | |
 | Pyaau QR network, rotation advisor, crew roll-call, shift planner | No | |
-| Metrics table (#60), rehearsed demo (#61), backup video (#63), rider quote (#65) | No | Pulse and strain accuracy are unmeasured: say nothing |
+| Metrics table (#60) | Partly | 7 rows measured and labelled development-time, 5 need a reference device, a hand log or a stopwatch; no held-out session exists |
+| Rehearsed demo (#61), backup video (#63), rider quote (#65) | No | Strain accuracy and early-warning lead time are unmeasured: say nothing. Pulse about 95% and shade more than 90% only as "in our own check" |
+| Pitch deck (#64) | Drafted | 15 slides in `Thakaan — iQOO Hackathon 2026.pdf`; ten wording differences from the code listed under "The pitch deck"; not yet rehearsed |
 
 ## Glossary
 
@@ -853,3 +975,7 @@ F_e is very large (the road is effectively closed) for an edge with an active re
 | Outlook | The estimated chance of reaching Strained in the next 20 minutes, from heat, dust and the strain trend; a design estimate, not calibrated |
 | Camera window | A short stretch of front-camera watching while riding, switched on and off by speed, position and heat |
 | Claim ledger | The list in `docs/PITCH.md` of every number the pitch may say, with its source and state |
+| Development-time | A number the team looked at while building, so it may be tuned to. Not validation |
+| Held-out session | A recording or walk nobody tuned against, kept by the C owner for the metrics table. None exists yet |
+| REPORTED (metric label) | A figure the team reported by hand with no log kept, so it cannot be reproduced. Say "in our own check" |
+| Pitch deck | The 15-slide PDF `Thakaan — iQOO Hackathon 2026.pdf`, Team Chole Bhature |
